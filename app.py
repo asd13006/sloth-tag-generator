@@ -9,14 +9,12 @@ st.set_page_config(page_title="sLoth Creator", page_icon="🍏", layout="centere
 
 st.markdown("""
 <style>
-    /* 引入 iOS 風格字體與深色模式質感 */
     @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;600;700&display=swap');
     
     html, body, [class*="css"] {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    /* 標題美化 */
     .ios-title {
         font-weight: 700;
         font-size: 34px;
@@ -31,7 +29,6 @@ st.markdown("""
         margin-bottom: 40px;
     }
     
-    /* 隱藏頂部多餘空白 */
     .block-container {
         padding-top: 2rem;
         max-width: 800px;
@@ -78,14 +75,13 @@ else:
     genai.configure(api_key=st.session_state.api_key)
     model = genai.GenerativeModel('gemini-2.5-flash')
 
-    # 輸入區
     with st.container(border=True):
         st.markdown("#### 1. Visuals & Vibe")
         uploaded_file = st.file_uploader("上傳封面圖 (Thumbnail)", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
         
         if uploaded_file:
             image = Image.open(uploaded_file)
-            # 將圖片顯示得更靚
+            # 已經修復咗之前嘅 Error，使用最新標準寫法
             st.image(image, use_container_width=True)
             
         st.write("")
@@ -93,18 +89,17 @@ else:
 
     st.write("")
     
-    # 執行按鈕 (iOS 藍色大掣風格)
     generate_btn = st.button("✨ Generate Magic", type="primary", use_container_width=True)
 
     if generate_btn:
         if uploaded_file and video_story:
             with st.status("Thinking like an artist...", expanded=True) as status:
                 st.write("Analyzing visual aesthetics...")
-                st.write("Crafting poetic titles...")
+                st.write("Crafting situational titles...")
                 st.write("Optimizing SEO tags...")
                 
                 try:
-                    # 全新 Prompt：一次過要求標題同 Tags，並設定嚴格分隔符號方便程式截取
+                    # 【核心升級】：將你嘅情境感與功能性心法完全注入！
                     prompt = f"""
                     你係一位 YouTube 頂級內容策劃師與 SEO 專家。
                     請根據提供的圖片視覺和以下氛圍描述，為 Lofi/純音樂頻道 (sLoth rAdio) 創作標題和標籤。
@@ -114,8 +109,11 @@ else:
                     【輸出格式必須嚴格如下】：
                     
                     ===TITLES===
-                    請提供 5 個極具點擊率、充滿畫面感和陪伴感的 YouTube 標題。
-                    可以中英混合，也可以加上 emoji。標題要能觸動人心，營造出寧靜、治癒的感覺。
+                    請提供 5 個極具點擊率嘅 YouTube 標題。標題必須具備強烈嘅「情境感」同「功能性」。
+                    千萬不要只寫普通的「Relaxing Music」，必須將標題場景化！
+                    參考例子：「深夜趕Deadline專用嘅高專注頻率」、「凌晨三點，一個人在房間的沉浸式歌單」。
+                    核心理念：賣嘅唔單止係音樂，而係為聽眾提供一個「解決方案」同「陪伴感」。
+                    可以中英混合，適當加上 emoji。要精準擊中目標受眾嘅痛點或需求，觸動人心。
                     
                     ===TAGS===
                     直接輸出一連串由逗號和半形空格分隔的 Tags。
@@ -126,16 +124,14 @@ else:
                     response = model.generate_content([prompt, image])
                     result_text = response.text
                     
-                    # 將 AI 嘅回覆拆分做「標題」同「Tags」兩部份
                     parts = result_text.split("===TAGS===")
                     titles_part = parts[0].replace("===TITLES===", "").strip()
                     tags_part = parts[1].strip() if len(parts) > 1 else ""
                     
                     status.update(label="✅ Generation Complete", state="complete", expanded=False)
                     
-                    # 輸出區 (結果顯示)
                     st.write("")
-                    st.markdown("#### 📝 Generated Titles")
+                    st.markdown("#### 📝 Generated Titles (情境與功能性)")
                     st.info(titles_part)
                     
                     st.write("")
@@ -156,4 +152,4 @@ else:
             st.error("Please provide both an image and a vibe description.")
             
     st.write("")
-    st.caption("Designed for sLoth rAdio.")
+    st.caption("Designed for sLoth rAdio. Powered by Gemini Multimodal AI.")
