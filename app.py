@@ -3,9 +3,9 @@ import google.generativeai as genai
 from PIL import Image
 
 # ==========================================
-# 1. 頁面基礎設定與 Pro 級 UI/CSS (保持 dark apple 質感)
+# 1. 頁面基礎設定與 AI 微動畫 CSS
 # ==========================================
-st.set_page_config(page_title="sLoth Creator Pro", page_icon="🍏", layout="centered")
+st.set_page_config(page_title="sLoth AI Core", page_icon="🤖", layout="centered")
 
 st.markdown("""
 <style>
@@ -15,48 +15,63 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    .ios-title {
-        font-weight: 700;
-        font-size: 38px;
+    /* AI 動態流光標題 */
+    @keyframes gradient-text {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    .ai-title {
+        font-weight: 800;
+        font-size: 42px;
         letter-spacing: -0.5px;
         margin-bottom: 8px;
         text-align: center;
-        background: -webkit-linear-gradient(45deg, #4A90E2, #50E3C2);
+        background: linear-gradient(270deg, #00E676, #00ffcc, #b026ff, #00E676);
+        background-size: 300% 300%;
+        animation: gradient-text 4s ease infinite;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
     }
-    .ios-subtitle {
+    .ai-subtitle {
         color: #8E8E93;
         font-size: 16px;
         text-align: center;
-        margin-bottom: 35px;
+        margin-bottom: 25px;
         font-weight: 500;
+        letter-spacing: 1px;
     }
     
-    /* 標題卡片設計 */
+    /* 標題卡片 - 加入懸停發光微動畫 */
     .title-card {
-        background-color: rgba(44, 44, 46, 0.5);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background-color: rgba(20, 20, 22, 0.7);
+        border: 1px solid rgba(0, 255, 204, 0.15);
         border-radius: 12px;
         padding: 18px 20px;
         margin-bottom: 15px;
-        transition: all 0.2s ease-in-out;
+        backdrop-filter: blur(10px);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     }
     .title-card:hover {
-        background-color: rgba(44, 44, 46, 0.8);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-        transform: translateY(-2px);
+        background-color: rgba(30, 30, 35, 0.9);
+        border: 1px solid rgba(0, 255, 204, 0.6);
+        box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+        transform: translateY(-4px);
     }
+    
+    /* 分數標籤 - 螢光綠色 */
     .score-badge {
         display: inline-block;
         font-size: 12px;
         font-weight: 700;
         color: #00E676;
         background: rgba(0, 230, 118, 0.1);
+        border: 1px solid rgba(0, 230, 118, 0.3);
         padding: 4px 10px;
         border-radius: 6px;
         margin-bottom: 10px;
     }
+    
     .zh-title {
         font-size: 18px;
         font-weight: 600;
@@ -70,8 +85,26 @@ st.markdown("""
         line-height: 1.4;
     }
     
+    /* 主按鈕 - 呼吸發光效果 (Pulse Glow) */
+    @keyframes pulse-glow {
+        0% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); }
+        50% { box-shadow: 0 0 20px rgba(0, 255, 204, 0.8); }
+        100% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); }
+    }
+    button[kind="primary"] {
+        background: linear-gradient(90deg, #008080, #00E676) !important;
+        border: none !important;
+        color: #fff !important;
+        font-weight: bold !important;
+        animation: pulse-glow 2.5s infinite !important;
+        transition: transform 0.2s !important;
+    }
+    button[kind="primary"]:hover {
+        transform: scale(1.02) !important;
+    }
+    
     .block-container {
-        padding-top: 2.5rem;
+        padding-top: 1.5rem;
         max-width: 760px;
     }
 </style>
@@ -81,64 +114,79 @@ if "api_key" not in st.session_state:
     st.session_state.api_key = ""
 
 # ==========================================
-# 2. 側邊欄設定
+# 2. 彈出式視窗 (Dialog) - 取代舊有側邊欄
 # ==========================================
-with st.sidebar:
-    st.markdown("### ⚙️ Settings")
-    if not st.session_state.api_key:
-        api_input = st.text_input("Gemini API Key", type="password", placeholder="Enter your key...")
-        if st.button("Connect via API", type="primary", use_container_width=True):
-            if api_input:
-                with st.spinner("Authenticating..."):
-                    try:
-                        genai.configure(api_key=api_input)
-                        # 【升級】切換至 Gemini 3 Flash Preview 進行連線測試
-                        genai.get_model('models/gemini-3-flash-preview')
-                        st.session_state.api_key = api_input
-                        st.rerun()
-                    except Exception as e:
-                        st.error("Invalid Key.")
-    else:
-        st.success("🟢 System Online")
-        st.caption("Ready to generate aesthetic magic.")
-        if st.button("Disconnect", use_container_width=True):
-            st.session_state.api_key = ""
-            st.rerun()
+@st.dialog("⚡ AI 核心連線 (API Authentication)")
+def api_connection_dialog():
+    st.markdown("請輸入您的 Gemini API Key 以啟動神經網絡。")
+    api_input = st.text_input("API Key", type="password", placeholder="AIzaSy...")
+    
+    if st.button("啟動連線", use_container_width=True):
+        if api_input:
+            with st.spinner("Authenticating..."):
+                try:
+                    genai.configure(api_key=api_input)
+                    genai.get_model('models/gemini-3-flash-preview')
+                    st.session_state.api_key = api_input
+                    st.rerun()
+                except Exception as e:
+                    st.error("連線失敗：無效的金鑰。")
+        else:
+            st.warning("請輸入金鑰。")
+
+@st.dialog("🟢 系統狀態")
+def disconnect_dialog():
+    st.success("AI 核心已成功連線，狀態良好。")
+    if st.button("斷開連線 (Disconnect)", use_container_width=True):
+        st.session_state.api_key = ""
+        st.rerun()
 
 # ==========================================
-# 3. 主畫面
+# 3. 頂部導航欄 (右上角按鈕)
 # ==========================================
-st.markdown("<div class='ios-title'>sLoth Creator Pro</div>", unsafe_allow_html=True)
-st.markdown("<div class='ios-subtitle'>Powered by Gemini 3. Aesthetic bilingual titles & SEO tags.</div>", unsafe_allow_html=True)
+col_space, col_btn = st.columns([8.5, 1.5])
+with col_btn:
+    if not st.session_state.api_key:
+        if st.button("🔑 連線", use_container_width=True):
+            api_connection_dialog()
+    else:
+        if st.button("🟢 已連線", use_container_width=True):
+            disconnect_dialog()
+
+# ==========================================
+# 4. 主畫面 (AI 核心介面)
+# ==========================================
+st.markdown("<div class='ai-title'>sLoth 神經網絡</div>", unsafe_allow_html=True)
+st.markdown("<div class='ai-subtitle'>Aesthetic Generation Core • Powered by Gemini 3</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
-    st.info("👋 Welcome! Please enter your API Key in the sidebar to start.")
+    # 未連線狀態嘅提示
+    st.info("⚠️ 系統處於休眠狀態：請點擊右上角「🔑 連線」按鈕以喚醒 AI。")
 else:
     genai.configure(api_key=st.session_state.api_key)
-    # 【升級】正式選用 Gemini 3 Flash Preview 作為生成引擎
     model = genai.GenerativeModel('gemini-3-flash-preview')
 
     with st.container(border=True):
-        st.markdown("#### 1. Visuals & Context")
-        uploaded_file = st.file_uploader("Upload Thumbnail (JPG/PNG)", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+        st.markdown("#### 👁️ 視覺與情境輸入")
+        uploaded_file = st.file_uploader("匯入視覺特徵 (JPG/PNG)", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
         
         if uploaded_file:
             image = Image.open(uploaded_file)
             st.image(image, use_container_width=True)
             
         st.write("")
-        video_story = st.text_area("Describe the Vibe, Story & Time", height=100, placeholder="例如：凌晨兩點，趕功課趕到好累，窗外雨越落越大，需要人鼓勵一下...")
+        video_story = st.text_area("設定情境參數 (Vibe, Story & Time)", height=100, placeholder="例如：凌晨兩點，趕功課趕到好累，窗外雨越落越大，需要人鼓勵一下...")
 
     st.write("")
     
-    generate_btn = st.button("✨ Generate Integrated Magic", type="primary", use_container_width=True)
+    generate_btn = st.button("✨ 啟動神經生成 (Execute Magic)", type="primary", use_container_width=True)
 
     if generate_btn:
         if uploaded_file and video_story:
-            with st.status("Thinking with Gemini 3...", expanded=True) as status:
-                st.write("Feeling the visual aesthetic...")
-                st.write("Crafting integrated bilingual titles with Emojis...")
-                st.write("Optimizing SEO tags length (max 490 chars)...")
+            with st.status("🤖 神經網絡深度解析中...", expanded=True) as status:
+                st.write("掃描圖片視覺特徵...")
+                st.write("配對生活化共鳴語句...")
+                st.write("最佳化 490 字元流量標籤...")
                 
                 try:
                     prompt = f"""
@@ -162,7 +210,6 @@ else:
                     
                     例子：
                     98|||溫書累就休息一下先啦，我喺度 ☔|||Rest if you're tired from studying, I'm here | lo fi beats to relax/study to
-                    96|||2:00 am: 一個人的房間，你也還沒睡嗎? 🌙|||2:00 am: Lonely in the room, are you still up too? | calm vibes for sleep
                     
                     ===TAGS===
                     直接輸出一連串由逗號和半形空格分隔的 Tags。
@@ -177,11 +224,11 @@ else:
                     titles_part = parts[0].replace("===TITLES===", "").strip()
                     tags_part = parts[1].strip() if len(parts) > 1 else ""
                     
-                    status.update(label="✅ Magic Ready", state="complete", expanded=False)
-                    st.toast('✨Integrated Magic generated successfully!', icon='🎉')
+                    status.update(label="✅ 生成完畢！數據已傳輸。", state="complete", expanded=False)
+                    st.toast('✨ 神經網絡生成成功！', icon='🤖')
                     
                     st.write("")
-                    st.markdown("#### 💬 Choose your integrated & poetic Title")
+                    st.markdown("#### 💬 最佳化共鳴標題")
                     
                     for line in titles_part.split('\n'):
                         line = line.replace("*", "").strip()
@@ -190,7 +237,7 @@ else:
                                 score, zh_title, en_title = line.split("|||")
                                 st.markdown(f"""
                                 <div class='title-card'>
-                                    <div class='score-badge'>🔥 CTR Score: {score.strip()}/100</div>
+                                    <div class='score-badge'>🔥 AI 預測點擊率: {score.strip()}/100</div>
                                     <div class='zh-title'>{zh_title.strip()}</div>
                                     <div class='en-title'>{en_title.strip()}</div>
                                 </div>
@@ -199,26 +246,26 @@ else:
                                 pass
                     
                     st.write("")
-                    st.markdown("#### 🏷️ Traffic-Optimized Tags (Safe Length)")
+                    st.markdown("#### 🏷️ 流量最佳化標籤")
                     
                     char_count = len(tags_part)
                     col_tags, col_metric = st.columns([3, 1])
                     
                     with col_metric:
-                        st.metric(label="Characters", value=f"{char_count}", delta=f"{490 - char_count} safe chars left", delta_color="normal")
+                        st.metric(label="Characters", value=f"{char_count}", delta=f"{490 - char_count} 剩餘安全空間", delta_color="normal")
                             
                     with col_tags:
                         st.code(tags_part, language="text")
                         if char_count > 490:
-                            st.caption("⚠️ Tags slightly over safe limit (max 490). Trim before pasting.")
+                            st.caption("⚠️ 標籤稍微超過安全限制，複製前請刪減結尾。")
                         else:
-                            st.caption("✅ Perfect length. Safe to copy.")
+                            st.caption("✅ 長度完美，已就緒。")
                     
                 except Exception as e:
-                    status.update(label="❌ Generation interrupted", state="error")
-                    st.error(f"Error details: {e}")
+                    status.update(label="❌ 運算中斷", state="error")
+                    st.error(f"系統錯誤：{e}")
         else:
-            st.error("Please provide both an image and a vibe description.")
+            st.error("請提供視覺特徵 (圖片) 及情境參數 (故事)。")
             
     st.write("")
-    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 20px;'>Powered by Gemini 3 Flash Preview • Built for sLoth rAdio</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 40px; opacity: 0.6;'>System Core v3.0 • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
