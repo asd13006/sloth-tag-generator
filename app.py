@@ -86,7 +86,7 @@ else:
         if uploaded_file:
             image = Image.open(uploaded_file)
             # 將圖片顯示得更靚
-            st.image(image, use_column_width=True, border_radius=15)
+            st.image(image, use_container_width=True)
             
         st.write("")
         video_story = st.text_area("描述氛圍與受眾 (Vibe & Story)", height=100, placeholder="例如：落緊雨嘅夜晚，啱晒溫書或者放空聽...")
