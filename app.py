@@ -15,7 +15,6 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    /* 標題美化 */
     .ios-title {
         font-weight: 700;
         font-size: 38px;
@@ -34,7 +33,6 @@ st.markdown("""
         font-weight: 500;
     }
     
-    /* 獨立標題卡片設計 (毛玻璃質感) */
     .title-card {
         background-color: rgba(44, 44, 46, 0.5);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -52,7 +50,6 @@ st.markdown("""
         transform: translateY(-2px);
     }
     
-    /* 區塊微調 */
     .block-container {
         padding-top: 2.5rem;
         max-width: 760px;
@@ -99,7 +96,6 @@ else:
     genai.configure(api_key=st.session_state.api_key)
     model = genai.GenerativeModel('gemini-2.5-flash')
 
-    # 輸入區
     with st.container(border=True):
         st.markdown("#### 1. Visuals & Context")
         uploaded_file = st.file_uploader("Upload Thumbnail (JPG/PNG)", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
@@ -123,8 +119,9 @@ else:
                 st.write("Calculating optimal SEO tags...")
                 
                 try:
+                    # 【核心進化：植入百萬流量密碼】
                     prompt = f"""
-                    你係一位 YouTube 頂級內容策劃師與 SEO 專家。
+                    你係一位 YouTube 頂級內容策劃師與 SEO 專家，專門負責為頻道打造百萬點擊的爆款影片。
                     請根據圖片視覺和以下氛圍描述，為 Lofi/純音樂頻道 (sLoth rAdio) 創作標題和標籤。
                     
                     氛圍與受眾：{video_story}
@@ -132,9 +129,12 @@ else:
                     【嚴格輸出格式】：
                     
                     ===TITLES===
-                    提供 5 個極具點擊率嘅中英對照標題 (格式: 中文 | English)。
-                    必須具備強烈嘅「情境感」同「功能性」，賣「解決方案」同「陪伴感」。適當加 emoji。
-                    請每行輸出一個標題，不要加 1. 2. 3. 等數字序號，直接輸出標題文字。
+                    提供 5 個【極致點擊率 (Max CTR) 與最高搜尋流量】的中英對照標題 (格式: 中文 | English)。
+                    必須運用 YouTube 演算法的流量密碼，包含以下 3 大元素：
+                    1. 情緒與痛點解決：賣「陪伴感」、解決「失眠/焦慮/溫書壓力/深夜emo」。
+                    2. 頂流關鍵字：英文部分必須無縫融入全球最高搜尋量的 Lofi 字眼 (例如: lofi hip hop, beats to relax/study to, deep focus, chill vibes, aesthetic)。
+                    3. 吸睛排版：適當使用括號 (如 【 】 或 [ ]) 標示重點，例如 【深夜陪伴】或 [Study Lofi]，並加上 1-2 個符合氛圍的 Emoji。
+                    請每行輸出一個標題，不要加 1. 2. 3. 等數字序號，直接輸出。
                     
                     ===TAGS===
                     直接輸出一連串由逗號和半形空格分隔的 Tags。
@@ -150,17 +150,11 @@ else:
                     tags_part = parts[1].strip() if len(parts) > 1 else ""
                     
                     status.update(label="✅ Analysis Complete", state="complete", expanded=False)
-                    
-                    # 觸發成功提示 Toast
                     st.toast('✨ Magic generated successfully!', icon='🎉')
                     
-                    # ----------------------------------------
-                    # 結果顯示區 (UX 升級)
-                    # ----------------------------------------
                     st.write("")
                     st.markdown("#### 📝 Select Your Favorite Title")
                     
-                    # 將標題變成一張張獨立嘅卡片
                     for line in titles_part.split('\n'):
                         clean_title = line.replace("*", "").strip()
                         if clean_title:
@@ -170,8 +164,6 @@ else:
                     st.markdown("#### 🏷️ Traffic-Optimized Tags")
                     
                     char_count = len(tags_part)
-                    
-                    # 建立左右兩欄，右邊顯示專業數據儀表
                     col_tags, col_metric = st.columns([3, 1])
                     
                     with col_metric:
