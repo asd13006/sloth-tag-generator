@@ -33,21 +33,41 @@ st.markdown("""
         font-weight: 500;
     }
     
+    /* 升級版標題卡片設計 */
     .title-card {
         background-color: rgba(44, 44, 46, 0.5);
         border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 12px;
-        padding: 16px 20px;
-        margin-bottom: 12px;
-        font-size: 16px;
-        color: #E5E5EA;
-        line-height: 1.5;
+        padding: 18px 20px;
+        margin-bottom: 15px;
         transition: all 0.2s ease-in-out;
     }
     .title-card:hover {
         background-color: rgba(44, 44, 46, 0.8);
         border: 1px solid rgba(255, 255, 255, 0.3);
         transform: translateY(-2px);
+    }
+    .score-badge {
+        display: inline-block;
+        font-size: 12px;
+        font-weight: 700;
+        color: #00E676;
+        background: rgba(0, 230, 118, 0.1);
+        padding: 4px 10px;
+        border-radius: 6px;
+        margin-bottom: 10px;
+    }
+    .zh-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #FFFFFF;
+        margin-bottom: 6px;
+        line-height: 1.4;
+    }
+    .en-title {
+        font-size: 14px;
+        color: #8E8E93;
+        line-height: 1.4;
     }
     
     .block-container {
@@ -115,11 +135,11 @@ else:
         if uploaded_file and video_story:
             with st.status("🧠 Analyzing multimodal context...", expanded=True) as status:
                 st.write("Extracting visual aesthetics...")
-                st.write("Engineering psychological triggers for titles...")
-                st.write("Calculating optimal SEO tags...")
+                st.write("Scoring potential title CTR...")
+                st.write("Optimizing SEO tags length (max 490 chars)...")
                 
                 try:
-                    # 【核心進化：植入百萬流量密碼】
+                    # 【核心升級：強制字數限制與評分格式】
                     prompt = f"""
                     你係一位 YouTube 頂級內容策劃師與 SEO 專家，專門負責為頻道打造百萬點擊的爆款影片。
                     請根據圖片視覺和以下氛圍描述，為 Lofi/純音樂頻道 (sLoth rAdio) 創作標題和標籤。
@@ -129,17 +149,20 @@ else:
                     【嚴格輸出格式】：
                     
                     ===TITLES===
-                    提供 5 個【極致點擊率 (Max CTR) 與最高搜尋流量】的中英對照標題 (格式: 中文 | English)。
-                    必須運用 YouTube 演算法的流量密碼，包含以下 3 大元素：
-                    1. 情緒與痛點解決：賣「陪伴感」、解決「失眠/焦慮/溫書壓力/深夜emo」。
-                    2. 頂流關鍵字：英文部分必須無縫融入全球最高搜尋量的 Lofi 字眼 (例如: lofi hip hop, beats to relax/study to, deep focus, chill vibes, aesthetic)。
-                    3. 吸睛排版：適當使用括號 (如 【 】 或 [ ]) 標示重點，例如 【深夜陪伴】或 [Study Lofi]，並加上 1-2 個符合氛圍的 Emoji。
-                    請每行輸出一個標題，不要加 1. 2. 3. 等數字序號，直接輸出。
+                    提供 5 個【極致點擊率 (Max CTR)】的標題。
+                    必須賣「陪伴感」或解決「失眠/溫書/焦慮」。使用括號【 】標示痛點，並包含全球最高搜尋量的英文關鍵字。
+                    請為每個標題給出一個預測點擊率分數 (0-100)。
+                    
+                    【絕對格式限制】：每行必須嚴格遵循以下格式輸出 (使用 ||| 分隔)：
+                    分數|||中文標題 (含Emoji)|||英文標題
+                    例子：
+                    98|||【極致專注】凌晨三點的溫書陪伴指南 ☕|||deep focus lofi beats to study/relax to
+                    95|||【拯救失眠】帶你逃離焦慮的深夜電台 🌙|||chill vibes to sleep/relax to
                     
                     ===TAGS===
                     直接輸出一連串由逗號和半形空格分隔的 Tags。
                     包含 lofi hip hop radio, beats to relax/study to 等大熱字眼。
-                    總長度極度逼近但不可超過 500 個字元。不可分類，不可有 hashtags。
+                    【警告】：總字元長度必須嚴格控制在 450 到 490 之間！絕對不能超過 490 字元！不可分類，不可有 hashtags。
                     """
                     
                     response = model.generate_content([prompt, image])
@@ -152,14 +175,30 @@ else:
                     status.update(label="✅ Analysis Complete", state="complete", expanded=False)
                     st.toast('✨ Magic generated successfully!', icon='🎉')
                     
+                    # ----------------------------------------
+                    # UI 升級：評分卡片顯示
+                    # ----------------------------------------
                     st.write("")
                     st.markdown("#### 📝 Select Your Favorite Title")
                     
                     for line in titles_part.split('\n'):
-                        clean_title = line.replace("*", "").strip()
-                        if clean_title:
-                            st.markdown(f"<div class='title-card'>{clean_title}</div>", unsafe_allow_html=True)
+                        line = line.replace("*", "").strip()
+                        if "|||" in line:
+                            try:
+                                score, zh_title, en_title = line.split("|||")
+                                st.markdown(f"""
+                                <div class='title-card'>
+                                    <div class='score-badge'>🔥 CTR Score: {score.strip()}/100</div>
+                                    <div class='zh-title'>{zh_title.strip()}</div>
+                                    <div class='en-title'>{en_title.strip()}</div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            except:
+                                pass # 略過格式錯誤的行數
                     
+                    # ----------------------------------------
+                    # UI 升級：精準字數顯示
+                    # ----------------------------------------
                     st.write("")
                     st.markdown("#### 🏷️ Traffic-Optimized Tags")
                     
@@ -175,7 +214,9 @@ else:
                     with col_tags:
                         st.code(tags_part, language="text")
                         if char_count > 500:
-                            st.caption("⚠️ Please trim a few tags before pasting to YouTube.")
+                            st.caption("⚠️ Tags exceeded limit. Please trim before pasting.")
+                        else:
+                            st.caption("✅ Perfect length. Ready to copy and paste to YouTube Studio.")
                     
                 except Exception as e:
                     status.update(label="❌ Generation Failed", state="error")
