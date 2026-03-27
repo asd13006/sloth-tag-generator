@@ -92,7 +92,8 @@ with st.sidebar:
                 with st.spinner("Authenticating..."):
                     try:
                         genai.configure(api_key=api_input)
-                        genai.get_model('models/gemini-2.5-flash')
+                        # 【升級】切換至 Gemini 3 Flash Preview 進行連線測試
+                        genai.get_model('models/gemini-3-flash-preview')
                         st.session_state.api_key = api_input
                         st.rerun()
                     except Exception as e:
@@ -108,13 +109,14 @@ with st.sidebar:
 # 3. 主畫面
 # ==========================================
 st.markdown("<div class='ios-title'>sLoth Creator Pro</div>", unsafe_allow_html=True)
-st.markdown("<div class='ios-subtitle'>Aesthetic bilingual titles & SEO tags, vibe-checked for sLoth rAdio.</div>", unsafe_allow_html=True)
+st.markdown("<div class='ios-subtitle'>Powered by Gemini 3. Aesthetic bilingual titles & SEO tags.</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
     st.info("👋 Welcome! Please enter your API Key in the sidebar to start.")
 else:
     genai.configure(api_key=st.session_state.api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    # 【升級】正式選用 Gemini 3 Flash Preview 作為生成引擎
+    model = genai.GenerativeModel('gemini-3-flash-preview')
 
     with st.container(border=True):
         st.markdown("#### 1. Visuals & Context")
@@ -133,13 +135,12 @@ else:
 
     if generate_btn:
         if uploaded_file and video_story:
-            with st.status("Thinking like an artist...", expanded=True) as status:
+            with st.status("Thinking with Gemini 3...", expanded=True) as status:
                 st.write("Feeling the visual aesthetic...")
                 st.write("Crafting integrated bilingual titles with Emojis...")
                 st.write("Optimizing SEO tags length (max 490 chars)...")
                 
                 try:
-                    # 【核心核心終極升級：真正同義，加入 Emoji】
                     prompt = f"""
                     你而家係一位深受大學生同失眠人士喜愛嘅 Lofi 電台策劃師 (類似 Lofi Girl 或 Homework Radio)。你嘅專長係寫出中英文意思準確對照，富有強烈生活感、對話感，好似老朋友關懷一樣嘅爆款標題。
                     
@@ -154,8 +155,8 @@ else:
                     
                     【標題創作法则 - 絕對指令】：
                     1. 對話與生活感：中文標題必須像是在**對觀眾說話**，帶有強烈的生活氣息和關懷感（类似：辛苦喇 / 時間到喇...）。
-                    2. **真正中英同義**：英文標題必須緊密匹對中文標題的意思，確保中義同英文義完全對照。同時英文部分要保持自然的 Lofi 氛圍語調，並可以適當無縫加入 1-2 個搜尋關鍵字詞尾（如 | lo fi study session）。
-                    3. **情緒 Emoji**：在中英文標題中加入**適量和適合（例如：溫書加📚，雨天加☔, 睡覺加🌙）**的 Emoji，以增加點擊慾望。
+                    2. 真正中英同義：英文標題必須緊密匹對中文標題的意思，確保中義同英文義完全對照。同時英文部分要保持自然的 Lofi 氛圍語調，並可以適當無縫加入 1-2 個搜尋關鍵字詞尾（如 | lo fi study session）。
+                    3. 情緒 Emoji：在中英文標題中加入適量和適合（例如：溫書加📚，雨天加☔, 睡覺加🌙）的 Emoji，以增加點擊慾望。
                     4. 圍繞故事：必須深度結合用戶提供的【圖片】和【故事情境】。
                     5. 格式：每個標題給出一個評分 (0-100)，並使用 `|||` 分隔。不要加序號。
                     
@@ -179,9 +180,6 @@ else:
                     status.update(label="✅ Magic Ready", state="complete", expanded=False)
                     st.toast('✨Integrated Magic generated successfully!', icon='🎉')
                     
-                    # ----------------------------------------
-                    # UI 顯示
-                    # ----------------------------------------
                     st.write("")
                     st.markdown("#### 💬 Choose your integrated & poetic Title")
                     
@@ -223,4 +221,4 @@ else:
             st.error("Please provide both an image and a vibe description.")
             
     st.write("")
-    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 20px;'>Powered by Gemini 2.5 Flash • Built for sLoth rAdio</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 20px;'>Powered by Gemini 3 Flash Preview • Built for sLoth rAdio</div>", unsafe_allow_html=True)
