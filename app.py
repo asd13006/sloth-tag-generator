@@ -67,7 +67,7 @@ with st.sidebar:
 # 3. 主畫面：iOS 風格 Creator Dashboard
 # ==========================================
 st.markdown("<div class='ios-title'>sLoth Creator</div>", unsafe_allow_html=True)
-st.markdown("<div class='ios-subtitle'>Auto-generate aesthetic titles and traffic-optimized tags.</div>", unsafe_allow_html=True)
+st.markdown("<div class='ios-subtitle'>Auto-generate bilingual aesthetic titles and traffic-optimized tags.</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
     st.info("👈 請先於左側 Settings 輸入 API Key。")
@@ -81,7 +81,6 @@ else:
         
         if uploaded_file:
             image = Image.open(uploaded_file)
-            # 已經修復咗之前嘅 Error，使用最新標準寫法
             st.image(image, use_container_width=True)
             
         st.write("")
@@ -95,11 +94,11 @@ else:
         if uploaded_file and video_story:
             with st.status("Thinking like an artist...", expanded=True) as status:
                 st.write("Analyzing visual aesthetics...")
-                st.write("Crafting situational titles...")
+                st.write("Crafting bilingual situational titles...")
                 st.write("Optimizing SEO tags...")
                 
                 try:
-                    # 【核心升級】：將你嘅情境感與功能性心法完全注入！
+                    # 【核心升級】：加入中英對照指令！
                     prompt = f"""
                     你係一位 YouTube 頂級內容策劃師與 SEO 專家。
                     請根據提供的圖片視覺和以下氛圍描述，為 Lofi/純音樂頻道 (sLoth rAdio) 創作標題和標籤。
@@ -109,11 +108,12 @@ else:
                     【輸出格式必須嚴格如下】：
                     
                     ===TITLES===
-                    請提供 5 個極具點擊率嘅 YouTube 標題。標題必須具備強烈嘅「情境感」同「功能性」。
-                    千萬不要只寫普通的「Relaxing Music」，必須將標題場景化！
-                    參考例子：「深夜趕Deadline專用嘅高專注頻率」、「凌晨三點，一個人在房間的沉浸式歌單」。
-                    核心理念：賣嘅唔單止係音樂，而係為聽眾提供一個「解決方案」同「陪伴感」。
-                    可以中英混合，適當加上 emoji。要精準擊中目標受眾嘅痛點或需求，觸動人心。
+                    請提供 5 個極具點擊率嘅 YouTube 標題。
+                    1. 情境與功能性：標題必須具備強烈嘅「情境感」，將標題場景化！為聽眾提供一個「解決方案」同「陪伴感」。
+                    2. 語言格式：每個標題必須是嚴格的【中英對照】(使用 " | " 分隔，例如：中文標題 | English Title)，並適當加上 emoji。
+                    參考例子：
+                    - 深夜趕Deadline專用嘅高專注頻率 | Deep Focus Lofi for Late Night Study 🎧
+                    - 凌晨三點，一個人在房間的沉浸式歌單 | 3AM Immersive Playlist for Lonely Souls 🌙
                     
                     ===TAGS===
                     直接輸出一連串由逗號和半形空格分隔的 Tags。
@@ -131,7 +131,7 @@ else:
                     status.update(label="✅ Generation Complete", state="complete", expanded=False)
                     
                     st.write("")
-                    st.markdown("#### 📝 Generated Titles (情境與功能性)")
+                    st.markdown("#### 📝 Generated Titles (中英對照)")
                     st.info(titles_part)
                     
                     st.write("")
