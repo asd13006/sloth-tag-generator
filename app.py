@@ -3,7 +3,7 @@ import google.generativeai as genai
 from PIL import Image
 
 # ==========================================
-# 1. 頁面基礎設定與 Pro 級 UI/CSS
+# 1. 頁面基礎設定與 Pro 級 UI/CSS (保持 dark apple 質感)
 # ==========================================
 st.set_page_config(page_title="sLoth Creator Pro", page_icon="🍏", layout="centered")
 
@@ -99,7 +99,7 @@ with st.sidebar:
                         st.error("Invalid Key.")
     else:
         st.success("🟢 System Online")
-        st.caption("Ready to generate conversational magic.")
+        st.caption("Ready to generate aesthetic magic.")
         if st.button("Disconnect", use_container_width=True):
             st.session_state.api_key = ""
             st.rerun()
@@ -107,8 +107,8 @@ with st.sidebar:
 # ==========================================
 # 3. 主畫面
 # ==========================================
-st.markdown("<div class='ios-title'>sLoth Creator</div>", unsafe_allow_html=True)
-st.markdown("<div class='ios-subtitle'>Transform your vibe into relatable, high-converting titles & tags.</div>", unsafe_allow_html=True)
+st.markdown("<div class='ios-title'>sLoth Creator Pro</div>", unsafe_allow_html=True)
+st.markdown("<div class='ios-subtitle'>Aesthetic bilingual titles & SEO tags, vibe-checked for sLoth rAdio.</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
     st.info("👋 Welcome! Please enter your API Key in the sidebar to start.")
@@ -129,19 +129,19 @@ else:
 
     st.write("")
     
-    generate_btn = st.button("✨ Generate Conversational Ideas", type="primary", use_container_width=True)
+    generate_btn = st.button("✨ Generate Integrated Magic", type="primary", use_container_width=True)
 
     if generate_btn:
         if uploaded_file and video_story:
-            with st.status("Thinking like an old friend...", expanded=True) as status:
+            with st.status("Thinking like an artist...", expanded=True) as status:
                 st.write("Feeling the visual aesthetic...")
-                st.write("Searching for empathetic phrases...")
-                st.write("Securing maximum search volume...")
+                st.write("Crafting integrated bilingual titles with Emojis...")
+                st.write("Optimizing SEO tags length (max 490 chars)...")
                 
                 try:
-                    # 【核心核心終極升級：對話式、叫人休息、生活感】
+                    # 【核心核心終極升級：真正同義，加入 Emoji】
                     prompt = f"""
-                    你而家係一位深受大學生同失眠人士喜愛嘅 Lofi 電台策劃師 (類似 Lofi Girl 或 Homework Radio)。你嘅專長係寫出富有強烈生活感、共鳴感，好似老朋友對話一樣嘅爆款標題。
+                    你而家係一位深受大學生同失眠人士喜愛嘅 Lofi 電台策劃師 (類似 Lofi Girl 或 Homework Radio)。你嘅專長係寫出中英文意思準確對照，富有強烈生活感、對話感，好似老朋友關懷一樣嘅爆款標題。
                     
                     請根據圖片視覺和以下氛圍描述，為頻道 sLoth rAdio 創作標題和標籤。
                     
@@ -150,20 +150,22 @@ else:
                     【輸出格式】：
                     
                     ===TITLES===
-                    提供 5 個極具點擊率 (CTR) 嘅中英對照標題 (格式: 分數|||中文標題|||英文標題)。
+                    提供 5 個極具點擊率 (CTR) 嘅中英對照標題 (格式: 分數|||中文標題 (含Emoji)|||英文標題 (含Emoji))。
                     
                     【標題創作法则 - 絕對指令】：
-                    1. 對話與生活感：標題必須像是在**對觀眾說話**，帶有強烈的生活氣息和關懷感（類似：辛苦喇，休息一下先啦 / 2:00 am: a sign... / Rest gently...）。賣的是「陪伴」和「情緒價值」，而不僅僅是音樂。
-                    2. 圍繞故事：必須深度結合用戶提供的【圖片】和【故事情境】（例如：如果故事提到「雨天溫書」，中文標題可以寫「雨落得咁大，溫書累就休息一下先啦 ☔」）。
-                    3. 流量組合：英文標題必須同時包含大熱流量字眼 (例如: beats to relax/study to, lofi hip hop radio, deep focus, calm vibes)。
-                    4. 格式：每個標題給出一個評分 (0-100)，並使用 `|||` 分隔。不要加序號。
+                    1. 對話與生活感：中文標題必須像是在**對觀眾說話**，帶有強烈的生活氣息和關懷感（类似：辛苦喇 / 時間到喇...）。
+                    2. **真正中英同義**：英文標題必須緊密匹對中文標題的意思，確保中義同英文義完全對照。同時英文部分要保持自然的 Lofi 氛圍語調，並可以適當無縫加入 1-2 個搜尋關鍵字詞尾（如 | lo fi study session）。
+                    3. **情緒 Emoji**：在中英文標題中加入**適量和適合（例如：溫書加📚，雨天加☔, 睡覺加🌙）**的 Emoji，以增加點擊慾望。
+                    4. 圍繞故事：必須深度結合用戶提供的【圖片】和【故事情境】。
+                    5. 格式：每個標題給出一個評分 (0-100)，並使用 `|||` 分隔。不要加序號。
                     
-                    參考例子格式：
-                    98|||溫書累就休息一下先啦，我喺度 ☔|||rainy night study session | lo fi beats to relax/study to
-                    96|||2:00 am: 一個人的房間，你也還沒睡嗎? 🌙|||late night vibes for lonely souls | chill beats to sleep to
+                    例子：
+                    98|||溫書累就休息一下先啦，我喺度 ☔|||Rest if you're tired from studying, I'm here | lo fi beats to relax/study to
+                    96|||2:00 am: 一個人的房間，你也還沒睡嗎? 🌙|||2:00 am: Lonely in the room, are you still up too? | calm vibes for sleep
                     
                     ===TAGS===
                     直接輸出一連串由逗號和半形空格分隔的 Tags。
+                    包含 lofi hip hop radio, beats to relax/study to 等大熱字眼。
                     【字數警告】：總字元長度必須嚴格控制在 450 到 490 之間！絕對不能超過 490 字元！不可分類。
                     """
                     
@@ -174,14 +176,14 @@ else:
                     titles_part = parts[0].replace("===TITLES===", "").strip()
                     tags_part = parts[1].strip() if len(parts) > 1 else ""
                     
-                    status.update(label="✅ Conversations Ready", state="complete", expanded=False)
-                    st.toast('✨ Vibe check passed!', icon='🎉')
+                    status.update(label="✅ Magic Ready", state="complete", expanded=False)
+                    st.toast('✨Integrated Magic generated successfully!', icon='🎉')
                     
                     # ----------------------------------------
                     # UI 顯示
                     # ----------------------------------------
                     st.write("")
-                    st.markdown("#### 💬 Choose your Conversational Title")
+                    st.markdown("#### 💬 Choose your integrated & poetic Title")
                     
                     for line in titles_part.split('\n'):
                         line = line.replace("*", "").strip()
@@ -210,15 +212,15 @@ else:
                     with col_tags:
                         st.code(tags_part, language="text")
                         if char_count > 490:
-                            st.caption("⚠️ Slightly over safe limit. Trim before pasting.")
+                            st.caption("⚠️ Tags slightly over safe limit (max 490). Trim before pasting.")
                         else:
                             st.caption("✅ Perfect length. Safe to copy.")
                     
                 except Exception as e:
-                    status.update(label="❌ Connection interrupted", state="error")
+                    status.update(label="❌ Generation interrupted", state="error")
                     st.error(f"Error details: {e}")
         else:
             st.error("Please provide both an image and a vibe description.")
             
     st.write("")
-    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 20px;'>Powered by Gemini 2.5 Flash • Vibe checked for sLoth rAdio</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 20px;'>Powered by Gemini 2.5 Flash • Built for sLoth rAdio</div>", unsafe_allow_html=True)
