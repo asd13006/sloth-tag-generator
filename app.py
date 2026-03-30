@@ -5,7 +5,8 @@ from PIL import Image
 # ==========================================
 # 1. 頁面基礎設定與 AI 微動畫 CSS
 # ==========================================
-st.set_page_config(page_title="sLoth AI Core", page_icon="🤖", layout="centered")
+# 【改動 1】：更改瀏覽器 Tab 標題
+st.set_page_config(page_title="YouTube Title Studio", page_icon="🤖", layout="centered")
 
 st.markdown("""
 <style>
@@ -69,7 +70,6 @@ st.markdown("""
         margin-bottom: 12px;
     }
     
-    /* 【視覺層次對調】：英文變大字，中文變細字 */
     .en-title {
         font-size: 18px;
         font-weight: 600;
@@ -153,7 +153,8 @@ with col_btn:
 # ==========================================
 # 4. 主畫面
 # ==========================================
-st.markdown("<div class='ai-title'>sLoth 神經網絡</div>", unsafe_allow_html=True)
+# 【改動 2】：更改主畫面標題
+st.markdown("<div class='ai-title'>YouTube Title Studio</div>", unsafe_allow_html=True)
 st.markdown("<div class='ai-subtitle'>Aesthetic Generation Core • Powered by Gemini 3</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
@@ -247,7 +248,6 @@ else:
                         if "|||" in line:
                             try:
                                 score, zh_title, en_title = line.split("|||")
-                                # 【排版次序對調】：先顯示英文(大字)，再顯示中文(細字)
                                 st.markdown(f"""
                                 <div class='title-card'>
                                     <div class='score-badge'>🔥 AI 預測點擊率: {score.strip()}/100</div>
@@ -281,4 +281,5 @@ else:
             st.warning("⚠️ 喂喂，請至少上傳一張圖片，或者輸入少少情境故事，先可以施展魔法㗎！")
             
     st.write("")
-    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 40px; opacity: 0.6;'>System Core v3.3 • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
+    # 【改動 3】：底部加入版本號及署名
+    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 40px; opacity: 0.7;'>YouTube Title Studio v3.4<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
