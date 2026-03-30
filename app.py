@@ -66,17 +66,18 @@ st.markdown("""
         border: 1px solid rgba(0, 230, 118, 0.3);
         padding: 4px 10px;
         border-radius: 6px;
-        margin-bottom: 10px;
+        margin-bottom: 12px;
     }
     
-    .zh-title {
+    /* 【視覺層次對調】：英文變大字，中文變細字 */
+    .en-title {
         font-size: 18px;
         font-weight: 600;
         color: #FFFFFF;
         margin-bottom: 6px;
         line-height: 1.4;
     }
-    .en-title {
+    .zh-title {
         font-size: 14px;
         color: #8E8E93;
         line-height: 1.4;
@@ -177,11 +178,9 @@ else:
     generate_btn = st.button("✨ 啟動神經生成 (Execute Magic)", type="primary", use_container_width=True)
 
     if generate_btn:
-        # 【核心修改】：將 and 改為 or，只要有求其一樣就可以行
         if uploaded_file or video_story:
             with st.status("🤖 神經網絡深度解析中...", expanded=True) as status:
                 
-                # 準備發送畀 AI 嘅資料包 (Payload) 同埋動態前奏
                 payload = []
                 context_desc = ""
                 
@@ -217,8 +216,6 @@ else:
                        參考例子：
                        - Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙
                        - A cozy place to study… Chill R&B for Golden Hour Focus & Slow Living 🌅 📚
-                       - Find Peace in Small Tasks… Chill Lofi for Relaxation & Unwinding 🧼 🌿
-                       - Slow Down With the Fish… Peaceful R&B for Relaxation & Quiet Focus 🐟 🌿
                        
                     2. 音樂曲風 (Genre)：請根據圖片或氛圍靈活替換，例如 Chill Lofi, Chill R&B, Peaceful Beats, Cozy Jazz 等。
                     3. 中文標題：將英文標題轉化為語感自然、帶有陪伴感的生活化中文。
@@ -230,10 +227,8 @@ else:
                     【字數警告】：總字元長度必須嚴格控制在 450 到 490 之間！絕對不能超過 490 字元！不可分類。
                     """
                     
-                    # 將文字 Prompt 擺入 Payload 嘅最前面
                     payload.insert(0, prompt)
                     
-                    # AI 生成
                     response = model.generate_content(payload)
                     result_text = response.text
                     
@@ -252,11 +247,12 @@ else:
                         if "|||" in line:
                             try:
                                 score, zh_title, en_title = line.split("|||")
+                                # 【排版次序對調】：先顯示英文(大字)，再顯示中文(細字)
                                 st.markdown(f"""
                                 <div class='title-card'>
                                     <div class='score-badge'>🔥 AI 預測點擊率: {score.strip()}/100</div>
-                                    <div class='zh-title'>{zh_title.strip()}</div>
                                     <div class='en-title'>{en_title.strip()}</div>
+                                    <div class='zh-title'>{zh_title.strip()}</div>
                                 </div>
                                 """, unsafe_allow_html=True)
                             except:
@@ -282,8 +278,7 @@ else:
                     status.update(label="❌ 運算中斷", state="error")
                     st.error(f"系統錯誤：{e}")
         else:
-            # 如果兩樣都冇填，就彈個警告出嚟
             st.warning("⚠️ 喂喂，請至少上傳一張圖片，或者輸入少少情境故事，先可以施展魔法㗎！")
             
     st.write("")
-    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 40px; opacity: 0.6;'>System Core v3.2 • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 40px; opacity: 0.6;'>System Core v3.3 • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
