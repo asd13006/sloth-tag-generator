@@ -5,7 +5,6 @@ from PIL import Image
 # ==========================================
 # 1. 頁面基礎設定與 AI 微動畫 CSS
 # ==========================================
-# 【改動 1】：更改瀏覽器 Tab 標題
 st.set_page_config(page_title="YouTube Title Studio", page_icon="🤖", layout="centered")
 
 st.markdown("""
@@ -111,14 +110,15 @@ if "api_key" not in st.session_state:
     st.session_state.api_key = ""
 
 # ==========================================
-# 2. 彈出式視窗 (Dialog)
+# 2. 彈出式視窗 (Dialog) - 依然保留給右上角按鈕
 # ==========================================
 @st.dialog("⚡ AI 核心連線 (API Authentication)")
 def api_connection_dialog():
     st.markdown("請輸入您的 Gemini API Key 以啟動神經網絡。")
-    api_input = st.text_input("API Key", type="password", placeholder="AIzaSy...")
+    # 加上獨立 key 避免衝突
+    api_input = st.text_input("API Key", type="password", placeholder="AIzaSy...", key="dialog_api")
     
-    if st.button("啟動連線", use_container_width=True):
+    if st.button("啟動連線", use_container_width=True, key="dialog_btn"):
         if api_input:
             with st.spinner("Authenticating..."):
                 try:
@@ -139,7 +139,7 @@ def disconnect_dialog():
         st.rerun()
 
 # ==========================================
-# 3. 頂部導航欄
+# 3. 頂部導航欄 (保留右上角連線掣)
 # ==========================================
 col_space, col_btn = st.columns([8.5, 1.5])
 with col_btn:
@@ -153,13 +153,33 @@ with col_btn:
 # ==========================================
 # 4. 主畫面
 # ==========================================
-# 【改動 2】：更改主畫面標題
 st.markdown("<div class='ai-title'>YouTube Title Studio</div>", unsafe_allow_html=True)
 st.markdown("<div class='ai-subtitle'>Aesthetic Generation Core • Powered by Gemini 3</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
-    st.info("⚠️ 系統處於休眠狀態：請點擊右上角「🔑 連線」按鈕以喚醒 AI。")
+    # 【改動核心】：未連線時，直接在標題下方顯示輸入框
+    with st.container(border=True):
+        st.markdown("#### 🔌 喚醒神經網絡 (System Offline)")
+        st.markdown("<span style='color:#8E8E93; font-size:14px;'>請貼上 Gemini API 金鑰以解鎖所有生成功能。</span>", unsafe_allow_html=True)
+        st.write("")
+        
+        # 加上獨立 key 避免同上面 Dialog 衝突
+        main_api_input = st.text_input("Gemini API Key", type="password", placeholder="AIzaSy...", label_visibility="collapsed", key="main_api")
+        
+        if st.button("⚡ 啟動連線 (Initialize)", type="primary", use_container_width=True, key="main_btn"):
+            if main_api_input:
+                with st.spinner("驗證金鑰中 (Authenticating)..."):
+                    try:
+                        genai.configure(api_key=main_api_input)
+                        genai.get_model('models/gemini-3-flash-preview')
+                        st.session_state.api_key = main_api_input
+                        st.rerun()
+                    except Exception as e:
+                        st.error("連線失敗：金鑰無效或網絡異常，請檢查後重試。")
+            else:
+                st.warning("⚠️ 請先貼上您的 API Key。")
 else:
+    # 已經連線，顯示主要生成介面
     genai.configure(api_key=st.session_state.api_key)
     model = genai.GenerativeModel('gemini-3-flash-preview')
 
@@ -281,5 +301,4 @@ else:
             st.warning("⚠️ 喂喂，請至少上傳一張圖片，或者輸入少少情境故事，先可以施展魔法㗎！")
             
     st.write("")
-    # 【改動 3】：底部加入版本號及署名
-    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 40px; opacity: 0.7;'>YouTube Title Studio v3.4<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 40px; opacity: 0.7;'>YouTube Title Studio v3.5<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
