@@ -15,7 +15,6 @@ st.markdown("""
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
     
-    /* AI 動態流光標題 */
     @keyframes gradient-text {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
@@ -42,7 +41,6 @@ st.markdown("""
         letter-spacing: 1px;
     }
     
-    /* 標題卡片 - 加入懸停發光微動畫 */
     .title-card {
         background-color: rgba(20, 20, 22, 0.7);
         border: 1px solid rgba(0, 255, 204, 0.15);
@@ -59,7 +57,6 @@ st.markdown("""
         transform: translateY(-4px);
     }
     
-    /* 分數標籤 - 螢光綠色 */
     .score-badge {
         display: inline-block;
         font-size: 12px;
@@ -85,7 +82,6 @@ st.markdown("""
         line-height: 1.4;
     }
     
-    /* 主按鈕 - 呼吸發光效果 (Pulse Glow) */
     @keyframes pulse-glow {
         0% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); }
         50% { box-shadow: 0 0 20px rgba(0, 255, 204, 0.8); }
@@ -114,7 +110,7 @@ if "api_key" not in st.session_state:
     st.session_state.api_key = ""
 
 # ==========================================
-# 2. 彈出式視窗 (Dialog) - 取代舊有側邊欄
+# 2. 彈出式視窗 (Dialog)
 # ==========================================
 @st.dialog("⚡ AI 核心連線 (API Authentication)")
 def api_connection_dialog():
@@ -142,7 +138,7 @@ def disconnect_dialog():
         st.rerun()
 
 # ==========================================
-# 3. 頂部導航欄 (右上角按鈕)
+# 3. 頂部導航欄
 # ==========================================
 col_space, col_btn = st.columns([8.5, 1.5])
 with col_btn:
@@ -154,13 +150,12 @@ with col_btn:
             disconnect_dialog()
 
 # ==========================================
-# 4. 主畫面 (AI 核心介面)
+# 4. 主畫面
 # ==========================================
 st.markdown("<div class='ai-title'>sLoth 神經網絡</div>", unsafe_allow_html=True)
 st.markdown("<div class='ai-subtitle'>Aesthetic Generation Core • Powered by Gemini 3</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
-    # 未連線狀態嘅提示
     st.info("⚠️ 系統處於休眠狀態：請點擊右上角「🔑 連線」按鈕以喚醒 AI。")
 else:
     genai.configure(api_key=st.session_state.api_key)
@@ -175,7 +170,7 @@ else:
             st.image(image, use_container_width=True)
             
         st.write("")
-        video_story = st.text_area("設定情境參數 (Vibe, Story & Time)", height=100, placeholder="例如：凌晨兩點，趕功課趕到好累，窗外雨越落越大，需要人鼓勵一下...")
+        video_story = st.text_area("設定情境參數 (Vibe, Story & Time)", height=100, placeholder="例如：凌晨兩點，趕功課趕到好累，窗外雨越落越大...")
 
     st.write("")
     
@@ -185,13 +180,13 @@ else:
         if uploaded_file and video_story:
             with st.status("🤖 神經網絡深度解析中...", expanded=True) as status:
                 st.write("掃描圖片視覺特徵...")
-                st.write("配對生活化共鳴語句...")
+                st.write("套用黃金三段式 Aesthetic 標題結構...")
                 st.write("最佳化 490 字元流量標籤...")
                 
                 try:
+                    # 【終極心法：強制套用黃金三段式標題格式】
                     prompt = f"""
-                    你而家係一位深受大學生同失眠人士喜愛嘅 Lofi 電台策劃師 (類似 Lofi Girl 或 Homework Radio)。你嘅專長係寫出中英文意思準確對照，富有強烈生活感、對話感，好似老朋友關懷一樣嘅爆款標題。
-                    
+                    你而家係一位深受大學生同失眠人士喜愛嘅 Lofi 電台策劃師。
                     請根據圖片視覺和以下氛圍描述，為頻道 sLoth rAdio 創作標題和標籤。
                     
                     氛圍與故事：{video_story}
@@ -199,17 +194,25 @@ else:
                     【輸出格式】：
                     
                     ===TITLES===
-                    提供 5 個極具點擊率 (CTR) 嘅中英對照標題 (格式: 分數|||中文標題 (含Emoji)|||英文標題 (含Emoji))。
+                    提供 5 個極具點擊率 (CTR) 嘅中英對照標題 (格式: 分數|||中文標題|||英文標題)。
                     
-                    【標題創作法则 - 絕對指令】：
-                    1. 對話與生活感：中文標題必須像是在**對觀眾說話**，帶有強烈的生活氣息和關懷感（类似：辛苦喇 / 時間到喇...）。
-                    2. 真正中英同義：英文標題必須緊密匹對中文標題的意思，確保中義同英文義完全對照。同時英文部分要保持自然的 Lofi 氛圍語調，並可以適當無縫加入 1-2 個搜尋關鍵字詞尾（如 | lo fi study session）。
-                    3. 情緒 Emoji：在中英文標題中加入適量和適合（例如：溫書加📚，雨天加☔, 睡覺加🌙）的 Emoji，以增加點擊慾望。
-                    4. 圍繞故事：必須深度結合用戶提供的【圖片】和【故事情境】。
-                    5. 格式：每個標題給出一個評分 (0-100)，並使用 `|||` 分隔。不要加序號。
+                    【標題創作法則 - 絕對指令】：
+                    1. 英文標題格式必須 100% 嚴格跟隨以下結構 (請留意省略號 ... 後面有一個半形空格)：
+                       [極簡生活感短句]… [音樂曲風] for [活動1], [活動2] & [氛圍] [2個Emoji]
+                       
+                       參考例子：
+                       - Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙
+                       - A cozy place to study… Chill R&B for Golden Hour Focus & Slow Living 🌅 📚
+                       - Find Peace in Small Tasks… Chill Lofi for Relaxation & Unwinding 🧼 🌿
+                       - Slow Down With the Fish… Peaceful R&B for Relaxation & Quiet Focus 🐟 🌿
+                       
+                    2. 音樂曲風 (Genre)：請根據圖片氛圍靈活替換，例如 Chill Lofi, Chill R&B, Peaceful Beats, Cozy Jazz 等。
+                    3. 中文標題：將英文標題轉化為語感自然、帶有陪伴感的中文。
+                    4. 格式：每個標題給出一個評分 (0-100)，並使用 `|||` 分隔。不要加序號。
                     
                     例子：
-                    98|||溫書累就休息一下先啦，我喺度 ☔|||Rest if you're tired from studying, I'm here | lo fi beats to relax/study to
+                    98|||溫馨的泡茶時光… 適合放鬆與學習的 Chill Lofi 🍵 🌙|||Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙
+                    96|||安靜家中的休息片刻… 適合寧靜午後的 Chill R&B 🧸 🌊|||Rest in the Quiet Home… Chill R&B for Peaceful Afternoons 🧸 🌊
                     
                     ===TAGS===
                     直接輸出一連串由逗號和半形空格分隔的 Tags。
@@ -268,4 +271,4 @@ else:
             st.error("請提供視覺特徵 (圖片) 及情境參數 (故事)。")
             
     st.write("")
-    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 40px; opacity: 0.6;'>System Core v3.0 • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 40px; opacity: 0.6;'>System Core v3.1 • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
