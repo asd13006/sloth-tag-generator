@@ -110,12 +110,11 @@ if "api_key" not in st.session_state:
     st.session_state.api_key = ""
 
 # ==========================================
-# 2. 彈出式視窗 (Dialog) - 依然保留給右上角按鈕
+# 2. 彈出式視窗 (Dialog)
 # ==========================================
 @st.dialog("⚡ AI 核心連線 (API Authentication)")
 def api_connection_dialog():
     st.markdown("請輸入您的 Gemini API Key 以啟動神經網絡。")
-    # 加上獨立 key 避免衝突
     api_input = st.text_input("API Key", type="password", placeholder="AIzaSy...", key="dialog_api")
     
     if st.button("啟動連線", use_container_width=True, key="dialog_btn"):
@@ -139,7 +138,7 @@ def disconnect_dialog():
         st.rerun()
 
 # ==========================================
-# 3. 頂部導航欄 (保留右上角連線掣)
+# 3. 頂部導航欄
 # ==========================================
 col_space, col_btn = st.columns([8.5, 1.5])
 with col_btn:
@@ -151,19 +150,18 @@ with col_btn:
             disconnect_dialog()
 
 # ==========================================
-# 4. 主畫面
+# 4. 主畫面與邏輯
 # ==========================================
 st.markdown("<div class='ai-title'>YouTube Title Studio</div>", unsafe_allow_html=True)
 st.markdown("<div class='ai-subtitle'>Aesthetic Generation Core • Powered by Gemini 3</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
-    # 【改動核心】：未連線時，直接在標題下方顯示輸入框
+    # 未連線狀態：主畫面直接顯示輸入框
     with st.container(border=True):
         st.markdown("#### 🔌 喚醒神經網絡 (System Offline)")
         st.markdown("<span style='color:#8E8E93; font-size:14px;'>請貼上 Gemini API 金鑰以解鎖所有生成功能。</span>", unsafe_allow_html=True)
         st.write("")
         
-        # 加上獨立 key 避免同上面 Dialog 衝突
         main_api_input = st.text_input("Gemini API Key", type="password", placeholder="AIzaSy...", label_visibility="collapsed", key="main_api")
         
         if st.button("⚡ 啟動連線 (Initialize)", type="primary", use_container_width=True, key="main_btn"):
@@ -179,7 +177,7 @@ if not st.session_state.api_key:
             else:
                 st.warning("⚠️ 請先貼上您的 API Key。")
 else:
-    # 已經連線，顯示主要生成介面
+    # 已連線狀態：顯示主生成器
     genai.configure(api_key=st.session_state.api_key)
     model = genai.GenerativeModel('gemini-3-flash-preview')
 
@@ -299,6 +297,10 @@ else:
                     st.error(f"系統錯誤：{e}")
         else:
             st.warning("⚠️ 喂喂，請至少上傳一張圖片，或者輸入少少情境故事，先可以施展魔法㗎！")
-            
-    st.write("")
-    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 40px; opacity: 0.7;'>YouTube Title Studio v3.5<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
+
+# ==========================================
+# 5. 全域底部版權宣告 (移出 if/else 判斷)
+# ==========================================
+st.write("")
+st.write("")
+st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 40px; margin-bottom: 20px; opacity: 0.7;'>YouTube Title Studio v3.6<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
