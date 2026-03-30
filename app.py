@@ -162,7 +162,7 @@ else:
     model = genai.GenerativeModel('gemini-3-flash-preview')
 
     with st.container(border=True):
-        st.markdown("#### 👁️ 視覺與情境輸入")
+        st.markdown("#### 👁️ 視覺與情境輸入 (至少提供一項)")
         uploaded_file = st.file_uploader("匯入視覺特徵 (JPG/PNG)", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
         
         if uploaded_file:
@@ -170,26 +170,40 @@ else:
             st.image(image, use_container_width=True)
             
         st.write("")
-        video_story = st.text_area("設定情境參數 (Vibe, Story & Time)", height=100, placeholder="例如：凌晨兩點，趕功課趕到好累，窗外雨越落越大...")
+        video_story = st.text_area("設定情境參數 (Vibe, Story & Time)", height=100, placeholder="可選填。例如：凌晨兩點，趕功課趕到好累，窗外雨越落越大...")
 
     st.write("")
     
     generate_btn = st.button("✨ 啟動神經生成 (Execute Magic)", type="primary", use_container_width=True)
 
     if generate_btn:
-        if uploaded_file and video_story:
+        # 【核心修改】：將 and 改為 or，只要有求其一樣就可以行
+        if uploaded_file or video_story:
             with st.status("🤖 神經網絡深度解析中...", expanded=True) as status:
-                st.write("掃描圖片視覺特徵...")
+                
+                # 準備發送畀 AI 嘅資料包 (Payload) 同埋動態前奏
+                payload = []
+                context_desc = ""
+                
+                if uploaded_file and video_story:
+                    st.write("掃描圖片視覺特徵與解讀情境故事...")
+                    context_desc = f"請根據提供嘅圖片視覺和以下氛圍描述：{video_story}"
+                    payload.append(image)
+                elif uploaded_file:
+                    st.write("掃描圖片視覺特徵...")
+                    context_desc = "請單純根據提供嘅圖片視覺氛圍"
+                    payload.append(image)
+                elif video_story:
+                    st.write("解讀情境故事...")
+                    context_desc = f"請單純根據以下氛圍描述：{video_story}"
+                
                 st.write("套用黃金三段式 Aesthetic 標題結構...")
                 st.write("最佳化 490 字元流量標籤...")
                 
                 try:
-                    # 【終極心法：強制套用黃金三段式標題格式】
                     prompt = f"""
                     你而家係一位深受大學生同失眠人士喜愛嘅 Lofi 電台策劃師。
-                    請根據圖片視覺和以下氛圍描述，為頻道 sLoth rAdio 創作標題和標籤。
-                    
-                    氛圍與故事：{video_story}
+                    {context_desc}，為頻道 sLoth rAdio 創作標題和標籤。
                     
                     【輸出格式】：
                     
@@ -206,13 +220,9 @@ else:
                        - Find Peace in Small Tasks… Chill Lofi for Relaxation & Unwinding 🧼 🌿
                        - Slow Down With the Fish… Peaceful R&B for Relaxation & Quiet Focus 🐟 🌿
                        
-                    2. 音樂曲風 (Genre)：請根據圖片氛圍靈活替換，例如 Chill Lofi, Chill R&B, Peaceful Beats, Cozy Jazz 等。
-                    3. 中文標題：將英文標題轉化為語感自然、帶有陪伴感的中文。
+                    2. 音樂曲風 (Genre)：請根據圖片或氛圍靈活替換，例如 Chill Lofi, Chill R&B, Peaceful Beats, Cozy Jazz 等。
+                    3. 中文標題：將英文標題轉化為語感自然、帶有陪伴感的生活化中文。
                     4. 格式：每個標題給出一個評分 (0-100)，並使用 `|||` 分隔。不要加序號。
-                    
-                    例子：
-                    98|||溫馨的泡茶時光… 適合放鬆與學習的 Chill Lofi 🍵 🌙|||Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙
-                    96|||安靜家中的休息片刻… 適合寧靜午後的 Chill R&B 🧸 🌊|||Rest in the Quiet Home… Chill R&B for Peaceful Afternoons 🧸 🌊
                     
                     ===TAGS===
                     直接輸出一連串由逗號和半形空格分隔的 Tags。
@@ -220,7 +230,11 @@ else:
                     【字數警告】：總字元長度必須嚴格控制在 450 到 490 之間！絕對不能超過 490 字元！不可分類。
                     """
                     
-                    response = model.generate_content([prompt, image])
+                    # 將文字 Prompt 擺入 Payload 嘅最前面
+                    payload.insert(0, prompt)
+                    
+                    # AI 生成
+                    response = model.generate_content(payload)
                     result_text = response.text
                     
                     parts = result_text.split("===TAGS===")
@@ -255,7 +269,7 @@ else:
                     col_tags, col_metric = st.columns([3, 1])
                     
                     with col_metric:
-                        st.metric(label="Characters", value=f"{char_count}", delta=f"{490 - char_count} 剩餘安全空間", delta_color="normal")
+                        st.metric(label="Characters", value=f"{char_count}", delta=f"{490 - char_count} 剩餘", delta_color="normal")
                             
                     with col_tags:
                         st.code(tags_part, language="text")
@@ -268,7 +282,8 @@ else:
                     status.update(label="❌ 運算中斷", state="error")
                     st.error(f"系統錯誤：{e}")
         else:
-            st.error("請提供視覺特徵 (圖片) 及情境參數 (故事)。")
+            # 如果兩樣都冇填，就彈個警告出嚟
+            st.warning("⚠️ 喂喂，請至少上傳一張圖片，或者輸入少少情境故事，先可以施展魔法㗎！")
             
     st.write("")
-    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 40px; opacity: 0.6;'>System Core v3.1 • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
+    st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 12px; margin-top: 40px; opacity: 0.6;'>System Core v3.2 • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
