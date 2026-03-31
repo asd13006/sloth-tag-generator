@@ -6,6 +6,7 @@ import re
 # ==========================================
 # 1. 頁面設定與全域暗黑美學 CSS
 # ==========================================
+# 為了配合 4x5 佈局，版面稍微加闊
 st.set_page_config(page_title="YouTube Title Studio", page_icon="🤖", layout="centered")
 
 st.markdown("""
@@ -13,6 +14,9 @@ st.markdown("""
     @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap');
     html, body, [class*="css"] { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     
+    /* 配合 4x5 陣列，加大容器闊度 */
+    .block-container { padding-top: 1.5rem; max-width: 1200px !important; }
+
     /* 流光標題動畫 */
     @keyframes gradient-text { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
     .ai-title { font-weight: 800; font-size: 38px; text-align: center; background: linear-gradient(270deg, #00E676, #00ffcc, #b026ff, #00E676); background-size: 300% 300%; animation: gradient-text 4s ease infinite; -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 5px; }
@@ -25,7 +29,7 @@ st.markdown("""
     /* Sticky Bottom Action Bar */
     .stApp > header {background-color: transparent !important;}
     div.stActionButton { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(20, 20, 22, 0.95); backdrop-filter: blur(10px); border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 15px 0; z-index: 1000; text-align: center; }
-    div.stActionButton > div { max-width: 760px; margin: 0 auto; padding: 0 1rem; }
+    div.stActionButton > div { max-width: 1200px; margin: 0 auto; padding: 0 1rem; }
 
     /* 全域卡片 (Tab 4) */
     .result-card { background-color: rgba(30, 30, 35, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
@@ -41,34 +45,35 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. 專屬歌曲卡片 (暗黑美學 + 隱藏按鈕魔法)
+# 2. 專屬歌曲卡片 (4x5 適配 + 完美點擊黑魔法)
 # ==========================================
 def inject_dark_card_css():
     st.markdown("""
 <style>
-    /* 卡片主體 (暗黑風格) */
+    /* 卡片主體 (暗黑風格，適配 4x5 窄距) */
     .song-card {
         background-color: rgba(30, 30, 35, 0.6);
         border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        border-radius: 10px;
+        transition: all 0.2s ease-in-out;
         display: flex;
         flex-direction: column;
         color: #FFFFFF;
         overflow: hidden;
         height: 100%;
+        min-height: 180px;
     }
 
-    /* 懸停效果 (Hover) - 螢光微光 */
+    /* 懸停效果 (Hover) */
     .song-card:hover {
         border-color: rgba(0, 255, 204, 0.6);
         box-shadow: 0 8px 20px rgba(0, 255, 204, 0.1);
-        transform: translateY(-3px);
+        transform: translateY(-2px);
     }
     
-    /* 已選取狀態 (Selected) - 螢光青框 */
+    /* 已選取狀態 (Selected) */
     .song-card.selected {
-        background-color: rgba(0, 255, 204, 0.05);
+        background-color: rgba(0, 255, 204, 0.08);
         border: 2px solid #00ffcc;
         box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
     }
@@ -77,10 +82,10 @@ def inject_dark_card_css():
     .song-card.selected::after {
         content: '✓';
         position: absolute;
-        top: 12px;
-        right: 15px;
+        top: 8px;
+        right: 12px;
         color: #00ffcc;
-        font-size: 20px;
+        font-size: 18px;
         font-weight: 800;
         text-shadow: 0 0 8px rgba(0, 255, 204, 0.5);
         z-index: 5;
@@ -88,59 +93,63 @@ def inject_dark_card_css():
 
     /* 頂層：標題區 */
     .card-top {
-        padding: 16px;
+        padding: 12px 14px;
         display: flex;
         align-items: flex-start;
-        gap: 12px;
+        gap: 10px;
         border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     /* 編號小圓圈 */
     .card-id {
         flex-shrink: 0;
-        width: 26px; height: 26px;
+        width: 22px; height: 22px;
         background-color: rgba(255, 255, 255, 0.1);
         color: #FFFFFF;
         border-radius: 50%;
         display: flex; align-items: center; justify-content: center;
-        font-size: 13px; font-weight: 700;
+        font-size: 11px; font-weight: 700;
         margin-top: 2px;
     }
 
-    /* 標題排版 */
-    .card-titles { flex-grow: 1; padding-right: 20px; }
-    .card-en-title { font-size: 16px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; line-height: 1.3; }
-    .card-zh-title { font-size: 13px; color: #8E8E93; font-weight: 500; }
+    /* 標題排版 (縮小字體以適應 4 欄) */
+    .card-titles { flex-grow: 1; padding-right: 15px; }
+    .card-en-title { font-size: 14px; font-weight: 700; color: #FFFFFF; margin-bottom: 4px; line-height: 1.2; }
+    .card-zh-title { font-size: 12px; color: #8E8E93; font-weight: 500; }
 
-    /* 底層：意境區 (完全展開，無 Ellipsis) */
+    /* 底層：意境區 */
     .card-bottom {
         background-color: rgba(20, 20, 22, 0.5);
-        padding: 15px 16px;
+        padding: 12px 14px;
         display: flex;
         align-items: flex-start;
-        gap: 10px;
+        gap: 8px;
         flex-grow: 1;
     }
 
-    .theme-icon { font-size: 16px; margin-top: 1px; flex-shrink: 0; filter: grayscale(100%) brightness(150%); }
-    .theme-text { font-size: 13px; color: #D1D1D6; line-height: 1.6; }
+    .theme-icon { font-size: 14px; margin-top: 1px; flex-shrink: 0; filter: grayscale(100%) brightness(150%); }
+    .theme-text { font-size: 12px; color: #D1D1D6; line-height: 1.5; }
     .theme-zh-text { color: #8E8E93; margin-top: 4px; }
 
     /* =========================================================
-       🔥 黑魔法：隱藏 Streamlit Button 並將其變為全區覆蓋點擊
+       🔥 黑魔法：完美全域透明點擊覆蓋 (Absolute Button Overlay)
        ========================================================= */
-    div[data-testid="stVerticalBlock"]:has(.click-marker) {
+    /* 讓 Streamlit 欄位成為相對定位的容器 */
+    div[data-testid="column"] {
         position: relative;
     }
-    div[data-testid="stVerticalBlock"]:has(.click-marker) div[data-testid="stButton"] button {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        opacity: 0 !important;
-        z-index: 10 !important;
-        cursor: pointer !important;
+    /* 將隱藏的按鈕容器絕對定位，100% 覆蓋整個欄位 */
+    div[data-testid="column"] div[data-testid="stButton"] {
+        position: absolute;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        z-index: 10;
+    }
+    /* 將按鈕本身變為透明 */
+    div[data-testid="column"] div[data-testid="stButton"] button {
+        width: 100%; height: 100%;
+        opacity: 0;
+        cursor: pointer;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -182,7 +191,7 @@ with col_api:
     if st.button("🟢 已連線" if st.session_state.api_key else "🔑 連線", use_container_width=True) and not st.session_state.api_key: api_dialog()
 
 st.markdown("<div class='ai-title'>YouTube Title Studio</div>", unsafe_allow_html=True)
-st.markdown("<div class='ai-subtitle'>Dark Aesthetic Content Engine • v7.0</div>", unsafe_allow_html=True)
+st.markdown("<div class='ai-subtitle'>Dark Aesthetic Content Engine • v8.0</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
     with st.container(border=True):
@@ -212,7 +221,7 @@ with col_count:
 st.write("")
 
 # ==========================================
-# Pipeline Step 1: 音樂靈感 (暗黑卡片、直覺點擊)
+# Pipeline Step 1: 音樂靈感 (4x5 陣列、無痕點擊)
 # ==========================================
 if st.session_state.step == 1:
     inject_dark_card_css()
@@ -229,7 +238,6 @@ if st.session_state.step == 1:
                 一定要生成夠 20 首。不要有任何前言或結語。"""
                 resp = model.generate_content(prompt)
                 
-                # Regex 確保格式精準解析
                 raw_text = resp.text.strip()
                 pattern = r"(\d+)\.\s*《(.*?)》\s*(.*?)\nLyric Theme:\s*(.*?)\s*[—-]\s*(.*)"
                 matches = re.findall(pattern, raw_text)
@@ -239,10 +247,11 @@ if st.session_state.step == 1:
                 st.rerun()
     else:
         st.markdown("### 🎛️ Stage 1: Select Your Aesthetic Songs")
-        st.markdown("<span style='color:#8E8E93; font-size:14px;'>點擊卡片即可選取 (可多選)。意境描述完全展開，方便閱讀。</span>", unsafe_allow_html=True)
+        st.markdown("<span style='color:#8E8E93; font-size:14px;'>請點擊卡片選取您需要的歌曲 (可按需選擇，1 首或多首都無問題)。</span>", unsafe_allow_html=True)
         st.write("")
 
-        col1, col2 = st.columns(2, gap="medium")
+        # 建立 4 columns Grid (4x5 佈局)
+        cols = st.columns(4, gap="small")
         sorted_songs = sorted(st.session_state.song_data, key=lambda x: x['id'])
 
         def toggle_selection(song_id):
@@ -251,38 +260,35 @@ if st.session_state.step == 1:
             else:
                 st.session_state.selected_song_ids.append(song_id)
 
+        # 渲染 4x5 陣列
         for idx, song in enumerate(sorted_songs):
-            target_col = col1 if idx % 2 == 0 else col2
+            target_col = cols[idx % 4]
             is_selected = song['id'] in st.session_state.selected_song_ids
             sel_class = "selected" if is_selected else ""
             
             with target_col:
-                with st.container():
-                    # 注入 CSS Marker，令下面嘅 Button 變成絕對定位覆蓋卡片
-                    st.markdown("<div class='click-marker'></div>", unsafe_allow_html=True)
-                    
-                    # 繪製暗黑卡片 UI
-                    st.markdown(f"""
-                    <div class='song-card {sel_class}'>
-                        <div class='card-top'>
-                            <div class='card-id'>{song['id']}</div>
-                            <div class='card-titles'>
-                                <div class='card-en-title'>{song['en_title']}</div>
-                                <div class='card-zh-title'>{song['zh_title']}</div>
-                            </div>
-                        </div>
-                        <div class='card-bottom'>
-                            <div class='theme-icon'>💡</div>
-                            <div class='theme-text'>
-                                <div>{song['en_theme']}</div>
-                                <div class='theme-zh-text'>— {song['zh_theme']}</div>
-                            </div>
+                # 繪製暗黑卡片 UI
+                st.markdown(f"""
+                <div class='song-card {sel_class}'>
+                    <div class='card-top'>
+                        <div class='card-id'>{song['id']}</div>
+                        <div class='card-titles'>
+                            <div class='card-en-title'>{song['en_title']}</div>
+                            <div class='card-zh-title'>{song['zh_title']}</div>
                         </div>
                     </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # 隱藏嘅點擊觸發器
-                    st.button("Toggle", key=f"btn_{song['id']}", on_click=toggle_selection, args=(song['id'],), use_container_width=True)
+                    <div class='card-bottom'>
+                        <div class='theme-icon'>💡</div>
+                        <div class='theme-text'>
+                            <div>{song['en_theme']}</div>
+                            <div class='theme-zh-text'>— {song['zh_theme']}</div>
+                        </div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                # 隱藏嘅點擊觸發器 (透過 CSS 放大覆蓋整個 column)
+                st.button("Toggle", key=f"btn_{song['id']}", on_click=toggle_selection, args=(song['id'],), use_container_width=True)
                 
                 st.write("") # 模擬 margin-bottom
 
@@ -290,7 +296,7 @@ if st.session_state.step == 1:
         st.markdown('<div class="stActionButton"><div>', unsafe_allow_html=True)
         if st.button("確認選擇，進入下一步 ️(Visual Concept) ➡️", type="primary", use_container_width=True):
             if not st.session_state.selected_song_ids:
-                st.warning("請至少點擊選取一首歌曲！")
+                st.warning("⚠️ 請至少點擊選取一首歌曲！")
             else:
                 next_step()
                 st.rerun()
@@ -363,6 +369,7 @@ elif st.session_state.step == 3:
             if uploaded_img: payload.append(Image.open(uploaded_img))
             
             prompt = f"""你是 YouTube Lofi 音樂頻道總監。請根據以上歌曲設定、視覺意境及圖片（如有），一次過輸出以下最終內容。
+            賣的是「共鳴」同「 companionship」，賣為聽眾提供一個「心理停頓、放鬆、心理療癒」嘅解決方案。
             
             【嚴格輸出格式，使用 === 分隔，遵守格式否則系統崩潰】：
             
@@ -449,4 +456,4 @@ elif st.session_state.step == 4:
         st.rerun()
 
 st.write("")
-st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 30px; opacity: 0.7;'>YouTube Title Studio v7.0<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 30px; opacity: 0.7;'>YouTube Title Studio v8.0<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
