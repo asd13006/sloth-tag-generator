@@ -1,306 +1,189 @@
 import streamlit as st
 import google.generativeai as genai
 from PIL import Image
+import random
 
 # ==========================================
-# 1. 頁面基礎設定與 AI 微動畫 CSS
+# 1. 頁面設定與 AI 賽博龐克 CSS
 # ==========================================
 st.set_page_config(page_title="YouTube Title Studio", page_icon="🤖", layout="centered")
 
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700&display=swap');
+    html, body, [class*="css"] { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     
-    html, body, [class*="css"] {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    }
+    /* 流光標題動畫 */
+    @keyframes gradient-text { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .ai-title { font-weight: 800; font-size: 42px; text-align: center; background: linear-gradient(270deg, #00E676, #00ffcc, #b026ff, #00E676); background-size: 300% 300%; animation: gradient-text 4s ease infinite; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .ai-subtitle { color: #8E8E93; font-size: 16px; text-align: center; margin-bottom: 25px; letter-spacing: 1px; }
+
+    /* 卡片設計 */
+    .glass-card { background-color: rgba(20, 20, 22, 0.7); border: 1px solid rgba(0, 255, 204, 0.15); border-radius: 12px; padding: 20px; margin-bottom: 20px; backdrop-filter: blur(10px); }
+    .title-card { background-color: rgba(30, 30, 35, 0.8); border: 1px solid rgba(0, 255, 204, 0.3); border-radius: 10px; padding: 15px; margin-bottom: 10px; }
+    .score-badge { display: inline-block; font-size: 11px; font-weight: 700; color: #00E676; background: rgba(0, 230, 118, 0.1); padding: 2px 8px; border-radius: 4px; margin-bottom: 8px; }
     
-    @keyframes gradient-text {
-        0% { background-position: 0% 50%; }
-        50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
-    .ai-title {
-        font-weight: 800;
-        font-size: 42px;
-        letter-spacing: -0.5px;
-        margin-bottom: 8px;
-        text-align: center;
-        background: linear-gradient(270deg, #00E676, #00ffcc, #b026ff, #00E676);
-        background-size: 300% 300%;
-        animation: gradient-text 4s ease infinite;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-    }
-    .ai-subtitle {
-        color: #8E8E93;
-        font-size: 16px;
-        text-align: center;
-        margin-bottom: 25px;
-        font-weight: 500;
-        letter-spacing: 1px;
-    }
-    
-    .title-card {
-        background-color: rgba(20, 20, 22, 0.7);
-        border: 1px solid rgba(0, 255, 204, 0.15);
-        border-radius: 12px;
-        padding: 18px 20px;
-        margin-bottom: 15px;
-        backdrop-filter: blur(10px);
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-    .title-card:hover {
-        background-color: rgba(30, 30, 35, 0.9);
-        border: 1px solid rgba(0, 255, 204, 0.6);
-        box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
-        transform: translateY(-4px);
-    }
-    
-    .score-badge {
-        display: inline-block;
-        font-size: 12px;
-        font-weight: 700;
-        color: #00E676;
-        background: rgba(0, 230, 118, 0.1);
-        border: 1px solid rgba(0, 230, 118, 0.3);
-        padding: 4px 10px;
-        border-radius: 6px;
-        margin-bottom: 12px;
-    }
-    
-    .en-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: #FFFFFF;
-        margin-bottom: 6px;
-        line-height: 1.4;
-    }
-    .zh-title {
-        font-size: 14px;
-        color: #8E8E93;
-        line-height: 1.4;
-    }
-    
-    @keyframes pulse-glow {
-        0% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); }
-        50% { box-shadow: 0 0 20px rgba(0, 255, 204, 0.8); }
-        100% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); }
-    }
-    button[kind="primary"] {
-        background: linear-gradient(90deg, #008080, #00E676) !important;
-        border: none !important;
-        color: #fff !important;
-        font-weight: bold !important;
-        animation: pulse-glow 2.5s infinite !important;
-        transition: transform 0.2s !important;
-    }
-    button[kind="primary"]:hover {
-        transform: scale(1.02) !important;
-    }
-    
-    .block-container {
-        padding-top: 1.5rem;
-        max-width: 760px;
-    }
+    /* 標題層次：英大中細 */
+    .en-main { font-size: 18px; font-weight: 600; color: #FFFFFF; margin-bottom: 4px; }
+    .zh-sub { font-size: 14px; color: #8E8E93; }
+
+    /* 按鈕發光 */
+    @keyframes pulse-glow { 0% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); } 50% { box-shadow: 0 0 20px rgba(0, 255, 204, 0.8); } 100% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); } }
+    button[kind="primary"] { background: linear-gradient(90deg, #008080, #00E676) !important; animation: pulse-glow 2.5s infinite !important; border: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
-if "api_key" not in st.session_state:
-    st.session_state.api_key = ""
+# 初始化 Session State (記憶系統)
+if "api_key" not in st.session_state: st.session_state.api_key = ""
+if "step1_results" not in st.session_state: st.session_state.step1_results = []
+if "selected_song" not in st.session_state: st.session_state.selected_song = None
+if "step2_concepts" not in st.session_state: st.session_state.step2_concepts = []
+if "selected_concept" not in st.session_state: st.session_state.selected_concept = None
+if "long_story" not in st.session_state: st.session_state.long_story = None
+if "image_prompt" not in st.session_state: st.session_state.image_prompt = None
+if "final_titles" not in st.session_state: st.session_state.final_titles = []
+if "final_tags" not in st.session_state: st.session_state.final_tags = ""
 
 # ==========================================
-# 2. 彈出式視窗 (Dialog)
+# 2. API 連線視窗
 # ==========================================
-@st.dialog("⚡ AI 核心連線 (API Authentication)")
-def api_connection_dialog():
-    st.markdown("請輸入您的 Gemini API Key 以啟動神經網絡。")
-    api_input = st.text_input("API Key", type="password", placeholder="AIzaSy...", key="dialog_api")
-    
-    if st.button("啟動連線", use_container_width=True, key="dialog_btn"):
+@st.dialog("⚡ AI 核心連線")
+def api_dialog():
+    api_input = st.text_input("Enter Gemini API Key", type="password", key="dialog_api")
+    if st.button("啟動連線", use_container_width=True):
         if api_input:
-            with st.spinner("Authenticating..."):
-                try:
-                    genai.configure(api_key=api_input)
-                    genai.get_model('models/gemini-3-flash-preview')
-                    st.session_state.api_key = api_input
-                    st.rerun()
-                except Exception as e:
-                    st.error("連線失敗：無效的金鑰。")
-        else:
-            st.warning("請輸入金鑰。")
+            try:
+                genai.configure(api_key=api_input)
+                genai.get_model('models/gemini-3-flash-preview')
+                st.session_state.api_key = api_input
+                st.rerun()
+            except: st.error("Invalid Key.")
 
-@st.dialog("🟢 系統狀態")
-def disconnect_dialog():
-    st.success("AI 核心已成功連線，狀態良好。")
-    if st.button("斷開連線 (Disconnect)", use_container_width=True):
-        st.session_state.api_key = ""
-        st.rerun()
-
-# ==========================================
-# 3. 頂部導航欄
-# ==========================================
-col_space, col_btn = st.columns([8.5, 1.5])
+# 頂部導航
+col_title, col_btn = st.columns([8, 2])
 with col_btn:
-    if not st.session_state.api_key:
-        if st.button("🔑 連線", use_container_width=True):
-            api_connection_dialog()
-    else:
-        if st.button("🟢 已連線", use_container_width=True):
-            disconnect_dialog()
+    label = "🟢 已連線" if st.session_state.api_key else "🔑 連線"
+    if st.button(label, use_container_width=True): api_dialog()
 
-# ==========================================
-# 4. 主畫面與邏輯
-# ==========================================
 st.markdown("<div class='ai-title'>YouTube Title Studio</div>", unsafe_allow_html=True)
-st.markdown("<div class='ai-subtitle'>Aesthetic Generation Core • Powered by Gemini 3</div>", unsafe_allow_html=True)
+st.markdown("<div class='ai-subtitle'>End-to-End Lofi Content Workflow • v4.0</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
-    # 未連線狀態：主畫面直接顯示輸入框
-    with st.container(border=True):
-        st.markdown("#### 🔌 喚醒神經網絡 (System Offline)")
-        st.markdown("<span style='color:#8E8E93; font-size:14px;'>請貼上 Gemini API 金鑰以解鎖所有生成功能。</span>", unsafe_allow_html=True)
-        st.write("")
-        
-        main_api_input = st.text_input("Gemini API Key", type="password", placeholder="AIzaSy...", label_visibility="collapsed", key="main_api")
-        
-        if st.button("⚡ 啟動連線 (Initialize)", type="primary", use_container_width=True, key="main_btn"):
-            if main_api_input:
-                with st.spinner("驗證金鑰中 (Authenticating)..."):
-                    try:
-                        genai.configure(api_key=main_api_input)
-                        genai.get_model('models/gemini-3-flash-preview')
-                        st.session_state.api_key = main_api_input
-                        st.rerun()
-                    except Exception as e:
-                        st.error("連線失敗：金鑰無效或網絡異常，請檢查後重試。")
-            else:
-                st.warning("⚠️ 請先貼上您的 API Key。")
+    st.info("👋 歡迎！請先輸入 API Key 以喚醒 AI 創作核心。")
+    main_api = st.text_input("Gemini API Key", type="password", key="main_api_key")
+    if st.button("⚡ 快速初始化", type="primary", use_container_width=True):
+        if main_api:
+            genai.configure(api_key=main_api)
+            st.session_state.api_key = main_api
+            st.rerun()
 else:
-    # 已連線狀態：顯示主生成器
+    # 定義模型
     genai.configure(api_key=st.session_state.api_key)
     model = genai.GenerativeModel('gemini-3-flash-preview')
 
-    with st.container(border=True):
-        st.markdown("#### 👁️ 視覺與情境輸入 (至少提供一項)")
-        uploaded_file = st.file_uploader("匯入視覺特徵 (JPG/PNG)", type=["jpg", "jpeg", "png"], label_visibility="collapsed")
+    # ==========================================
+    # 3. 三大功能分頁
+    # ==========================================
+    tab1, tab2, tab3, tab4 = st.tabs(["🎵 音樂靈感", "🖼️ 視覺故事", "🚀 SEO 包裝", "📋 最終成品"])
+
+    # ---- Tab 1: Suno Ideation ----
+    with tab1:
+        st.markdown("### 1. Suno AI 歌曲孵化")
+        if st.button("🪄 生成 20 首治癒系歌曲靈感", type="primary"):
+            with st.status("正在創作靈魂治癒音樂主題..."):
+                prompt = """
+                我正在使用 SUNO AI 創作英文治癒系歌曲。請為我全新創作 20 首歌曲題目及其意境 (Lyric Theme)。
+                要求：核心情感傳遞『全然放鬆、心理停頓、和平、感官溫暖』。使用具體感官細節。
+                格式：[編號]. 《[英文歌名]》 [中文譯名] |意境| [英文意境] — [中文意境]
+                """
+                response = model.generate_content(prompt)
+                lines = response.text.strip().split('\n')
+                st.session_state.step1_results = [l for l in lines if "《" in l]
         
-        if uploaded_file:
-            image = Image.open(uploaded_file)
-            st.image(image, use_container_width=True)
-            
-        st.write("")
-        video_story = st.text_area("設定情境參數 (Vibe, Story & Time)", height=100, placeholder="可選填。例如：凌晨兩點，趕功課趕到好累，窗外雨越落越大...")
+        if st.session_state.step1_results:
+            selected = st.radio("揀選一首你最鍾意嘅主題：", st.session_state.step1_results)
+            if st.button("✅ 確定主題並進入下一步"):
+                st.session_state.selected_song = selected
+                st.success(f"已選定：{selected}")
 
-    st.write("")
-    
-    generate_btn = st.button("✨ 啟動神經生成 (Execute Magic)", type="primary", use_container_width=True)
-
-    if generate_btn:
-        if uploaded_file or video_story:
-            with st.status("🤖 神經網絡深度解析中...", expanded=True) as status:
-                
-                payload = []
-                context_desc = ""
-                
-                if uploaded_file and video_story:
-                    st.write("掃描圖片視覺特徵與解讀情境故事...")
-                    context_desc = f"請根據提供嘅圖片視覺和以下氛圍描述：{video_story}"
-                    payload.append(image)
-                elif uploaded_file:
-                    st.write("掃描圖片視覺特徵...")
-                    context_desc = "請單純根據提供嘅圖片視覺氛圍"
-                    payload.append(image)
-                elif video_story:
-                    st.write("解讀情境故事...")
-                    context_desc = f"請單純根據以下氛圍描述：{video_story}"
-                
-                st.write("套用黃金三段式 Aesthetic 標題結構...")
-                st.write("最佳化 490 字元流量標籤...")
-                
-                try:
-                    prompt = f"""
-                    你而家係一位深受大學生同失眠人士喜愛嘅 Lofi 電台策劃師。
-                    {context_desc}，為頻道 sLoth rAdio 創作標題和標籤。
-                    
-                    【輸出格式】：
-                    
-                    ===TITLES===
-                    提供 5 個極具點擊率 (CTR) 嘅中英對照標題 (格式: 分數|||中文標題|||英文標題)。
-                    
-                    【標題創作法則 - 絕對指令】：
-                    1. 英文標題格式必須 100% 嚴格跟隨以下結構 (請留意省略號 ... 後面有一個半形空格)：
-                       [極簡生活感短句]… [音樂曲風] for [活動1], [活動2] & [氛圍] [2個Emoji]
-                       
-                       參考例子：
-                       - Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙
-                       - A cozy place to study… Chill R&B for Golden Hour Focus & Slow Living 🌅 📚
-                       
-                    2. 音樂曲風 (Genre)：請根據圖片或氛圍靈活替換，例如 Chill Lofi, Chill R&B, Peaceful Beats, Cozy Jazz 等。
-                    3. 中文標題：將英文標題轉化為語感自然、帶有陪伴感的生活化中文。
-                    4. 格式：每個標題給出一個評分 (0-100)，並使用 `|||` 分隔。不要加序號。
-                    
-                    ===TAGS===
-                    直接輸出一連串由逗號和半形空格分隔的 Tags。
-                    包含 lofi hip hop radio, beats to relax/study to 等大熱字眼。
-                    【字數警告】：總字元長度必須嚴格控制在 450 到 490 之間！絕對不能超過 490 字元！不可分類。
-                    """
-                    
-                    payload.insert(0, prompt)
-                    
-                    response = model.generate_content(payload)
-                    result_text = response.text
-                    
-                    parts = result_text.split("===TAGS===")
-                    titles_part = parts[0].replace("===TITLES===", "").strip()
-                    tags_part = parts[1].strip() if len(parts) > 1 else ""
-                    
-                    status.update(label="✅ 生成完畢！數據已傳輸。", state="complete", expanded=False)
-                    st.toast('✨ 神經網絡生成成功！', icon='🤖')
-                    
-                    st.write("")
-                    st.markdown("#### 💬 最佳化共鳴標題")
-                    
-                    for line in titles_part.split('\n'):
-                        line = line.replace("*", "").strip()
-                        if "|||" in line:
-                            try:
-                                score, zh_title, en_title = line.split("|||")
-                                st.markdown(f"""
-                                <div class='title-card'>
-                                    <div class='score-badge'>🔥 AI 預測點擊率: {score.strip()}/100</div>
-                                    <div class='en-title'>{en_title.strip()}</div>
-                                    <div class='zh-title'>{zh_title.strip()}</div>
-                                </div>
-                                """, unsafe_allow_html=True)
-                            except:
-                                pass
-                    
-                    st.write("")
-                    st.markdown("#### 🏷️ 流量最佳化標籤")
-                    
-                    char_count = len(tags_part)
-                    col_tags, col_metric = st.columns([3, 1])
-                    
-                    with col_metric:
-                        st.metric(label="Characters", value=f"{char_count}", delta=f"{490 - char_count} 剩餘", delta_color="normal")
-                            
-                    with col_tags:
-                        st.code(tags_part, language="text")
-                        if char_count > 490:
-                            st.caption("⚠️ 標籤稍微超過安全限制，複製前請刪減結尾。")
-                        else:
-                            st.caption("✅ 長度完美，已就緒。")
-                    
-                except Exception as e:
-                    status.update(label="❌ 運算中斷", state="error")
-                    st.error(f"系統錯誤：{e}")
+    # ---- Tab 2: Visual Storyteller ----
+    with tab2:
+        st.markdown("### 2. 視覺故事與繪圖提示詞")
+        if not st.session_state.selected_song:
+            st.warning("請先喺 Tab 1 揀選一個音樂主題。")
         else:
-            st.warning("⚠️ 喂喂，請至少上傳一張圖片，或者輸入少少情境故事，先可以施展魔法㗎！")
+            time_vibe = st.text_input("自定義時間與氛圍 (留空則由 AI 隨機)", placeholder="例如：凌晨兩點，窗外微雨...")
+            if st.button("🧠 生成 3 個故事大綱", type="primary"):
+                with st.status("正在構思視覺場景..."):
+                    context = time_vibe if time_vibe else "晚上 7:30 (The Blue Hour), 暖燈與深藍夜色, 極度放鬆"
+                    prompt = f"""
+                    基於歌曲主題：{st.session_state.selected_song}
+                    情境設定：{context}
+                    請生成 3 個 Chill R&B 曲風的英文短故事大綱 (約 100 字)。
+                    要求：微小且放鬆的動作（如聽唱片、對著熱氣放空）。
+                    格式：[編號] ||| [標題] ||| [大綱內容]
+                    """
+                    response = model.generate_content(prompt)
+                    st.session_state.step2_concepts = [l for l in response.text.strip().split('\n') if "|||" in l]
+            
+            if st.session_state.step2_concepts:
+                sel_concept = st.radio("揀選一個故事方向：", st.session_state.step2_concepts)
+                if st.button("✍️ 擴寫長篇故事與 Prompt"):
+                    with st.status("正在撰寫感官長文..."):
+                        prompt = f"請將此大綱擴寫：{sel_concept}。要求：1. [Detailed Story] 約 1000 字英文感官描述。2. [Short Version] 約 500 字 Image Prompt。"
+                        resp = model.generate_content(prompt)
+                        st.session_state.selected_concept = sel_concept
+                        st.session_state.long_story = resp.text
+                        st.success("故事已準備就緒！")
+                        st.markdown(st.session_state.long_story)
 
-# ==========================================
-# 5. 全域底部版權宣告 (移出 if/else 判斷)
-# ==========================================
-st.write("")
-st.write("")
-st.markdown("<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 40px; margin-bottom: 20px; opacity: 0.7;'>YouTube Title Studio v3.6<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
+    # ---- Tab 3: SEO Publisher ----
+    with tab3:
+        st.markdown("### 3. YouTube SEO 包裝")
+        uploaded_img = st.file_uploader("上傳封面圖 (可選)", type=["jpg", "png"])
+        if uploaded_img: st.image(uploaded_img, use_container_width=True)
+        
+        if st.button("🔥 生成流量標題與 Tags", type="primary"):
+            with st.status("正在運算流量密碼..."):
+                payload = [st.session_state.long_story if st.session_state.long_story else st.session_state.selected_song]
+                if uploaded_img: payload.append(Image.open(uploaded_img))
+                
+                prompt = """
+                請根據以上內容生成 5 個中英對照標題 (分數|||中文|||英文) 及 490 字元內的 Tags。
+                標題格式：[短句]… [曲風] for [活動] & [氛圍] [Emoji]
+                英文標題要大字，中文細字。Tags 嚴格控制在 450-490 字元。
+                """
+                payload.insert(0, prompt)
+                response = model.generate_content(payload)
+                parts = response.text.split("===TAGS===") if "===TAGS===" in response.text else response.text.split("Tags:")
+                st.session_state.final_titles = parts[0].strip().split('\n')
+                st.session_state.final_tags = parts[1].strip() if len(parts)>1 else "請檢查輸出格式"
+
+        if st.session_state.final_titles:
+            for line in st.session_state.final_titles:
+                if "|||" in line:
+                    score, zh, en = line.split("|||")
+                    st.markdown(f"<div class='title-card'><div class='score-badge'>CTR: {score}/100</div><div class='en-main'>{en}</div><div class='zh-sub'>{zh}</div></div>", unsafe_allow_html=True)
+            st.code(st.session_state.final_tags)
+
+    # ---- Tab 4: Final Summary ----
+    with tab4:
+        st.markdown("### 📋 最終成品總結")
+        if not st.session_state.selected_song:
+            st.info("完成所有步驟後，呢度會顯示完整清單。")
+        else:
+            with st.container(border=True):
+                st.subheader("🎵 音樂設定")
+                st.write(st.session_state.selected_song)
+                st.divider()
+                st.subheader("📖 視覺劇本")
+                st.write(st.session_state.long_story)
+                st.divider()
+                st.subheader("🚀 SEO 標籤")
+                st.code(st.session_state.final_tags)
+            if st.button("🧹 重設並開始新創作"):
+                for key in list(st.session_state.keys()): 
+                    if key != "api_key": del st.session_state[key]
+                st.rerun()
+
+st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 40px;'>YouTube Title Studio v4.0<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
