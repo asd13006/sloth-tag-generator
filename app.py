@@ -40,16 +40,22 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. 極致無痕點擊卡片 CSS (Absolute Overlay Black Magic)
+# 2. 完美無痕點擊卡片 CSS (Absolute Overlay Black Magic)
 # ==========================================
 def inject_dark_card_css():
     st.markdown("""
 <style>
     /* 未選取狀態 */
-    .song-card { background-color: rgba(40, 40, 45, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; transition: all 0.2s ease-in-out; display: flex; flex-direction: column; color: #FFFFFF; overflow: hidden; height: 100%; min-height: 180px; }
+    .song-card { 
+        background-color: rgba(40, 40, 45, 0.6); 
+        border: 1px solid rgba(255, 255, 255, 0.05); 
+        border-radius: 12px; 
+        transition: all 0.2s ease-in-out; 
+        display: flex; flex-direction: column; color: #FFFFFF; overflow: hidden; height: 100%; min-height: 180px; 
+    }
     
-    /* 懸停與已選取狀態 */
-    div[data-testid="stVerticalBlock"]:has(.click-marker):hover .song-card { border-color: rgba(0, 255, 204, 0.4); transform: translateY(-2px); }
+    /* 懸停與已選取狀態 (綁定於容器，確保覆蓋點擊時有效) */
+    div[data-testid="stVerticalBlock"]:has(.song-card):hover .song-card { border-color: rgba(0, 255, 204, 0.4); transform: translateY(-2px); }
     .song-card.selected { background-color: rgba(20, 30, 60, 0.9); border: 2px solid #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.15); }
     .song-card.selected::after { content: '✓'; position: absolute; top: 10px; right: 15px; color: #00ffcc; font-size: 24px; font-weight: 900; text-shadow: 0 0 10px rgba(0, 255, 204, 0.6); z-index: 5; }
 
@@ -64,10 +70,33 @@ def inject_dark_card_css():
     .theme-text { font-size: 0.9rem; color: rgba(255, 255, 255, 0.6); line-height: 1.5; font-style: normal; font-weight: 400;}
     .theme-zh-text { margin-top: 4px; }
 
-    /* 100% 覆蓋隱形按鈕 */
-    div[data-testid="stVerticalBlock"]:has(.click-marker) { position: relative; }
-    div[data-testid="stVerticalBlock"]:has(.click-marker) > div:last-child { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; z-index: 10 !important; }
-    div[data-testid="stVerticalBlock"]:has(.click-marker) div[data-testid="stButton"], div[data-testid="stVerticalBlock"]:has(.click-marker) button { width: 100% !important; height: 100% !important; opacity: 0 !important; cursor: pointer !important; margin: 0 !important; padding: 0 !important; border: none !important; background: transparent !important; }
+    /* =========================================================
+       🔥 終極黑魔法：徹底覆蓋 Streamlit 隱形包裝，實現全卡點擊
+       ========================================================= */
+    /* 1. 將包含卡片的區塊設為相對定位 */
+    div[data-testid="stVerticalBlock"]:has(.song-card) { 
+        position: relative !important; 
+    }
+    
+    /* 2. 鎖定 Streamlit 生成的按鈕「外層包裝」，強制絕對定位鋪滿全卡 */
+    div[data-testid="stVerticalBlock"]:has(.song-card) > div:has(button) { 
+        position: absolute !important; 
+        top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; 
+        width: 100% !important; height: 100% !important; 
+        margin: 0 !important; padding: 0 !important; 
+        z-index: 999 !important; 
+    }
+    
+    /* 3. 將按鈕本體變為全透明，消滅實體，但保留點擊功能 */
+    div[data-testid="stVerticalBlock"]:has(.song-card) button { 
+        position: absolute !important; 
+        top: 0 !important; left: 0 !important; 
+        width: 100% !important; height: 100% !important; 
+        opacity: 0 !important; cursor: pointer !important; 
+        margin: 0 !important; padding: 0 !important; 
+        border: none !important; background: transparent !important; 
+        display: block !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -108,7 +137,7 @@ with col_api:
     if st.button("🟢 已連線" if st.session_state.api_key else "🔑 連線", use_container_width=True) and not st.session_state.api_key: api_dialog()
 
 st.markdown("<div class='ai-title'>YouTube Title Studio</div>", unsafe_allow_html=True)
-st.markdown("<div class='ai-subtitle'>Production Ready Content Engine • v10.1</div>", unsafe_allow_html=True)
+st.markdown("<div class='ai-subtitle'>Production Ready Content Engine • v10.2</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
     with st.container(border=True):
@@ -131,7 +160,7 @@ st.progress(progress_val, text=f"Pipeline Stage {st.session_state.step}/4: {step
 st.write("")
 
 # ==========================================
-# Pipeline Step 1: 音樂靈感 (防撞車機制)
+# Pipeline Step 1: 音樂靈感 (完美全卡點擊版)
 # ==========================================
 if st.session_state.step == 1:
     inject_dark_card_css()
@@ -169,21 +198,15 @@ if st.session_state.step == 1:
         cols = st.columns(3, gap="medium")
         sorted_songs = sorted(st.session_state.song_data, key=lambda x: x['id'])
 
-        def toggle_selection(song_id):
-            if song_id in st.session_state.selected_song_ids:
-                st.session_state.selected_song_ids.remove(song_id)
-            else:
-                st.session_state.selected_song_ids.append(song_id)
-
         for idx, song in enumerate(sorted_songs):
             target_col = cols[idx % 3]
             is_selected = song['id'] in st.session_state.selected_song_ids
             sel_class = "selected" if is_selected else ""
             
             with target_col:
+                # 每一張卡片包裝在獨立的 container 中，確保點擊覆蓋準確
                 with st.container():
                     st.markdown(f"""
-                    <div class='click-marker'></div>
                     <div class='song-card {sel_class}'>
                         <div class='card-top'>
                             <div class='card-id'>{song['id']}</div>
@@ -201,9 +224,19 @@ if st.session_state.step == 1:
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.button(" ", key=f"btn_{song['id']}", on_click=toggle_selection, args=(song['id'],), use_container_width=True)
-                st.write("")
+                    
+                    # 生成完全隱形的按鈕，透過 CSS 強制拉伸覆蓋整張卡片
+                    clicked = st.button(" ", key=f"btn_{song['id']}", use_container_width=True)
+                    if clicked:
+                        if song['id'] in st.session_state.selected_song_ids:
+                            st.session_state.selected_song_ids.remove(song['id'])
+                        else:
+                            st.session_state.selected_song_ids.append(song['id'])
+                        st.rerun()
+                
+                st.write("") # 模擬 margin-bottom
 
+        # Sticky Action Bar
         st.markdown('<div class="stActionButton"><div>', unsafe_allow_html=True)
         scol1, scol2, scol3, scol4 = st.columns([3, 1.5, 1.5, 4])
         with scol1: st.markdown(f"<div style='color:#00ffcc; font-size:16px; font-weight:700; padding-top:10px;'>已選擇 {len(st.session_state.selected_song_ids)} / {len(st.session_state.song_data)}</div>", unsafe_allow_html=True)
@@ -224,7 +257,7 @@ if st.session_state.step == 1:
         st.markdown('</div></div>', unsafe_allow_html=True)
 
 # ==========================================
-# Pipeline Step 2: 視覺意境 (防撞車機制)
+# Pipeline Step 2: 視覺意境 
 # ==========================================
 elif st.session_state.step == 2:
     st.markdown("### 🎬 Stage 2: Visual Concept (設定感官意境)")
@@ -264,7 +297,7 @@ elif st.session_state.step == 2:
             st.rerun()
 
 # ==========================================
-# Pipeline Step 3: Assets & SEO 打包 (防撞車)
+# Pipeline Step 3: Assets & SEO 打包
 # ==========================================
 elif st.session_state.step == 3:
     st.markdown("### 🖼️ Stage 3: Assets & SEO Prep (圖片與打包)")
@@ -376,4 +409,4 @@ elif st.session_state.step == 4:
         st.rerun()
 
 st.write("")
-st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>YouTube Title Studio v10.1 (Prod)<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>YouTube Title Studio v10.2 (Prod)<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
