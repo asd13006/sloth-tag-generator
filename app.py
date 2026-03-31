@@ -3,7 +3,6 @@ import time
 
 # ==========================================
 # 0. 網址傳參 (Query Params) 點擊攔截系統
-# 呢段代碼負責攔截 HTML 卡片嘅點擊，並極速更新選取狀態
 # ==========================================
 if "selected_song_ids" not in st.session_state: 
     st.session_state.selected_song_ids = []
@@ -15,10 +14,8 @@ try:
             st.session_state.selected_song_ids.remove(toggle_id)
         else:
             st.session_state.selected_song_ids.append(toggle_id)
-        # 清除網址參數，保持網址乾淨
-        del st.query_params["toggle"]
+        st.query_params.clear()
 except AttributeError:
-    # 兼容舊版 Streamlit
     params = st.experimental_get_query_params()
     if "toggle" in params:
         toggle_id = int(params["toggle"][0])
@@ -47,12 +44,10 @@ st.markdown("""
     @keyframes pulse-glow { 0% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); } 50% { box-shadow: 0 0 20px rgba(0, 255, 204, 0.8); } 100% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); } }
     button[kind="primary"] { background: linear-gradient(90deg, #008080, #00E676) !important; animation: pulse-glow 2.5s infinite !important; border: none !important; font-weight: 700 !important; color: #1C1C1E !important;}
     
-    /* Sticky Bottom Action Bar */
     .stApp > header {background-color: transparent !important;}
     div.stActionButton { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(20, 20, 22, 0.95); backdrop-filter: blur(15px); border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 15px 0; z-index: 1000; }
     div.stActionButton > div { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
 
-    /* 全域卡片 (Tab 4) */
     .result-card { background-color: rgba(30, 30, 35, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
     .section-title { font-size: 16px; font-weight: 700; color: #00ffcc; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;}
     .content-text { font-size: 15px; color: #E5E5EA; line-height: 1.6; }
@@ -66,53 +61,12 @@ st.markdown("""
 def inject_pure_html_css():
     st.markdown("""
 <style>
-    /* CSS Grid 完美 3 欄佈局 */
-    .pure-card-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 16px;
-        margin-bottom: 30px;
-    }
-    
-    /* 清除 a tag 嘅預設樣式 */
-    a.card-link {
-        text-decoration: none !important;
-        color: inherit !important;
-        display: block;
-        height: 100%;
-        outline: none !important;
-    }
-    
-    /* 卡片主體 */
-    .song-card { 
-        background-color: rgba(40, 40, 45, 0.6); 
-        border: 1px solid rgba(255, 255, 255, 0.05); 
-        border-radius: 12px; 
-        transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); 
-        display: flex; flex-direction: column; color: #FFFFFF; 
-        height: 100%; min-height: 180px; position: relative;
-    }
-    
-    /* 懸停特效 */
-    a.card-link:hover .song-card { 
-        border-color: rgba(0, 255, 204, 0.5); 
-        transform: translateY(-3px); 
-        box-shadow: 0 8px 20px rgba(0, 255, 204, 0.15); 
-    }
-    
-    /* 已選取狀態 */
-    .song-card.selected { 
-        background-color: rgba(20, 30, 60, 0.9); 
-        border: 2px solid #00ffcc; 
-        box-shadow: 0 0 15px rgba(0, 255, 204, 0.2); 
-    }
-    .song-card.selected::after { 
-        content: '✓'; position: absolute; top: 10px; right: 15px; 
-        color: #00ffcc; font-size: 24px; font-weight: 900; 
-        text-shadow: 0 0 10px rgba(0, 255, 204, 0.6); z-index: 5; 
-    }
-
-    /* 標題與意境排版 */
+    .pure-card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 30px; }
+    a.card-link { text-decoration: none !important; color: inherit !important; display: block; height: 100%; outline: none !important; }
+    .song-card { background-color: rgba(40, 40, 45, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); display: flex; flex-direction: column; color: #FFFFFF; height: 100%; min-height: 180px; position: relative; }
+    a.card-link:hover .song-card { border-color: rgba(0, 255, 204, 0.5); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(0, 255, 204, 0.15); }
+    .song-card.selected { background-color: rgba(20, 30, 60, 0.9); border: 2px solid #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.2); }
+    .song-card.selected::after { content: '✓'; position: absolute; top: 10px; right: 15px; color: #00ffcc; font-size: 24px; font-weight: 900; text-shadow: 0 0 10px rgba(0, 255, 204, 0.6); z-index: 5; }
     .card-top { padding: 16px 18px; display: flex; align-items: flex-start; gap: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
     .card-id { flex-shrink: 0; width: 24px; height: 24px; background-color: rgba(255, 255, 255, 0.1); color: #FFFFFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; margin-top: 4px; }
     .card-titles { flex-grow: 1; padding-right: 25px; }
@@ -147,7 +101,7 @@ def reset_pipeline():
 # 頁面標題 (Demo 模式)
 # ==========================================
 st.markdown("<div class='ai-title'>Title Studio <span style='color:#FF9500; font-size:24px;'>(DEMO)</span></div>", unsafe_allow_html=True)
-st.markdown("<div class='ai-subtitle'>Pure HTML Grid • 100% Flawless Click • v11.5</div>", unsafe_allow_html=True)
+st.markdown("<div class='ai-subtitle'>Pure HTML Grid • Bug Fixed • v11.6</div>", unsafe_allow_html=True)
 
 progress_val = (st.session_state.step - 1) / 3
 step_labels = ["Ideation", "Concept", "SEO Prep", "Dashboard"]
@@ -155,7 +109,7 @@ st.progress(progress_val, text=f"Pipeline Stage {st.session_state.step}/4: {step
 st.write("")
 
 # ==========================================
-# Pipeline Step 1: 純 HTML 網格渲染 (無 Checkbox)
+# Pipeline Step 1: 純 HTML 網格渲染 (Bug修復版)
 # ==========================================
 if st.session_state.step == 1:
     inject_pure_html_css()
@@ -163,7 +117,7 @@ if st.session_state.step == 1:
     if not st.session_state.song_data:
         st.markdown("### 🎛️ Stage 1: Music Ideation (Mock 數據)")
         if st.button("🪄 載入 20 首測試用假歌單 (不扣 API)", type="primary", use_container_width=True):
-            with st.spinner("模擬 AI 生成中... (等 1 秒)"):
+            with st.spinner("模擬 AI 生成中..."):
                 time.sleep(1)
                 dummy_songs = []
                 for i in range(1, 21):
@@ -178,41 +132,19 @@ if st.session_state.step == 1:
                 st.rerun()
     else:
         st.markdown("### 🎛️ Stage 1: Select Your Aesthetic Songs")
-        st.markdown("<span style='color:#00ffcc; font-size:14px;'>純 HTML 網格模式：完全移除多餘按鈕。點擊卡片任何位置都會精準選取！</span>", unsafe_allow_html=True)
         st.write("")
 
-        # 🔥 終極武器：一次過渲染整個 CSS Grid HTML
+        # ⚠️ 終極解法：強制將所有 HTML 濃縮成單行，防止 Markdown 解析為 Code Block
         cards_html = "<div class='pure-card-grid'>"
         for song in st.session_state.song_data:
             sel_class = "selected" if song['id'] in st.session_state.selected_song_ids else ""
-            
-            # 每張卡片都係一條 Link，點擊後會觸發頁首嘅 Query Params 攔截系統
-            cards_html += f"""
-            <a href="?toggle={song['id']}" target="_self" class="card-link">
-                <div class='song-card {sel_class}'>
-                    <div class='card-top'>
-                        <div class='card-id'>{song['id']}</div>
-                        <div class='card-titles'>
-                            <div class='card-en-title'>{song['en_title']}</div>
-                            <div class='card-zh-title'>{song['zh_title']}</div>
-                        </div>
-                    </div>
-                    <div class='card-bottom'>
-                        <div class='theme-icon'>💡</div>
-                        <div class='theme-text'>
-                            <div>{song['en_theme']}</div>
-                            <div class='theme-zh-text'>— {song['zh_theme']}</div>
-                        </div>
-                    </div>
-                </div>
-            </a>
-            """
+            cards_html += f"<a href='?toggle={song['id']}' target='_self' class='card-link'><div class='song-card {sel_class}'><div class='card-top'><div class='card-id'>{song['id']}</div><div class='card-titles'><div class='card-en-title'>{song['en_title']}</div><div class='card-zh-title'>{song['zh_title']}</div></div></div><div class='card-bottom'><div class='theme-icon'>💡</div><div class='theme-text'><div>{song['en_theme']}</div><div class='theme-zh-text'>— {song['zh_theme']}</div></div></div></div></a>"
         cards_html += "</div>"
         
         # 顯示完美卡片陣列
         st.markdown(cards_html, unsafe_allow_html=True)
 
-        # Sticky Action Bar 保持不變
+        # Sticky Action Bar
         st.markdown('<div class="stActionButton"><div>', unsafe_allow_html=True)
         scol1, scol2, scol3, scol4 = st.columns([3, 1.5, 1.5, 4])
         with scol1: st.markdown(f"<div style='color:#00ffcc; font-size:16px; font-weight:700; padding-top:10px;'>已選擇 {len(st.session_state.selected_song_ids)} / {len(st.session_state.song_data)}</div>", unsafe_allow_html=True)
@@ -237,7 +169,7 @@ if st.session_state.step == 1:
 # ==========================================
 elif st.session_state.step == 2:
     st.markdown("### 🎬 Stage 2: Visual Concept")
-    vibe = st.text_input("自定義時間與氛圍 (Demo 隨便打都得)")
+    vibe = st.text_input("自定義時間與氛圍")
     
     if st.button("🧠 載入 3 個假故事方向", type="primary", use_container_width=True):
         with st.spinner("模擬提取..."):
@@ -289,4 +221,4 @@ elif st.session_state.step == 4:
         st.rerun()
 
 st.write("")
-st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>Demo Mode (Pure HTML Grid) • v11.5</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>Demo Mode (Bug Fixed) • v11.6</div>", unsafe_allow_html=True)
