@@ -38,7 +38,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. 終極無痕點擊卡片 CSS (100% Browser Support)
+# 2. 終極防彈級 CSS (100% 任何瀏覽器通用)
 # ==========================================
 def inject_dark_card_css():
     st.markdown("""
@@ -69,39 +69,40 @@ def inject_dark_card_css():
     .theme-zh-text { margin-top: 4px; }
 
     /* =========================================================
-       🔥 終極 100% 穩陣 CSS 覆蓋魔法 (Sibling Combinator)
+       🔥 終極黑魔法：無條件絕對領域遮罩 (唔再依賴 :has 或 nth-child)
        ========================================================= */
-    /* 1. 確保容器相對定位 */
+    /* 1. 確保卡片容器本身係定海神針 (Relative Anchor) */
     div[data-testid="column"] div[data-testid="stVerticalBlock"] { 
         position: relative !important; 
-        height: 100%;
     }
     
-    /* 2. 將第一個子元素 (隱形按鈕) 設為絕對定位，100% 鋪滿全卡 */
-    div[data-testid="column"] div[data-testid="stVerticalBlock"] > div.element-container:nth-child(1) { 
+    /* 2. 瞄準所有卡片按鈕 (我哋特登設定佢哋為唯一嘅 secondary button)，全螢幕放大並隱形 */
+    div[data-testid="column"] button[kind="secondary"] { 
         position: absolute !important; 
-        top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; 
-        z-index: 999 !important; 
-    }
-    
-    /* 3. 消滅按鈕實體，保留點擊功能 */
-    div[data-testid="column"] div[data-testid="stVerticalBlock"] > div.element-container:nth-child(1) button { 
+        top: 0 !important; left: 0 !important; 
         width: 100% !important; height: 100% !important; 
         opacity: 0 !important; cursor: pointer !important; 
-        background: transparent !important; border: none !important; 
+        background: transparent !important; border: none !important; color: transparent !important;
+        z-index: 999 !important; 
     }
 
-    /* 4. 懸停特效：當滑鼠懸停在隱形按鈕(第1個元素)時，改變後面的卡片(第2個元素)嘅樣式 */
-    div[data-testid="column"] div[data-testid="stVerticalBlock"] > div.element-container:nth-child(1):hover + div.element-container .song-card {
-        border-color: rgba(0, 255, 204, 0.4) !important; 
-        transform: translateY(-2px) !important;
-        box-shadow: 0 8px 20px rgba(0, 255, 204, 0.1) !important;
+    /* 3. 殺死點擊時出現嘅紅邊 (Focus Outline) */
+    div[data-testid="column"] button[kind="secondary"]:focus,
+    div[data-testid="column"] button[kind="secondary"]:active {
+        box-shadow: none !important; outline: none !important; background: transparent !important;
+    }
+
+    /* 4. 將 Hover 特效綁定去整個容器，解決滑鼠指住掣時卡片無反應嘅問題 */
+    div[data-testid="column"] div[data-testid="stVerticalBlock"]:hover .song-card {
+        border-color: rgba(0, 255, 204, 0.4); 
+        transform: translateY(-2px); 
+        box-shadow: 0 8px 20px rgba(0, 255, 204, 0.1);
     }
 </style>
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 初始化流水線狀態 (已修復 Reset Bug) ✅
+# 初始化流水線狀態 
 # ==========================================
 if "step" not in st.session_state: st.session_state.step = 1
 if "song_data" not in st.session_state: st.session_state.song_data = []
@@ -110,10 +111,7 @@ if "concept_options" not in st.session_state: st.session_state.concept_options =
 if "selected_concept" not in st.session_state: st.session_state.selected_concept = None
 if "final_results" not in st.session_state: st.session_state.final_results = {}
 
-def next_step(): 
-    st.session_state.step += 1
-
-# ⚠️ 防呆版 Reset 函數，保證唔會再出現 NoneType Error
+def next_step(): st.session_state.step += 1
 def reset_pipeline():
     st.session_state.song_data = []
     st.session_state.selected_song_ids = []
@@ -126,7 +124,7 @@ def reset_pipeline():
 # 頁面標題 (Demo 模式)
 # ==========================================
 st.markdown("<div class='ai-title'>Title Studio <span style='color:#FF9500; font-size:24px;'>(DEMO)</span></div>", unsafe_allow_html=True)
-st.markdown("<div class='ai-subtitle'>Bulletproof Click Mode • v11.2</div>", unsafe_allow_html=True)
+st.markdown("<div class='ai-subtitle'>Absolute Overlay Click Mode • v11.3</div>", unsafe_allow_html=True)
 
 progress_val = (st.session_state.step - 1) / 3
 step_labels = ["Ideation", "Concept", "SEO Prep", "Dashboard"]
@@ -134,7 +132,7 @@ st.progress(progress_val, text=f"Pipeline Stage {st.session_state.step}/4: {step
 st.write("")
 
 # ==========================================
-# Pipeline Step 1: 測試 3 欄卡片點擊 (終極修復版)
+# Pipeline Step 1: 測試 3 欄卡片點擊 
 # ==========================================
 if st.session_state.step == 1:
     inject_dark_card_css()
@@ -157,7 +155,7 @@ if st.session_state.step == 1:
                 st.rerun()
     else:
         st.markdown("### 🎛️ Stage 1: Select Your Aesthetic Songs")
-        st.markdown("<span style='color:#FF9500; font-size:14px;'>修復版：按鈕已置頂，100% 覆蓋卡片。請隨意狂撳測試！</span>", unsafe_allow_html=True)
+        st.markdown("<span style='color:#FF9500; font-size:14px;'>防彈版修復：按鈕已 100% 透明覆蓋全卡，唔會有紅邊，無懼任何瀏覽器。</span>", unsafe_allow_html=True)
         st.write("")
 
         cols = st.columns(3, gap="medium")
@@ -175,14 +173,15 @@ if st.session_state.step == 1:
             
             with target_col:
                 with st.container():
-                    # ⚠️ 終極修復關鍵：先渲染隱形按鈕，再渲染卡片 HTML！
-                    clicked = st.button(" ", key=f"btn_{song['id']}", use_container_width=True)
+                    # 1. 宣告按鈕為 type="secondary" (全 App 只有卡片用，方便 CSS 精準狙擊)
+                    clicked = st.button(" ", key=f"btn_{song['id']}", type="secondary", use_container_width=True)
                     if clicked:
                         toggle_selection(song['id'])
                         st.rerun()
-                        
+                    
+                    # 2. 渲染卡片 (加上 margin-top: -1rem 消除按鈕留低嘅白邊)
                     st.markdown(f"""
-                    <div class='song-card {sel_class}'>
+                    <div class='song-card {sel_class}' style='margin-top: -1rem;'>
                         <div class='card-top'>
                             <div class='card-id'>{song['id']}</div>
                             <div class='card-titles'>
@@ -203,12 +202,14 @@ if st.session_state.step == 1:
         st.markdown('<div class="stActionButton"><div>', unsafe_allow_html=True)
         scol1, scol2, scol3, scol4 = st.columns([3, 1.5, 1.5, 4])
         with scol1: st.markdown(f"<div style='color:#00ffcc; font-size:16px; font-weight:700; padding-top:10px;'>已選擇 {len(st.session_state.selected_song_ids)} / {len(st.session_state.song_data)}</div>", unsafe_allow_html=True)
+        
+        # 確保所有導航按鈕都係 type="primary"，唔會被透明化
         with scol2:
-            if st.button("✅ 全選", use_container_width=True):
+            if st.button("✅ 全選", type="primary", use_container_width=True):
                 st.session_state.selected_song_ids = [s['id'] for s in st.session_state.song_data]
                 st.rerun()
         with scol3:
-            if st.button("🗑️ 清空", use_container_width=True):
+            if st.button("🗑️ 清空", type="primary", use_container_width=True):
                 st.session_state.selected_song_ids = []
                 st.rerun()
         with scol4:
@@ -226,7 +227,7 @@ elif st.session_state.step == 2:
     st.markdown("### 🎬 Stage 2: Visual Concept")
     vibe = st.text_input("自定義時間與氛圍 (Demo 隨便打都得)")
     
-    if st.button("🧠 載入 3 個假故事方向", use_container_width=True):
+    if st.button("🧠 載入 3 個假故事方向", type="primary", use_container_width=True):
         with st.spinner("模擬提取..."):
             time.sleep(1)
             st.session_state.concept_options = [
@@ -241,7 +242,7 @@ elif st.session_state.step == 2:
         
         st.write("")
         col_back, col_next = st.columns(2)
-        if col_back.button("⬅️ 返回", use_container_width=True):
+        if col_back.button("⬅️ 返回", type="primary", use_container_width=True):
             st.session_state.step = 1
             st.rerun()
         if col_next.button("進入下一步 ➡️", type="primary", use_container_width=True):
@@ -254,7 +255,13 @@ elif st.session_state.step == 2:
 # ==========================================
 elif st.session_state.step == 3:
     st.markdown("### 🖼️ Stage 3: Assets & SEO Prep")
-    if st.button("🚀 載入終極假數據!", type="primary", use_container_width=True):
+    
+    col_back, col_gen = st.columns(2)
+    if col_back.button("⬅️ 返回", type="primary", use_container_width=True):
+        st.session_state.step = 2
+        st.rerun()
+        
+    if col_gen.button("🚀 載入終極假數據!", type="primary", use_container_width=True):
         with st.status("⚙️ 模擬運作中...", expanded=True) as status:
             time.sleep(1)
             st.session_state.final_results = {"story_long": "Test", "story_short": "Test ☕", "titles": "99|||測試|||Test", "tags": "lofi, test"}
@@ -270,4 +277,4 @@ elif st.session_state.step == 4:
         st.rerun()
 
 st.write("")
-st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>Demo Mode (Bulletproof Click) • v11.2</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>Demo Mode (Bulletproof Overlay) • v11.3</div>", unsafe_allow_html=True)
