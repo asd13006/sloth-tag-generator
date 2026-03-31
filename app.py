@@ -101,7 +101,7 @@ def inject_dark_card_css():
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 初始化流水線狀態
+# 初始化流水線狀態 (已修復 Reset Bug) ✅
 # ==========================================
 if "step" not in st.session_state: st.session_state.step = 1
 if "song_data" not in st.session_state: st.session_state.song_data = []
@@ -110,17 +110,23 @@ if "concept_options" not in st.session_state: st.session_state.concept_options =
 if "selected_concept" not in st.session_state: st.session_state.selected_concept = None
 if "final_results" not in st.session_state: st.session_state.final_results = {}
 
-def next_step(): st.session_state.step += 1
+def next_step(): 
+    st.session_state.step += 1
+
+# ⚠️ 防呆版 Reset 函數，保證唔會再出現 NoneType Error
 def reset_pipeline():
-    for key in ["song_data", "selected_song_ids", "concept_options", "selected_concept", "final_results"]:
-        st.session_state[key] = [] if "songs" in key or "options" in key else ({} if "results" in key else None)
+    st.session_state.song_data = []
+    st.session_state.selected_song_ids = []
+    st.session_state.concept_options = []
+    st.session_state.selected_concept = None
+    st.session_state.final_results = {}
     st.session_state.step = 1
 
 # ==========================================
 # 頁面標題 (Demo 模式)
 # ==========================================
 st.markdown("<div class='ai-title'>Title Studio <span style='color:#FF9500; font-size:24px;'>(DEMO)</span></div>", unsafe_allow_html=True)
-st.markdown("<div class='ai-subtitle'>Bulletproof Click Mode • v11.1</div>", unsafe_allow_html=True)
+st.markdown("<div class='ai-subtitle'>Bulletproof Click Mode • v11.2</div>", unsafe_allow_html=True)
 
 progress_val = (st.session_state.step - 1) / 3
 step_labels = ["Ideation", "Concept", "SEO Prep", "Dashboard"]
@@ -264,4 +270,4 @@ elif st.session_state.step == 4:
         st.rerun()
 
 st.write("")
-st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>Demo Mode (Bulletproof Click) • v11.1</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>Demo Mode (Bulletproof Click) • v11.2</div>", unsafe_allow_html=True)
