@@ -4,13 +4,12 @@ import time
 # ==========================================
 # 1. 頁面設定與全域暗黑美學 CSS
 # ==========================================
-st.set_page_config(page_title="YouTube Title Studio", page_icon="🤖", layout="centered")
+st.set_page_config(page_title="YouTube Title Studio (Demo)", page_icon="🤖", layout="centered")
 
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700;800&display=swap');
     html, body, [class*="css"] { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-    
     .block-container { padding-top: 1.5rem; max-width: 1100px !important; }
 
     @keyframes gradient-text { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -23,9 +22,6 @@ st.markdown("""
     .stApp > header {background-color: transparent !important;}
     div.stActionButton { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(20, 20, 22, 0.95); backdrop-filter: blur(15px); border-top: 1px solid rgba(255, 255, 255, 0.1); padding: 15px 0; z-index: 1000; }
     div.stActionButton > div { max-width: 1100px; margin: 0 auto; padding: 0 1rem; }
-
-    /* 所有主要按鈕 (全選、下一步) 變成發光掣 */
-    button[kind="primary"] { background: linear-gradient(90deg, #008080, #00E676) !important; animation: pulse-glow 2.5s infinite !important; border: none !important; font-weight: 700 !important; color: #1C1C1E !important;}
     
     .result-card { background-color: rgba(30, 30, 35, 0.6); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
     .section-title { font-size: 16px; font-weight: 700; color: #00ffcc; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;}
@@ -34,68 +30,108 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. 終極重構：獨立容器 (Container Anchor) 黑魔法
+# 2. 終極魔法：將原生 Button 變成絕美卡片！
 # ==========================================
-def inject_bulletproof_css():
+def inject_native_button_card_css():
     st.markdown("""
 <style>
-    /* 1. 卡片本體美學 (與以前一樣靚) */
-    .song-card { 
-        background-color: rgba(40, 40, 45, 0.6); 
-        border: 1px solid rgba(255, 255, 255, 0.05); 
-        border-radius: 12px; 
-        transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); 
-        display: flex; flex-direction: column; color: #FFFFFF; 
-        height: 100%; min-height: 180px; 
+    /* 基礎卡片設定 (取消原生 Button 樣式，變成卡片) */
+    button[data-testid="baseButton-secondary"], button[data-testid="baseButton-primary"] {
+        border-radius: 12px !important;
+        padding: 20px 24px !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 200px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        justify-content: flex-start !important;
+        text-align: left !important;
+        transition: all 0.2s ease !important;
+        white-space: pre-wrap !important; /* 支援多行文字 */
     }
-    .song-card.selected { background-color: rgba(20, 30, 60, 0.9); border: 2px solid #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.2); }
-    .song-card.selected::after { content: '✓'; position: absolute; top: 10px; right: 15px; color: #00ffcc; font-size: 24px; font-weight: 900; text-shadow: 0 0 10px rgba(0, 255, 204, 0.6); z-index: 5; }
 
-    .card-top { padding: 16px 18px; display: flex; align-items: flex-start; gap: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
-    .card-id { flex-shrink: 0; width: 24px; height: 24px; background-color: rgba(255, 255, 255, 0.1); color: #FFFFFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; margin-top: 4px; }
-    .card-titles { flex-grow: 1; padding-right: 25px; }
-    .card-en-title { font-size: 1.2rem; font-weight: 800; color: #FFFFFF; margin-bottom: 4px; line-height: 1.2; letter-spacing: -0.2px;}
-    .card-zh-title { font-size: 0.95rem; color: rgba(255, 255, 255, 0.85); font-weight: 500; }
-    .card-bottom { background-color: transparent; padding: 14px 18px; display: flex; align-items: flex-start; gap: 10px; flex-grow: 1; }
-    .theme-icon { font-size: 16px; margin-top: 2px; flex-shrink: 0; filter: grayscale(100%) brightness(120%); opacity: 0.8;}
-    .theme-text { font-size: 0.9rem; color: rgba(255, 255, 255, 0.6); line-height: 1.5; font-style: normal; font-weight: 400;}
-    .theme-zh-text { margin-top: 4px; }
+    /* 未選取狀態 (Secondary Button) */
+    button[data-testid="baseButton-secondary"] {
+        background-color: rgba(40, 40, 45, 0.6) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+    button[data-testid="baseButton-secondary"]:hover {
+        border-color: rgba(0, 255, 204, 0.4) !important;
+        transform: translateY(-3px) !important;
+        box-shadow: 0 8px 20px rgba(0, 255, 204, 0.15) !important;
+    }
+
+    /* 已選取狀態 (Primary Button) */
+    button[data-testid="baseButton-primary"] {
+        background-color: rgba(20, 30, 60, 0.9) !important;
+        border: 2px solid #00ffcc !important;
+        box-shadow: 0 0 15px rgba(0, 255, 204, 0.2) !important;
+    }
+
+    /* 已選取狀態嘅右上角 Checkmark */
+    button[data-testid="baseButton-primary"]::after {
+        content: '✓';
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        color: #00ffcc;
+        font-size: 26px;
+        font-weight: 900;
+        text-shadow: 0 0 10px rgba(0, 255, 204, 0.6);
+    }
+
+    /* 處理卡片內部文字排版 */
+    button[data-testid="baseButton-secondary"] p, button[data-testid="baseButton-primary"] p {
+        width: 100% !important;
+        margin: 0 !important;
+        color: rgba(255, 255, 255, 0.65) !important; /* 意境描述顏色 */
+        font-size: 14px !important;
+        line-height: 1.6 !important;
+        text-align: left !important;
+    }
+    
+    /* 英文歌名 (加粗大字) */
+    button[data-testid="baseButton-secondary"] strong, button[data-testid="baseButton-primary"] strong {
+        color: #FFFFFF !important;
+        font-size: 18px !important;
+        font-weight: 800 !important;
+        display: block !important;
+        margin-bottom: 6px !important;
+        letter-spacing: 0.2px !important;
+    }
+
+    /* 中文譯名 (斜體轉化為細灰字) */
+    button[data-testid="baseButton-secondary"] em, button[data-testid="baseButton-primary"] em {
+        color: #8E8E93 !important;
+        font-style: normal !important;
+        font-size: 13px !important;
+        display: block !important;
+        margin-bottom: 16px !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        padding-bottom: 16px !important;
+    }
 
     /* =========================================================
-       🔥 終極重構核心：利用 Streamlit 原生 Border Container 作為定位點
+       保護底部 Action Bar 嘅按鈕唔被變成卡片
        ========================================================= */
-    /* 消除 Border Container 預設嘅邊框同 padding，變成透明骨架 */
-    div[data-testid="stVerticalBlockBorderWrapper"] {
-        position: relative !important;
-        padding: 0 !important;
+    div.stActionButton button[data-testid="baseButton-primary"] {
+        background: linear-gradient(90deg, #008080, #00E676) !important;
         border: none !important;
-        margin-bottom: 16px !important;
+        border-radius: 8px !important;
+        padding: 10px 20px !important;
+        min-height: auto !important;
+        height: auto !important;
+        flex-direction: row !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        box-shadow: none !important;
+        animation: pulse-glow 2.5s infinite !important;
+        transform: none !important;
     }
-
-    /* 懸停特效：綁定喺保護殼上，觸發入面張卡發光 */
-    div[data-testid="stVerticalBlockBorderWrapper"]:hover .song-card {
-        border-color: rgba(0, 255, 204, 0.5); 
-        transform: translateY(-3px); 
-        box-shadow: 0 8px 20px rgba(0, 255, 204, 0.15); 
-    }
-
-    /* 鎖定保護殼內「第二個元素」(即係按鈕)，強制絕對定位，1:1 覆蓋卡片 */
-    div[data-testid="stVerticalBlockBorderWrapper"] > div > div.element-container:nth-child(2) {
-        position: absolute !important;
-        top: 0 !important; left: 0 !important;
-        width: 100% !important; height: 100% !important;
-        z-index: 10 !important;
-    }
-
-    /* 將按鈕本體變為完全隱形嘅「保護貼」，保留點擊功能 */
-    div[data-testid="stVerticalBlockBorderWrapper"] button {
-        position: absolute !important;
-        top: 0 !important; left: 0 !important;
-        width: 100% !important; height: 100% !important;
-        opacity: 0 !important; 
-        cursor: pointer !important;
-        margin: 0 !important; padding: 0 !important;
-    }
+    div.stActionButton button[data-testid="baseButton-primary"]::after { content: none !important; }
+    div.stActionButton button[data-testid="baseButton-primary"] p { color: #1C1C1E !important; font-size: 16px !important; font-weight: 700 !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -122,7 +158,7 @@ def reset_pipeline():
 # 頁面標題 (Demo 模式)
 # ==========================================
 st.markdown("<div class='ai-title'>Title Studio <span style='color:#FF9500; font-size:24px;'>(DEMO)</span></div>", unsafe_allow_html=True)
-st.markdown("<div class='ai-subtitle'>Ultimate Rebuild • Bulletproof Click • v12.0</div>", unsafe_allow_html=True)
+st.markdown("<div class='ai-subtitle'>100% Native Button Card • Bulletproof • v12.1</div>", unsafe_allow_html=True)
 
 progress_val = (st.session_state.step - 1) / 3
 step_labels = ["Ideation", "Concept", "SEO Prep", "Dashboard"]
@@ -130,10 +166,10 @@ st.progress(progress_val, text=f"Pipeline Stage {st.session_state.step}/4: {step
 st.write("")
 
 # ==========================================
-# Pipeline Step 1: 完美獨立容器陣列 (終極重構版)
+# Pipeline Step 1: 完美原生按鈕卡片
 # ==========================================
 if st.session_state.step == 1:
-    inject_bulletproof_css()
+    inject_native_button_card_css()
     
     if not st.session_state.song_data:
         st.markdown("### 🎛️ Stage 1: Music Ideation (Mock 數據)")
@@ -153,7 +189,7 @@ if st.session_state.step == 1:
                 st.rerun()
     else:
         st.markdown("### 🎛️ Stage 1: Select Your Aesthetic Songs")
-        st.markdown("<span style='color:#00ffcc; font-size:14px;'>v12.0 重構版：每張卡片擁有獨立保護殼。100% 防彈覆蓋，不白屏，不走位。</span>", unsafe_allow_html=True)
+        st.markdown("<span style='color:#00ffcc; font-size:14px;'>v12.1 終極版：原生按鈕打造，絕無空位，100% 精準無痕點擊！</span>", unsafe_allow_html=True)
         st.write("")
 
         cols = st.columns(3, gap="medium")
@@ -161,40 +197,25 @@ if st.session_state.step == 1:
         for idx, song in enumerate(st.session_state.song_data):
             target_col = cols[idx % 3]
             is_selected = song['id'] in st.session_state.selected_song_ids
-            sel_class = "selected" if is_selected else ""
+            
+            # 選中時用 primary，未選用 secondary。CSS 會自動幫佢哋換衫！
+            btn_type = "primary" if is_selected else "secondary"
             
             with target_col:
-                # 🔥 終極殺手鐧：利用 border=True 創建獨立嘅相對定位保護殼
-                with st.container(border=True):
-                    
-                    # 元素 1: 絕美嘅 HTML 卡片
-                    st.markdown(f"""
-                    <div class='song-card {sel_class}'>
-                        <div class='card-top'>
-                            <div class='card-id'>{song['id']}</div>
-                            <div class='card-titles'>
-                                <div class='card-en-title'>{song['en_title']}</div>
-                                <div class='card-zh-title'>{song['zh_title']}</div>
-                            </div>
-                        </div>
-                        <div class='card-bottom'>
-                            <div class='theme-icon'>💡</div>
-                            <div class='theme-text'>
-                                <div>{song['en_theme']}</div>
-                                <div class='theme-zh-text'>— {song['zh_theme']}</div>
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    # 元素 2: 原生按鈕 (透過 CSS 精準放大為 100% 透明保護貼)
-                    clicked = st.button(" ", key=f"btn_{song['id']}", use_container_width=True)
-                    if clicked:
-                        if song['id'] in st.session_state.selected_song_ids:
-                            st.session_state.selected_song_ids.remove(song['id'])
-                        else:
-                            st.session_state.selected_song_ids.append(song['id'])
-                        st.rerun()
+                # 將所有資訊寫入 Markdown 字串，交畀 CSS 去排版
+                card_content = f"""**{song['id']}. {song['en_title']}**
+*{song['zh_title']}*
+💡 {song['en_theme']}
+— {song['zh_theme']}"""
+                
+                # 呢個就係嗰張卡！無任何多餘元素！
+                clicked = st.button(card_content, key=f"btn_{song['id']}", type=btn_type, use_container_width=True)
+                if clicked:
+                    if song['id'] in st.session_state.selected_song_ids:
+                        st.session_state.selected_song_ids.remove(song['id'])
+                    else:
+                        st.session_state.selected_song_ids.append(song['id'])
+                    st.rerun()
 
         # Sticky Action Bar
         st.markdown('<div class="stActionButton"><div>', unsafe_allow_html=True)
@@ -251,12 +272,10 @@ elif st.session_state.step == 2:
 # ==========================================
 elif st.session_state.step == 3:
     st.markdown("### 🖼️ Stage 3: Assets & SEO Prep")
-    
     col_back, col_gen = st.columns(2)
     if col_back.button("⬅️ 返回", type="primary", use_container_width=True):
         st.session_state.step = 2
         st.rerun()
-        
     if col_gen.button("🚀 載入終極假數據!", type="primary", use_container_width=True):
         with st.status("⚙️ 模擬運作中...", expanded=True) as status:
             time.sleep(1)
@@ -271,6 +290,3 @@ elif st.session_state.step == 4:
     if st.button("🔄 重置全線流程", type="primary", use_container_width=True):
         reset_pipeline()
         st.rerun()
-
-st.write("")
-st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>Demo Mode (Ultimate Rebuild) • v12.0</div>", unsafe_allow_html=True)
