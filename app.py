@@ -45,89 +45,29 @@ st.markdown("""
 def inject_dark_card_css():
     st.markdown("""
 <style>
-    /* 未選取狀態：深灰色背景，極淡邊框 */
-    .song-card {
-        background-color: rgba(40, 40, 45, 0.6); 
-        border: 1px solid rgba(255, 255, 255, 0.05); 
-        border-radius: 12px;
-        transition: all 0.2s ease-in-out;
-        display: flex;
-        flex-direction: column;
-        color: #FFFFFF;
-        overflow: hidden;
-        height: 100%;
-        min-height: 180px;
-    }
-
-    /* 懸停效果 (Hover) 綁定到父容器，確保隱形按鈕觸發時卡片有反應 */
-    div[data-testid="stVerticalBlock"]:has(.click-marker):hover .song-card {
-        border-color: rgba(0, 255, 204, 0.4);
-        transform: translateY(-2px);
-    }
+    /* 未選取狀態 */
+    .song-card { background-color: rgba(40, 40, 45, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; transition: all 0.2s ease-in-out; display: flex; flex-direction: column; color: #FFFFFF; overflow: hidden; height: 100%; min-height: 180px; }
     
-    /* 已選取狀態：深藍背景，2px 亮青色實線邊框 */
-    .song-card.selected {
-        background-color: rgba(20, 30, 60, 0.9);
-        border: 2px solid #00ffcc;
-        box-shadow: 0 0 15px rgba(0, 255, 204, 0.15);
-    }
+    /* 懸停與已選取狀態 */
+    div[data-testid="stVerticalBlock"]:has(.click-marker):hover .song-card { border-color: rgba(0, 255, 204, 0.4); transform: translateY(-2px); }
+    .song-card.selected { background-color: rgba(20, 30, 60, 0.9); border: 2px solid #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.15); }
+    .song-card.selected::after { content: '✓'; position: absolute; top: 10px; right: 15px; color: #00ffcc; font-size: 24px; font-weight: 900; text-shadow: 0 0 10px rgba(0, 255, 204, 0.6); z-index: 5; }
 
-    /* 右上角 Checkmark：大而明亮 */
-    .song-card.selected::after {
-        content: '✓';
-        position: absolute;
-        top: 10px;
-        right: 15px;
-        color: #00ffcc;
-        font-size: 24px;
-        font-weight: 900;
-        text-shadow: 0 0 10px rgba(0, 255, 204, 0.6);
-        z-index: 5;
-    }
-
-    /* 頂層：標題區 */
+    /* 標題與意境排版 */
     .card-top { padding: 16px 18px; display: flex; align-items: flex-start; gap: 12px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
     .card-id { flex-shrink: 0; width: 24px; height: 24px; background-color: rgba(255, 255, 255, 0.1); color: #FFFFFF; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; margin-top: 4px; }
     .card-titles { flex-grow: 1; padding-right: 25px; }
     .card-en-title { font-size: 1.2rem; font-weight: 800; color: #FFFFFF; margin-bottom: 4px; line-height: 1.2; letter-spacing: -0.2px;}
     .card-zh-title { font-size: 0.95rem; color: rgba(255, 255, 255, 0.85); font-weight: 500; }
-
-    /* 底層：意境區 */
     .card-bottom { background-color: transparent; padding: 14px 18px; display: flex; align-items: flex-start; gap: 10px; flex-grow: 1; }
     .theme-icon { font-size: 16px; margin-top: 2px; flex-shrink: 0; filter: grayscale(100%) brightness(120%); opacity: 0.8;}
     .theme-text { font-size: 0.9rem; color: rgba(255, 255, 255, 0.6); line-height: 1.5; font-style: normal; font-weight: 400;}
     .theme-zh-text { margin-top: 4px; }
 
-    /* =========================================================
-       🔥 終極黑魔法：完美 100% 覆蓋隱形按鈕，消滅下方空隙
-       ========================================================= */
-    /* 1. 將包含 Marker 的容器設為相對定位 */
-    div[data-testid="stVerticalBlock"]:has(.click-marker) {
-        position: relative;
-    }
-    /* 2. 將包含按鈕的最後一個 div 強制設為絕對定位，鋪滿全卡 */
-    div[data-testid="stVerticalBlock"]:has(.click-marker) > div:last-child {
-        position: absolute !important;
-        top: 0 !important;
-        left: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        z-index: 10 !important;
-    }
-    /* 3. 將按鈕本身變為全透明，消滅實體 */
-    div[data-testid="stVerticalBlock"]:has(.click-marker) div[data-testid="stButton"],
-    div[data-testid="stVerticalBlock"]:has(.click-marker) button {
-        width: 100% !important;
-        height: 100% !important;
-        opacity: 0 !important;
-        cursor: pointer !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        border: none !important;
-        background: transparent !important;
-    }
+    /* 100% 覆蓋隱形按鈕 */
+    div[data-testid="stVerticalBlock"]:has(.click-marker) { position: relative; }
+    div[data-testid="stVerticalBlock"]:has(.click-marker) > div:last-child { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; z-index: 10 !important; }
+    div[data-testid="stVerticalBlock"]:has(.click-marker) div[data-testid="stButton"], div[data-testid="stVerticalBlock"]:has(.click-marker) button { width: 100% !important; height: 100% !important; opacity: 0 !important; cursor: pointer !important; margin: 0 !important; padding: 0 !important; border: none !important; background: transparent !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -168,7 +108,7 @@ with col_api:
     if st.button("🟢 已連線" if st.session_state.api_key else "🔑 連線", use_container_width=True) and not st.session_state.api_key: api_dialog()
 
 st.markdown("<div class='ai-title'>YouTube Title Studio</div>", unsafe_allow_html=True)
-st.markdown("<div class='ai-subtitle'>UX-Optimized Content Engine • v10.0</div>", unsafe_allow_html=True)
+st.markdown("<div class='ai-subtitle'>Production Ready Content Engine • v10.1</div>", unsafe_allow_html=True)
 
 if not st.session_state.api_key:
     with st.container(border=True):
@@ -185,14 +125,13 @@ if not st.session_state.api_key:
 genai.configure(api_key=st.session_state.api_key)
 model = genai.GenerativeModel('gemini-3-flash-preview')
 
-# 進度條
 progress_val = (st.session_state.step - 1) / 3
 step_labels = ["Ideation", "Concept", "SEO Prep", "Dashboard"]
 st.progress(progress_val, text=f"Pipeline Stage {st.session_state.step}/4: {step_labels[st.session_state.step-1]}")
 st.write("")
 
 # ==========================================
-# Pipeline Step 1: 音樂靈感 (3欄完美無痕點擊)
+# Pipeline Step 1: 音樂靈感 (防撞車機制)
 # ==========================================
 if st.session_state.step == 1:
     inject_dark_card_css()
@@ -200,7 +139,7 @@ if st.session_state.step == 1:
     if not st.session_state.song_data:
         st.markdown("### 🎛️ Stage 1: Music Ideation (Suno 歌曲孵化)")
         if st.button("🪄 孵化 20 首治癒系英文歌曲主題 (感官溫暖・靈魂治癒)", type="primary", use_container_width=True):
-            with st.spinner("AI 正在深度創作靈魂歌單 (如果需時較長請耐心等候)..."):
+            with st.spinner("AI 正在深度創作靈魂歌單 (若需時較長請耐心等候)..."):
                 prompt = """我正在使用 SUNO AI 創作英文治癒系歌曲。請為我全新創作 20 首歌曲題目及其意境 (Lyric Theme)。
                 核心情感：全然放鬆、心理停頓、和平、感官溫暖。
                 嚴格遵守輸出格式（格式破壞則系統崩潰）：
@@ -208,31 +147,88 @@ if st.session_state.step == 1:
                 Lyric Theme: [英文意境描述] — [中文意境描述]
                 一定要生成夠 20 首。不要有任何前言或結語。"""
                 
-                # 加入防撞車機制 (Try-Except)
                 try:
                     resp = model.generate_content(prompt)
-                    
                     raw_text = resp.text.strip()
                     pattern = r"(\d+)\.\s*《(.*?)》\s*(.*?)\nLyric Theme:\s*(.*?)\s*[—-]\s*(.*)"
                     matches = re.findall(pattern, raw_text)
                     
                     if not matches:
-                        st.error("⚠️ AI 生成格式有誤，請再試一次！")
+                        st.error("⚠️ AI 輸出格式出現偏差，請重新點擊按鈕！")
                     else:
                         parsed_songs = [{"id": int(m[0]), "en_title": m[1].strip(), "zh_title": m[2].strip(), "en_theme": m[3].strip(), "zh_theme": m[4].strip()} for m in matches]
                         st.session_state.song_data = parsed_songs
                         st.rerun()
                 except Exception as e:
-                    # 捕捉 Timeout 或 503 錯誤，顯示友善提示
-                    st.error(f"⚠️ 哎呀！Google AI 伺服器啱啱開咗個小差 (連線超時)。請重新撳多一次個掣！\n系統報錯: {e}")
+                    st.error(f"⚠️ 伺服器繁忙 (連線超時)，請再撳一次按鈕！\n詳細錯誤: {e}")
+    else:
+        st.markdown("### 🎛️ Stage 1: Select Your Aesthetic Songs")
+        st.markdown("<span style='color:#8E8E93; font-size:14px;'>點擊卡片任何位置即可選取。支援全選或自由組合。</span>", unsafe_allow_html=True)
+        st.write("")
+
+        cols = st.columns(3, gap="medium")
+        sorted_songs = sorted(st.session_state.song_data, key=lambda x: x['id'])
+
+        def toggle_selection(song_id):
+            if song_id in st.session_state.selected_song_ids:
+                st.session_state.selected_song_ids.remove(song_id)
+            else:
+                st.session_state.selected_song_ids.append(song_id)
+
+        for idx, song in enumerate(sorted_songs):
+            target_col = cols[idx % 3]
+            is_selected = song['id'] in st.session_state.selected_song_ids
+            sel_class = "selected" if is_selected else ""
+            
+            with target_col:
+                with st.container():
+                    st.markdown(f"""
+                    <div class='click-marker'></div>
+                    <div class='song-card {sel_class}'>
+                        <div class='card-top'>
+                            <div class='card-id'>{song['id']}</div>
+                            <div class='card-titles'>
+                                <div class='card-en-title'>{song['en_title']}</div>
+                                <div class='card-zh-title'>{song['zh_title']}</div>
+                            </div>
+                        </div>
+                        <div class='card-bottom'>
+                            <div class='theme-icon'>💡</div>
+                            <div class='theme-text'>
+                                <div>{song['en_theme']}</div>
+                                <div class='theme-zh-text'>— {song['zh_theme']}</div>
+                            </div>
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    st.button(" ", key=f"btn_{song['id']}", on_click=toggle_selection, args=(song['id'],), use_container_width=True)
+                st.write("")
+
+        st.markdown('<div class="stActionButton"><div>', unsafe_allow_html=True)
+        scol1, scol2, scol3, scol4 = st.columns([3, 1.5, 1.5, 4])
+        with scol1: st.markdown(f"<div style='color:#00ffcc; font-size:16px; font-weight:700; padding-top:10px;'>已選擇 {len(st.session_state.selected_song_ids)} / {len(st.session_state.song_data)}</div>", unsafe_allow_html=True)
+        with scol2:
+            if st.button("✅ 全選", use_container_width=True):
+                st.session_state.selected_song_ids = [s['id'] for s in st.session_state.song_data]
+                st.rerun()
+        with scol3:
+            if st.button("🗑️ 清空", use_container_width=True):
+                st.session_state.selected_song_ids = []
+                st.rerun()
+        with scol4:
+            if st.button("確認並前往下一步 ➡️", type="primary", use_container_width=True):
+                if not st.session_state.selected_song_ids: st.warning("⚠️ 請至少點擊選取一首歌曲！")
+                else:
+                    next_step()
+                    st.rerun()
+        st.markdown('</div></div>', unsafe_allow_html=True)
 
 # ==========================================
-# Pipeline Step 2: 視覺意境 (極簡中英短句)
+# Pipeline Step 2: 視覺意境 (防撞車機制)
 # ==========================================
 elif st.session_state.step == 2:
     st.markdown("### 🎬 Stage 2: Visual Concept (設定感官意境)")
     
-    st.write("設定一個極度放鬆、慵懶嘅感官情境。可以自定義時間同氛圍。")
     vibe = st.text_input("自定義時間與氛圍 (留空則由 AI 隨機安排)", placeholder="例如：落雨嘅深夜，一個人喺房溫書放空...")
     
     if st.button("🧠 構思 3 個極簡故事方向", use_container_width=True):
@@ -244,10 +240,13 @@ elif st.session_state.step == 2:
             情境設定：{context}
             請提供 3 個不同的「極簡故事意境選項」。
             要求：中英對照，非常簡短，具畫面感。
-            格式必須為：[Emoji] [中文短意境] | [English short vibe] (不超過 20 字)
+            格式必須為：[Emoji] [中文短意境] | [English short vibe]
             每行一個，不要加數字。"""
-            resp = model.generate_content(prompt)
-            st.session_state.concept_options = [line.strip() for line in resp.text.strip().split('\n') if "|" in line]
+            try:
+                resp = model.generate_content(prompt)
+                st.session_state.concept_options = [line.strip() for line in resp.text.strip().split('\n') if "|" in line]
+            except Exception as e:
+                st.error(f"⚠️ 伺服器繁忙，請再撳一次！\n詳細錯誤: {e}")
     
     if st.session_state.concept_options:
         with st.container(border=True):
@@ -265,15 +264,15 @@ elif st.session_state.step == 2:
             st.rerun()
 
 # ==========================================
-# Pipeline Step 3: Assets & SEO 打包
+# Pipeline Step 3: Assets & SEO 打包 (防撞車)
 # ==========================================
 elif st.session_state.step == 3:
     st.markdown("### 🖼️ Stage 3: Assets & SEO Prep (圖片與打包)")
     
     with st.container(border=True):
         st.markdown("#### 👁️ 上傳視覺特徵 (Thumbnail)")
-        st.markdown("<span style='color:#8E8E93; font-size:14px;'>Upload 您生成好嘅靚圖 (可選，有齊圖文生成更精準)。</span>", unsafe_allow_html=True)
-        uploaded_img = st.file_uploader("Upload Thumb (JPG/PNG)", type=["jpg", "png"], label_visibility="collapsed")
+        st.markdown("<span style='color:#8E8E93; font-size:14px;'>Upload 您生成好嘅靚圖 (可選)。</span>", unsafe_allow_html=True)
+        uploaded_img = st.file_uploader("Upload Thumb", type=["jpg", "png"], label_visibility="collapsed")
         if uploaded_img: st.image(uploaded_img, use_container_width=True)
     
     st.write("")
@@ -285,35 +284,32 @@ elif st.session_state.step == 3:
     if col_gen.button("🚀 啟動全線終極生成 (Generate All)!", type="primary", use_container_width=True):
         with st.status("⚙️ 生產線全面運作中 (The Magic is happening)...", expanded=True) as status:
             st.write("1. 濃縮 300 字慵懶感官故事...")
-            st.write("2. 創作精簡 Emoji 生活日常短故事...")
-            st.write("3. 打包 490 字元黃金流量標籤...")
+            st.write("2. 創作精簡 Emoji 短故事...")
+            st.write("3. 打包 490 字元黃金標籤...")
             
             songs_context = [s['en_title'] for s in st.session_state.song_data if s['id'] in st.session_state.selected_song_ids]
             payload = [f"Songs: {'/'.join(songs_context)}\nVibe: {st.session_state.selected_concept}"]
             if uploaded_img: payload.append(Image.open(uploaded_img))
             
-            prompt = f"""你是 YouTube Lofi 音樂頻道總監。請根據以上歌曲設定、視覺意境及圖片（如有），一次過輸出以下最終內容。
-            賣的是「共鳴」同「 companionship」，賣為聽眾提供一個「心理停頓、放鬆、心理療癒」嘅解決方案。
+            prompt = f"""你是 YouTube Lofi 音樂頻道總監。請根據以上設定，一次過輸出以下最終內容。
             
-            【嚴格輸出格式，使用 === 分隔，遵守格式否則系統崩潰】：
+            【嚴格輸出格式，使用 === 分隔】：
             
             ===LONG_STORY===
-            寫一個約 300 字的英文慵懶感官描述故事 (Detailed Story)，極度放鬆且充滿溫馨感。描述光影、質感、慵懶的狀態。
+            寫一個約 300 字的英文慵懶感官描述故事 (Detailed Story)，極度放鬆且充滿溫馨感。
             
             ===SHORT_STORY===
-            精簡為「生活化、微小、帶有 Emoji 嘅 reflective/conversational」短故事。
-            要好似這個例子一樣：
+            精簡為「生活化、微小、帶有 Emoji 嘅 reflective」短故事。
+            要好似這個例子：
             Making Tea 🍵
-            Evening settles outside the window 🌙. You fill the kettle and set it on the stove...
-            The kettle hums low. When it whistles, you pour... ☕
-            You don't drink yet... 🛋️
+            Evening settles outside the window 🌙. You fill the kettle...
             
             ===TITLES===
-            提供 5 個極具點擊率嘅中英對照標題 (格式: 分數|||中文|||英文)。
-            英文格式嚴格跟隨黃金結構：[Poetic Phrase]… [曲風] for [活動1], [活動2] & [氛圍] [2個Emoji]
+            提供 5 個中英對照標題 (分數|||中文|||英文)。
+            英文格式嚴格跟隨：[Poetic Phrase]… [曲風] for [活動1], [活動2] & [氛圍] [2個Emoji]
             
             ===TAGS===
-            直接輸出一連串逗號分隔的 Tags，包含 lofi hip hop radio 等大熱字。總字元嚴格控制在 450 到 490 之間！
+            一連串逗號分隔 Tags，總字元控制在 450 到 490 之間。
             """
             payload.insert(0, prompt)
             
@@ -331,8 +327,8 @@ elif st.session_state.step == 3:
                 next_step()
                 st.rerun()
             except Exception as e:
-                status.update(label="❌ 生成中斷", state="error")
-                st.error(f"系統異常: {e}")
+                status.update(label="❌ 伺服器繁忙 (Timeout)", state="error")
+                st.error(f"請再撳一次！系統異常: {e}")
 
 # ==========================================
 # Pipeline Step 4: 最終成品總結
@@ -380,4 +376,4 @@ elif st.session_state.step == 4:
         st.rerun()
 
 st.write("")
-st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>YouTube Title Studio v10.0<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>YouTube Title Studio v10.1 (Prod)<br>Developed by Leo Lai • Powered by Gemini 3 Flash Preview</div>", unsafe_allow_html=True)
