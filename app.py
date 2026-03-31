@@ -200,93 +200,31 @@ if st.session_state.step == 1:
     if not st.session_state.song_data:
         st.markdown("### 🎛️ Stage 1: Music Ideation (Suno 歌曲孵化)")
         if st.button("🪄 孵化 20 首治癒系英文歌曲主題 (感官溫暖・靈魂治癒)", type="primary", use_container_width=True):
-            with st.spinner("AI 正在深度創作靈魂歌單..."):
+            with st.spinner("AI 正在深度創作靈魂歌單 (如果需時較長請耐心等候)..."):
                 prompt = """我正在使用 SUNO AI 創作英文治癒系歌曲。請為我全新創作 20 首歌曲題目及其意境 (Lyric Theme)。
                 核心情感：全然放鬆、心理停頓、和平、感官溫暖。
                 嚴格遵守輸出格式（格式破壞則系統崩潰）：
                 [編號]. 《[英文歌名]》 [中文譯名]
                 Lyric Theme: [英文意境描述] — [中文意境描述]
                 一定要生成夠 20 首。不要有任何前言或結語。"""
-                resp = model.generate_content(prompt)
                 
-                raw_text = resp.text.strip()
-                pattern = r"(\d+)\.\s*《(.*?)》\s*(.*?)\nLyric Theme:\s*(.*?)\s*[—-]\s*(.*)"
-                matches = re.findall(pattern, raw_text)
-                
-                parsed_songs = [{"id": int(m[0]), "en_title": m[1].strip(), "zh_title": m[2].strip(), "en_theme": m[3].strip(), "zh_theme": m[4].strip()} for m in matches]
-                st.session_state.song_data = parsed_songs
-                st.rerun()
-    else:
-        st.markdown("### 🎛️ Stage 1: Select Your Aesthetic Songs")
-        st.markdown("<span style='color:#8E8E93; font-size:14px;'>點擊卡片任何位置即可選取。支援全選或自由組合。</span>", unsafe_allow_html=True)
-        st.write("")
-
-        cols = st.columns(3, gap="medium")
-        sorted_songs = sorted(st.session_state.song_data, key=lambda x: x['id'])
-
-        def toggle_selection(song_id):
-            if song_id in st.session_state.selected_song_ids:
-                st.session_state.selected_song_ids.remove(song_id)
-            else:
-                st.session_state.selected_song_ids.append(song_id)
-
-        # 渲染 3 欄卡片，使用最新無痕黑魔法
-        for idx, song in enumerate(sorted_songs):
-            target_col = cols[idx % 3]
-            is_selected = song['id'] in st.session_state.selected_song_ids
-            sel_class = "selected" if is_selected else ""
-            
-            with target_col:
-                with st.container():
-                    # 注入 click-marker，用作 CSS 定位矛點
-                    st.markdown(f"""
-                    <div class='click-marker'></div>
-                    <div class='song-card {sel_class}'>
-                        <div class='card-top'>
-                            <div class='card-id'>{song['id']}</div>
-                            <div class='card-titles'>
-                                <div class='card-en-title'>{song['en_title']}</div>
-                                <div class='card-zh-title'>{song['zh_title']}</div>
-                            </div>
-                        </div>
-                        <div class='card-bottom'>
-                            <div class='theme-icon'>💡</div>
-                            <div class='theme-text'>
-                                <div>{song['en_theme']}</div>
-                                <div class='theme-zh-text'>— {song['zh_theme']}</div>
-                            </div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                # 加入防撞車機制 (Try-Except)
+                try:
+                    resp = model.generate_content(prompt)
                     
-                    # 生成按鈕 (文本留空，靠 CSS 覆蓋整張卡片)
-                    st.button(" ", key=f"btn_{song['id']}", on_click=toggle_selection, args=(song['id'],), use_container_width=True)
-                
-                st.write("") # 模擬 margin-bottom
-
-        # Sticky Action Bar
-        st.markdown('<div class="stActionButton"><div>', unsafe_allow_html=True)
-        scol1, scol2, scol3, scol4 = st.columns([3, 1.5, 1.5, 4])
-        
-        with scol1:
-            st.markdown(f"<div style='color:#00ffcc; font-size:16px; font-weight:700; padding-top:10px;'>已選擇 {len(st.session_state.selected_song_ids)} / 20</div>", unsafe_allow_html=True)
-        with scol2:
-            if st.button("✅ 全選", use_container_width=True):
-                st.session_state.selected_song_ids = [s['id'] for s in st.session_state.song_data]
-                st.rerun()
-        with scol3:
-            if st.button("🗑️ 清空", use_container_width=True):
-                st.session_state.selected_song_ids = []
-                st.rerun()
-        with scol4:
-            if st.button("確認並前往下一步 ➡️", type="primary", use_container_width=True):
-                if not st.session_state.selected_song_ids:
-                    st.warning("⚠️ 請至少點擊選取一首歌曲！")
-                else:
-                    next_step()
-                    st.rerun()
+                    raw_text = resp.text.strip()
+                    pattern = r"(\d+)\.\s*《(.*?)》\s*(.*?)\nLyric Theme:\s*(.*?)\s*[—-]\s*(.*)"
+                    matches = re.findall(pattern, raw_text)
                     
-        st.markdown('</div></div>', unsafe_allow_html=True)
+                    if not matches:
+                        st.error("⚠️ AI 生成格式有誤，請再試一次！")
+                    else:
+                        parsed_songs = [{"id": int(m[0]), "en_title": m[1].strip(), "zh_title": m[2].strip(), "en_theme": m[3].strip(), "zh_theme": m[4].strip()} for m in matches]
+                        st.session_state.song_data = parsed_songs
+                        st.rerun()
+                except Exception as e:
+                    # 捕捉 Timeout 或 503 錯誤，顯示友善提示
+                    st.error(f"⚠️ 哎呀！Google AI 伺服器啱啱開咗個小差 (連線超時)。請重新撳多一次個掣！\n系統報錯: {e}")
 
 # ==========================================
 # Pipeline Step 2: 視覺意境 (極簡中英短句)
