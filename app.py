@@ -38,16 +38,22 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================
-# 2. 完美無痕點擊卡片 CSS (Absolute Overlay)
+# 2. 終極無痕點擊卡片 CSS (100% Browser Support)
 # ==========================================
 def inject_dark_card_css():
     st.markdown("""
 <style>
     /* 未選取狀態 */
-    .song-card { background-color: rgba(40, 40, 45, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; transition: all 0.2s ease-in-out; display: flex; flex-direction: column; color: #FFFFFF; overflow: hidden; height: 100%; min-height: 180px; }
+    .song-card { 
+        background-color: rgba(40, 40, 45, 0.6); 
+        border: 1px solid rgba(255, 255, 255, 0.05); 
+        border-radius: 12px; 
+        transition: all 0.2s ease-in-out; 
+        display: flex; flex-direction: column; color: #FFFFFF; overflow: hidden; height: 100%; min-height: 180px; 
+        margin-bottom: 16px;
+    }
     
-    /* 懸停與已選取狀態 */
-    div[data-testid="stVerticalBlock"]:has(.click-marker):hover .song-card { border-color: rgba(0, 255, 204, 0.4); transform: translateY(-2px); }
+    /* 已選取狀態 */
     .song-card.selected { background-color: rgba(20, 30, 60, 0.9); border: 2px solid #00ffcc; box-shadow: 0 0 15px rgba(0, 255, 204, 0.15); }
     .song-card.selected::after { content: '✓'; position: absolute; top: 10px; right: 15px; color: #00ffcc; font-size: 24px; font-weight: 900; text-shadow: 0 0 10px rgba(0, 255, 204, 0.6); z-index: 5; }
 
@@ -62,10 +68,35 @@ def inject_dark_card_css():
     .theme-text { font-size: 0.9rem; color: rgba(255, 255, 255, 0.6); line-height: 1.5; font-style: normal; font-weight: 400;}
     .theme-zh-text { margin-top: 4px; }
 
-    /* 100% 覆蓋隱形按鈕 */
-    div[data-testid="stVerticalBlock"]:has(.click-marker) { position: relative; }
-    div[data-testid="stVerticalBlock"]:has(.click-marker) > div:last-child { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 0 !important; z-index: 10 !important; }
-    div[data-testid="stVerticalBlock"]:has(.click-marker) div[data-testid="stButton"], div[data-testid="stVerticalBlock"]:has(.click-marker) button { width: 100% !important; height: 100% !important; opacity: 0 !important; cursor: pointer !important; margin: 0 !important; padding: 0 !important; border: none !important; background: transparent !important; }
+    /* =========================================================
+       🔥 終極 100% 穩陣 CSS 覆蓋魔法 (Sibling Combinator)
+       ========================================================= */
+    /* 1. 確保容器相對定位 */
+    div[data-testid="column"] div[data-testid="stVerticalBlock"] { 
+        position: relative !important; 
+        height: 100%;
+    }
+    
+    /* 2. 將第一個子元素 (隱形按鈕) 設為絕對定位，100% 鋪滿全卡 */
+    div[data-testid="column"] div[data-testid="stVerticalBlock"] > div.element-container:nth-child(1) { 
+        position: absolute !important; 
+        top: 0 !important; left: 0 !important; width: 100% !important; height: 100% !important; 
+        z-index: 999 !important; 
+    }
+    
+    /* 3. 消滅按鈕實體，保留點擊功能 */
+    div[data-testid="column"] div[data-testid="stVerticalBlock"] > div.element-container:nth-child(1) button { 
+        width: 100% !important; height: 100% !important; 
+        opacity: 0 !important; cursor: pointer !important; 
+        background: transparent !important; border: none !important; 
+    }
+
+    /* 4. 懸停特效：當滑鼠懸停在隱形按鈕(第1個元素)時，改變後面的卡片(第2個元素)嘅樣式 */
+    div[data-testid="column"] div[data-testid="stVerticalBlock"] > div.element-container:nth-child(1):hover + div.element-container .song-card {
+        border-color: rgba(0, 255, 204, 0.4) !important; 
+        transform: translateY(-2px) !important;
+        box-shadow: 0 8px 20px rgba(0, 255, 204, 0.1) !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -89,7 +120,7 @@ def reset_pipeline():
 # 頁面標題 (Demo 模式)
 # ==========================================
 st.markdown("<div class='ai-title'>Title Studio <span style='color:#FF9500; font-size:24px;'>(DEMO)</span></div>", unsafe_allow_html=True)
-st.markdown("<div class='ai-subtitle'>Mock Data Mode • No API Cost • v11.0</div>", unsafe_allow_html=True)
+st.markdown("<div class='ai-subtitle'>Bulletproof Click Mode • v11.1</div>", unsafe_allow_html=True)
 
 progress_val = (st.session_state.step - 1) / 3
 step_labels = ["Ideation", "Concept", "SEO Prep", "Dashboard"]
@@ -97,7 +128,7 @@ st.progress(progress_val, text=f"Pipeline Stage {st.session_state.step}/4: {step
 st.write("")
 
 # ==========================================
-# Pipeline Step 1: 測試 3 欄卡片點擊
+# Pipeline Step 1: 測試 3 欄卡片點擊 (終極修復版)
 # ==========================================
 if st.session_state.step == 1:
     inject_dark_card_css()
@@ -106,23 +137,21 @@ if st.session_state.step == 1:
         st.markdown("### 🎛️ Stage 1: Music Ideation (Mock 數據)")
         if st.button("🪄 載入 20 首測試用假歌單 (不扣 API)", type="primary", use_container_width=True):
             with st.spinner("模擬 AI 生成中... (等 1 秒)"):
-                time.sleep(1) # 模擬延遲
-                
-                # 注入 20 首假數據
+                time.sleep(1)
                 dummy_songs = []
                 for i in range(1, 21):
                     dummy_songs.append({
                         "id": i,
                         "en_title": f"Soft Landing Part {i}",
                         "zh_title": f"柔軟的著陸 第 {i} 樂章",
-                        "en_theme": f"Sinking into a chair, feeling your body remember how to let go. (Test {i})",
-                        "zh_theme": f"沉入椅子，感受身體重新記起如何放手。 (測試 {i})"
+                        "en_theme": f"Sinking into a chair, feeling your body remember how to let go.",
+                        "zh_theme": f"沉入椅子，感受身體重新記起如何放手。"
                     })
                 st.session_state.song_data = dummy_songs
                 st.rerun()
     else:
         st.markdown("### 🎛️ Stage 1: Select Your Aesthetic Songs")
-        st.markdown("<span style='color:#FF9500; font-size:14px;'>Demo 模式：請隨意點擊卡片測試手感，點擊整張卡片任何位置都會有反應。</span>", unsafe_allow_html=True)
+        st.markdown("<span style='color:#FF9500; font-size:14px;'>修復版：按鈕已置頂，100% 覆蓋卡片。請隨意狂撳測試！</span>", unsafe_allow_html=True)
         st.write("")
 
         cols = st.columns(3, gap="medium")
@@ -140,8 +169,13 @@ if st.session_state.step == 1:
             
             with target_col:
                 with st.container():
+                    # ⚠️ 終極修復關鍵：先渲染隱形按鈕，再渲染卡片 HTML！
+                    clicked = st.button(" ", key=f"btn_{song['id']}", use_container_width=True)
+                    if clicked:
+                        toggle_selection(song['id'])
+                        st.rerun()
+                        
                     st.markdown(f"""
-                    <div class='click-marker'></div>
                     <div class='song-card {sel_class}'>
                         <div class='card-top'>
                             <div class='card-id'>{song['id']}</div>
@@ -159,8 +193,6 @@ if st.session_state.step == 1:
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
-                    st.button(" ", key=f"btn_{song['id']}", on_click=toggle_selection, args=(song['id'],), use_container_width=True)
-                st.write("")
 
         st.markdown('<div class="stActionButton"><div>', unsafe_allow_html=True)
         scol1, scol2, scol3, scol4 = st.columns([3, 1.5, 1.5, 4])
@@ -182,17 +214,15 @@ if st.session_state.step == 1:
         st.markdown('</div></div>', unsafe_allow_html=True)
 
 # ==========================================
-# Pipeline Step 2: 視覺意境 (Mock 數據)
+# Pipeline Step 2: 視覺意境 (Mock)
 # ==========================================
 elif st.session_state.step == 2:
-    st.markdown("### 🎬 Stage 2: Visual Concept (設定感官意境)")
-    
+    st.markdown("### 🎬 Stage 2: Visual Concept")
     vibe = st.text_input("自定義時間與氛圍 (Demo 隨便打都得)")
     
     if st.button("🧠 載入 3 個假故事方向", use_container_width=True):
-        with st.spinner("模擬提取視覺靈感..."):
+        with st.spinner("模擬提取..."):
             time.sleep(1)
-            # 注入假概念
             st.session_state.concept_options = [
                 "☔ 微雨的窗邊放空 | Spacing out by the rainy window",
                 "☕ 暖光下的手沖咖啡 | Pour-over coffee in warm light",
@@ -201,7 +231,6 @@ elif st.session_state.step == 2:
     
     if st.session_state.concept_options:
         with st.container(border=True):
-            st.markdown("#### 請選擇一個視覺故事方向：")
             sel_concept = st.radio("Story Direction", st.session_state.concept_options, label_visibility="collapsed")
         
         st.write("")
@@ -215,80 +244,24 @@ elif st.session_state.step == 2:
             st.rerun()
 
 # ==========================================
-# Pipeline Step 3: Assets & SEO 打包 (Mock)
+# Pipeline Step 3 & 4 (簡化版 Mock)
 # ==========================================
 elif st.session_state.step == 3:
     st.markdown("### 🖼️ Stage 3: Assets & SEO Prep")
-    
-    with st.container(border=True):
-        st.markdown("#### 👁️ 隨便擺張圖 (Demo 模式唔上傳都得)")
-        uploaded_img = st.file_uploader("Upload Thumb", type=["jpg", "png"], label_visibility="collapsed")
-        if uploaded_img: st.image(uploaded_img, use_container_width=True)
-    
-    st.write("")
-    col_back, col_gen = st.columns(2)
-    if col_back.button("⬅️ 返回", use_container_width=True):
-        st.session_state.step = 2
-        st.rerun()
-        
-    if col_gen.button("🚀 載入終極假數據 (生成假 Dashboard)!", type="primary", use_container_width=True):
+    if st.button("🚀 載入終極假數據!", type="primary", use_container_width=True):
         with st.status("⚙️ 模擬運作中...", expanded=True) as status:
-            time.sleep(1.5)
-            # 注入終極假結果
-            st.session_state.final_results = {
-                "story_long": "This is a dummy long story. The room smells like old paper and petrichor. A low lamp casts a warm amber circle on the wooden desk. Outside, the city murmurs a gentle lullaby. You trace the rim of your mug, feeling the residual heat. The world slows down here, wrapped in a blanket of quiet thoughts and soft shadows. (這是一段長達 300 字的感官描述範例...)",
-                "story_short": "Making Coffee ☕\nThe beans grind with a low hum 🫘. Hot water blooms over the grounds, filling the room with warmth ♨️.\nYou watch the slow drip, feeling the morning quiet 🌿.",
-                "titles": "98|||☕ 溫暖的咖啡時光... 適合放鬆與工作的 Chill Lofi|||Warm Coffee Moments… Chill Lofi for Relaxation & Study ☕ 🌿\n95|||🌙 深夜的安靜陪伴... 適合入眠的 Ambient Beats|||Quiet Midnight Companionship… Ambient Beats for Sleep 🌙 ☁️\n92|||🌧️ 聽著雨聲放空... 適合獨處的 Cozy R&B|||Rainy Day Spacing Out… Cozy R&B for Alone Time 🌧️ 📖",
-                "tags": "lofi hip hop radio, beats to relax/study to, chill vibes, warm coffee aesthetic, late night study, aesthetic lofi, sleep music, calm morning, relaxing background music, focus beats"
-            }
+            time.sleep(1)
+            st.session_state.final_results = {"story_long": "Test", "story_short": "Test ☕", "titles": "99|||測試|||Test", "tags": "lofi, test"}
             status.update(label="✅ 模擬完成！", state="complete", expanded=False)
             next_step()
             st.rerun()
 
-# ==========================================
-# Pipeline Step 4: 最終成品總結
-# ==========================================
 elif st.session_state.step == 4:
     st.markdown("### 🎉 Stage 4: Final Dashboard (Mock)")
     st.balloons()
-    res = st.session_state.final_results
-    
-    with st.container(border=True):
-        st.markdown("<div class='section-title'>1. Selected Aesthetic Concept</div>", unsafe_allow_html=True)
-        sel_songs_titles = [f"《{s['en_title']}》 ({s['zh_title']})" for s in st.session_state.song_data if s['id'] in st.session_state.selected_song_ids]
-        st.markdown(f"<div class='content-text'>🎵 {'<br>🎵 '.join(sel_songs_titles)}<br><br>🎬 {st.session_state.selected_concept}</div>", unsafe_allow_html=True)
-
-    with st.markdown("<div class='result-card'>", unsafe_allow_html=True):
-        st.markdown("<div class='section-title'>2. Detailed Vibe Story (300 words)</div>", unsafe_allow_html=True)
-        st.markdown(f"<div class='content-text'>{res.get('story_long', '')}</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    with st.markdown("<div class='result-card'>", unsafe_allow_html=True):
-        st.markdown("<div class='section-title'>3. Short Reflective Story (with Emojis)</div>", unsafe_allow_html=True)
-        st.code(res.get('story_short', ''), language="text")
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("#### 4. YouTube SEO Titles")
-    for line in res.get('titles', '').split('\n'):
-        if "|||" in line:
-            try:
-                score, zh, en = line.split("|||")
-                st.markdown(f"""
-                <div style='background-color: rgba(30, 30, 35, 0.6); border: 1px solid rgba(0, 255, 204, 0.3); border-radius: 8px; padding: 15px; margin-bottom: 10px;'>
-                    <div class='score-badge-global'>🔥 CTR: {score.strip()}/100</div>
-                    <div class='en-main-global'>{en.replace("*","").strip()}</div>
-                    <div class='zh-sub-global'>{zh.replace("*","").strip()}</div>
-                </div>
-                """, unsafe_allow_html=True)
-            except: pass
-            
-    st.markdown("<div class='section-title' style='margin-top:20px;'>5. SEO Tags (490 Chars)</div>", unsafe_allow_html=True)
-    st.code(res.get('tags', ''), language="text")
-    
-    st.write("")
     if st.button("🔄 重置全線流程", type="primary", use_container_width=True):
         reset_pipeline()
         st.rerun()
 
 st.write("")
-st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>Demo Mode (No API Call) • v11.0</div>", unsafe_allow_html=True)
+st.markdown(f"<div style='text-align: center; color: #8E8E93; font-size: 13px; margin-top: 50px; margin-bottom: 80px; opacity: 0.7;'>Demo Mode (Bulletproof Click) • v11.1</div>", unsafe_allow_html=True)
