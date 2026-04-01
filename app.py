@@ -8,8 +8,7 @@ st.set_page_config(page_title="YouTube Title Studio", page_icon="🤖", layout="
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@400;500;600;700;800;900&display=swap');
-    html, body, [class*="css"] { font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    html, body, [class*="css"] { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     
     .block-container { padding-top: 2rem; max-width: 1150px !important; }
 
@@ -19,10 +18,7 @@ st.markdown("""
 
     @keyframes pulse-glow { 0% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); } 50% { box-shadow: 0 0 20px rgba(0, 255, 204, 0.8); } 100% { box-shadow: 0 0 5px rgba(0, 255, 204, 0.4); } }
     
-    /* 底部 Sticky Action Bar */
     .stApp > header {background-color: transparent !important;}
-    div.stActionButton { position: fixed; bottom: 0; left: 0; width: 100%; background-color: rgba(15, 15, 18, 0.95); backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.08); padding: 20px 0; z-index: 1000; box-shadow: 0 -10px 40px rgba(0,0,0,0.5); }
-    div.stActionButton > div { max-width: 1150px; margin: 0 auto; padding: 0 1.5rem; }
 
     .result-card { background-color: rgba(30, 30, 35, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 25px; margin-bottom: 25px; }
     .section-title { font-size: 17px; font-weight: 700; color: #00ffcc; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1.5px;}
@@ -38,8 +34,8 @@ def inject_hierarchy_card_css():
     /* =========================================================
        基礎卡片容器 (原生 Button)
        ========================================================= */
-    button[data-testid="baseButton-secondary"], 
-    button[data-testid="baseButton-primary"] {
+    button[data-testid="baseButton-secondary"]:has(h3), 
+    button[data-testid="baseButton-primary"]:has(h3) {
         border-radius: 16px !important;
         padding: 24px !important;
         width: 100% !important;
@@ -57,30 +53,30 @@ def inject_hierarchy_card_css():
     }
 
     /* --- 未選取狀態 (Secondary) --- */
-    button[data-testid="baseButton-secondary"] {
+    button[data-testid="baseButton-secondary"]:has(h3) {
         background-color: rgba(30, 30, 35, 0.7) !important;
         border: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
     
     /* 加入微弱漸層色塊 (視覺錨點) - 解決字海疲勞 */
-    div[data-testid="column"]:nth-child(3n+1) button[data-testid="baseButton-secondary"] { background-image: radial-gradient(circle at 100% 0%, rgba(180, 100, 255, 0.08), transparent 50%) !important; }
-    div[data-testid="column"]:nth-child(3n+2) button[data-testid="baseButton-secondary"] { background-image: radial-gradient(circle at 100% 0%, rgba(0, 255, 204, 0.06), transparent 50%) !important; }
-    div[data-testid="column"]:nth-child(3n+3) button[data-testid="baseButton-secondary"] { background-image: radial-gradient(circle at 100% 0%, rgba(255, 150, 50, 0.06), transparent 50%) !important; }
+    div[data-testid="column"]:nth-child(3n+1) button[data-testid="baseButton-secondary"]:has(h3) { background-image: radial-gradient(circle at 100% 0%, rgba(180, 100, 255, 0.08), transparent 50%) !important; }
+    div[data-testid="column"]:nth-child(3n+2) button[data-testid="baseButton-secondary"]:has(h3) { background-image: radial-gradient(circle at 100% 0%, rgba(0, 255, 204, 0.06), transparent 50%) !important; }
+    div[data-testid="column"]:nth-child(3n+3) button[data-testid="baseButton-secondary"]:has(h3) { background-image: radial-gradient(circle at 100% 0%, rgba(255, 150, 50, 0.06), transparent 50%) !important; }
 
     /* 懸停效果 */
-    button[data-testid="baseButton-secondary"]:hover {
+    button[data-testid="baseButton-secondary"]:has(h3):hover {
         border-color: rgba(255, 255, 255, 0.25) !important;
         transform: translateY(-4px) !important;
         box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3) !important;
     }
 
     /* --- 已選取狀態 (Primary) --- 強烈反差 */
-    button[data-testid="baseButton-primary"] {
+    button[data-testid="baseButton-primary"]:has(h3) {
         background: linear-gradient(145deg, rgba(16, 32, 64, 0.95), rgba(12, 20, 40, 0.95)) !important; /* 深海藍色 */
         border: 2px solid #00ffcc !important;
         box-shadow: 0 0 25px rgba(0, 255, 204, 0.2) !important;
     }
-    button[data-testid="baseButton-primary"]:hover {
+    button[data-testid="baseButton-primary"]:has(h3):hover {
         transform: translateY(-4px) !important;
         box-shadow: 0 8px 30px rgba(0, 255, 204, 0.3) !important;
     }
@@ -157,33 +153,6 @@ def inject_hierarchy_card_css():
         border-left: 2px solid rgba(0, 255, 204, 0.5) !important;
         color: #8E8E93 !important;
     }
-
-    /* =========================================================
-       保護 Action Bar 按鈕 (防止被 Markdown 樣式污染)
-       ========================================================= */
-    div.stActionButton button[data-testid="baseButton-primary"] {
-        background: linear-gradient(135deg, #008080 0%, #00E676 100%) !important;
-        border: none !important;
-        border-radius: 10px !important;
-        padding: 12px 24px !important;
-        min-height: auto !important; height: auto !important;
-        flex-direction: row !important; align-items: center !important; justify-content: center !important;
-        text-align: center !important;
-        box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3) !important;
-        animation: pulse-glow 2.5s infinite !important; transform: none !important; margin: 0 !important;
-    }
-    div.stActionButton button[data-testid="baseButton-primary"]:hover {
-        box-shadow: 0 6px 20px rgba(0, 230, 118, 0.5) !important; transform: translateY(-2px) !important;
-    }
-    div.stActionButton button p { color: #1C1C1E !important; font-size: 16px !important; font-weight: 700 !important; margin: 0 !important; border: none !important; padding: 0 !important;}
-    
-    div.stActionButton button[data-testid="baseButton-secondary"] {
-        background-color: rgba(255,255,255,0.1) !important; border: 1px solid rgba(255,255,255,0.2) !important;
-        border-radius: 10px !important; min-height: auto !important; height: auto !important;
-        padding: 12px !important; flex-direction: row !important; align-items: center !important; justify-content: center !important; text-align: center !important;
-    }
-    div.stActionButton button[data-testid="baseButton-secondary"] p { color: #FFF !important; font-size: 15px !important; font-weight: 600 !important; margin: 0 !important; border: none !important; padding: 0 !important;}
-    div.stActionButton button[data-testid="baseButton-secondary"]:hover { background-color: rgba(255,255,255,0.2) !important; transform: translateY(-2px) !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -220,7 +189,6 @@ st.write("")
 # Pipeline Step 1: 階梯式排版原生卡片
 # ==========================================
 if st.session_state.step == 1:
-    inject_hierarchy_card_css()
     
     if not st.session_state.song_data:
         st.markdown("### 🎛️ Stage 1: Music Ideation (Mock)")
@@ -239,6 +207,7 @@ if st.session_state.step == 1:
                 st.session_state.song_data = dummy_songs
                 st.rerun()
     else:
+        inject_hierarchy_card_css()
         st.markdown("### 🎛️ Stage 1: Select Your Aesthetic Songs")
         st.markdown("<span style='color:#A1A1AA; font-size:14px;'>v14.0：解決字海疲勞，強烈選中狀態，完美階梯排版。點擊卡片任何位置選取。</span>", unsafe_allow_html=True)
         st.write("")
@@ -274,8 +243,8 @@ if st.session_state.step == 1:
                         st.session_state.selected_song_ids.append(song['id'])
                     st.rerun()
 
-        # Sticky Action Bar
-        st.markdown('<div class="stActionButton"><div>', unsafe_allow_html=True)
+        # Action Bar
+        st.divider()
         scol1, scol2, scol3, scol4 = st.columns([3, 1.2, 1.2, 4])
         with scol1: 
             st.markdown(f"<div style='color:#FFFFFF; font-size:15px; font-weight:600; padding-top:12px;'>Selected: <span style='color:#00ffcc; font-size:22px; font-weight:900;'>{len(st.session_state.selected_song_ids)}</span> / {len(st.session_state.song_data)}</div>", unsafe_allow_html=True)
@@ -293,7 +262,6 @@ if st.session_state.step == 1:
                 else:
                     next_step()
                     st.rerun()
-        st.markdown('</div></div>', unsafe_allow_html=True)
 
 # ==========================================
 # Pipeline Step 2, 3, 4 (Mock 保持不變)
