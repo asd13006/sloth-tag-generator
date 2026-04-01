@@ -11,7 +11,8 @@ st.set_page_config(page_title="YouTube Title Studio",
 
 st.markdown("""
 <style>
-    html, body, [class*="css"] { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+    html, body, [class*="css"] { font-family: 'Poppins', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
     
     .block-container { padding-top: 2rem; max-width: 1150px !important; }
 
@@ -46,126 +47,159 @@ def inject_hierarchy_card_css():
     st.markdown("""
 <style>
     /* =========================================================
-       基礎卡片容器 (原生 Button)
+       Animated Gradient Border Keyframes
+       ========================================================= */
+    @keyframes border-glow {
+        0%   { border-color: #00ffcc; box-shadow: 0 0 18px rgba(0, 255, 204, 0.25); }
+        50%  { border-color: #b026ff; box-shadow: 0 0 22px rgba(176, 38, 255, 0.2); }
+        100% { border-color: #00ffcc; box-shadow: 0 0 18px rgba(0, 255, 204, 0.25); }
+    }
+
+    /* =========================================================
+       基礎卡片容器 — Glassmorphism Dark
        ========================================================= */
     button[data-testid="baseButton-secondary"]:has(h3), 
     button[data-testid="baseButton-primary"]:has(h3) {
-        border-radius: 16px !important;
-        padding: 24px !important;
+        border-radius: 20px !important;
+        padding: 28px 24px 24px !important;
         width: 100% !important;
         height: 100% !important;
-        min-height: 250px !important;
+        min-height: 270px !important;
         display: flex !important;
         flex-direction: column !important;
         align-items: flex-start !important;
         justify-content: flex-start !important;
         text-align: left !important;
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+        transition: all 0.25s cubic-bezier(0.22, 1, 0.36, 1) !important;
         white-space: pre-wrap !important;
         position: relative !important;
         overflow: hidden !important;
+        cursor: pointer !important;
+        backdrop-filter: blur(12px) !important;
+        -webkit-backdrop-filter: blur(12px) !important;
     }
 
-    /* --- 未選取狀態 (Secondary) --- */
+    /* --- 未選取狀態 (Secondary) — Frosted Glass --- */
     button[data-testid="baseButton-secondary"]:has(h3) {
-        background-color: rgba(30, 30, 35, 0.7) !important;
-        border: 1px solid rgba(255, 255, 255, 0.08) !important;
+        background: rgba(15, 15, 35, 0.55) !important;
+        border: 1px solid rgba(255, 255, 255, 0.07) !important;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
     }
     
-    /* 加入微弱漸層色塊 (視覺錨點) - 解決字海疲勞 */
-    div[data-testid="column"]:nth-child(3n+1) button[data-testid="baseButton-secondary"]:has(h3) { background-image: radial-gradient(circle at 100% 0%, rgba(180, 100, 255, 0.08), transparent 50%) !important; }
-    div[data-testid="column"]:nth-child(3n+2) button[data-testid="baseButton-secondary"]:has(h3) { background-image: radial-gradient(circle at 100% 0%, rgba(0, 255, 204, 0.06), transparent 50%) !important; }
-    div[data-testid="column"]:nth-child(3n+3) button[data-testid="baseButton-secondary"]:has(h3) { background-image: radial-gradient(circle at 100% 0%, rgba(255, 150, 50, 0.06), transparent 50%) !important; }
+    /* 右上角漸層光暈（視覺錨點）— 三色交替 */
+    div[data-testid="column"]:nth-child(3n+1) button[data-testid="baseButton-secondary"]:has(h3) { background-image: radial-gradient(ellipse at 95% -5%, rgba(176, 38, 255, 0.12), transparent 55%) !important; }
+    div[data-testid="column"]:nth-child(3n+2) button[data-testid="baseButton-secondary"]:has(h3) { background-image: radial-gradient(ellipse at 95% -5%, rgba(0, 255, 204, 0.09), transparent 55%) !important; }
+    div[data-testid="column"]:nth-child(3n+3) button[data-testid="baseButton-secondary"]:has(h3) { background-image: radial-gradient(ellipse at 95% -5%, rgba(255, 165, 50, 0.09), transparent 55%) !important; }
 
-    /* 懸停效果 */
+    /* 懸停效果 — 浮起 + 邊框亮化 + 發光陰影 */
     button[data-testid="baseButton-secondary"]:has(h3):hover {
-        border-color: rgba(255, 255, 255, 0.25) !important;
-        transform: translateY(-4px) !important;
-        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3) !important;
+        border-color: rgba(255, 255, 255, 0.18) !important;
+        transform: translateY(-6px) scale(1.015) !important;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), 0 0 20px rgba(0, 255, 204, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.06) !important;
     }
 
-    /* --- 已選取狀態 (Primary) --- 強烈反差 */
+    /* --- 已選取狀態 (Primary) — 深海藍 + 動態漸變邊框 --- */
     button[data-testid="baseButton-primary"]:has(h3) {
-        background: linear-gradient(145deg, rgba(16, 32, 64, 0.95), rgba(12, 20, 40, 0.95)) !important; /* 深海藍色 */
+        background: linear-gradient(155deg, rgba(10, 26, 54, 0.92), rgba(8, 14, 35, 0.95)) !important;
         border: 2px solid #00ffcc !important;
-        box-shadow: 0 0 25px rgba(0, 255, 204, 0.2) !important;
+        animation: border-glow 3s ease-in-out infinite !important;
     }
     button[data-testid="baseButton-primary"]:has(h3):hover {
-        transform: translateY(-4px) !important;
-        box-shadow: 0 8px 30px rgba(0, 255, 204, 0.3) !important;
+        transform: translateY(-6px) scale(1.015) !important;
+        box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35), 0 0 30px rgba(0, 255, 204, 0.2) !important;
     }
 
     /* =========================================================
-       階梯式文字排版 (利用 Markdown 標籤精準狙擊)
+       階梯式文字排版 — 增強間距與可讀性
        ========================================================= */
 
-    /* [第一層 - 標記] h5: 編號 或 Checkmark */
+    /* [第一層 - 標記] h5: 編號 / Checkmark */
     button h5 {
         position: absolute !important;
-        top: 24px !important;
-        left: 24px !important;
-        color: #8E8E93 !important;
-        font-size: 15px !important;
-        font-weight: 800 !important;
+        top: 20px !important;
+        right: 20px !important;
+        left: auto !important;
+        color: rgba(255, 255, 255, 0.25) !important;
+        font-size: 13px !important;
+        font-weight: 700 !important;
         margin: 0 !important;
-        letter-spacing: 1px !important;
+        letter-spacing: 1.5px !important;
+        font-family: 'Poppins', monospace !important;
     }
-    /* 選中後變成亮綠色勾號 */
+    /* 選中後：右上角發光綠色勾號 */
     button[data-testid="baseButton-primary"] h5 {
         color: #00ffcc !important;
-        font-size: 22px !important;
-        top: 20px !important;
-        text-shadow: 0 0 10px rgba(0, 255, 204, 0.5) !important;
+        font-size: 20px !important;
+        top: 18px !important;
+        text-shadow: 0 0 12px rgba(0, 255, 204, 0.6) !important;
+        filter: drop-shadow(0 0 4px rgba(0, 255, 204, 0.4)) !important;
     }
 
-    /* [第一層 - 歌名] h3: 英文歌名 (純白、加粗、放大) */
+    /* [第一層 - 歌名] h3: 英文歌名 */
     button h3 {
-        color: #FFFFFF !important;
-        font-size: 22px !important;
-        font-weight: 900 !important;
-        margin: 28px 0 4px 0 !important; /* 避開右上角 ID */
-        line-height: 1.1 !important;
-        letter-spacing: -0.5px !important;
+        color: #F8FAFC !important;
+        font-size: 20px !important;
+        font-weight: 800 !important;
+        margin: 6px 0 6px 0 !important;
+        line-height: 1.2 !important;
+        letter-spacing: -0.3px !important;
         width: 100% !important;
+        padding-right: 36px !important;
     }
 
-    /* [第二層 - 譯名] h4: 中文譯名 (灰色、小字、虛線底) */
+    /* [第二層 - 譯名] h4: 中文譯名 */
     button h4 {
         color: #A1A1AA !important;
-        font-size: 14px !important;
-        font-weight: 500 !important;
-        margin: 0 0 16px 0 !important;
-        padding-bottom: 16px !important;
-        border-bottom: 1px dashed rgba(255, 255, 255, 0.15) !important; /* 分割線 */
-        width: 100% !important;
-    }
-
-    /* [第三層 - 英文意境] strong: 灰色、適中 */
-    button strong {
-        color: #D1D1D6 !important;
-        font-size: 14px !important;
-        font-weight: 500 !important;
-        display: block !important;
-        line-height: 1.5 !important;
-        margin-bottom: 8px !important;
-        width: 100% !important;
-    }
-
-    /* [第四層 - 中文意境] em: 最淡灰色、縮進、左側線條 */
-    button em {
-        color: #71717A !important;
         font-size: 13px !important;
+        font-weight: 500 !important;
+        margin: 0 0 14px 0 !important;
+        padding-bottom: 14px !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06) !important;
+        width: 100% !important;
+        letter-spacing: 0.5px !important;
+    }
+    /* 選中後虛線變亮 */
+    button[data-testid="baseButton-primary"] h4 {
+        border-bottom: 1px solid rgba(0, 255, 204, 0.15) !important;
+        color: #C4B5FD !important;
+    }
+
+    /* [第三層 - 英文意境] strong */
+    button strong {
+        color: #C9CDD3 !important;
+        font-size: 13px !important;
+        font-weight: 400 !important;
+        display: block !important;
+        line-height: 1.65 !important;
+        margin-bottom: 10px !important;
+        width: 100% !important;
+    }
+
+    /* [第四層 - 中文意境] em — 左側線條裝飾 */
+    button em {
+        color: #636370 !important;
+        font-size: 12.5px !important;
         font-style: normal !important;
         display: block !important;
-        line-height: 1.5 !important;
+        line-height: 1.6 !important;
         padding-left: 12px !important;
-        border-left: 2px solid #3F3F46 !important; /* 左側視覺線條 */
+        border-left: 2px solid rgba(255, 255, 255, 0.06) !important;
         width: 100% !important;
+        margin-top: 2px !important;
     }
-    /* 選中後，中文意境嘅線條變為螢光色，增加細節感 */
+    /* 選中後：左側線螢光 + 文字提亮 */
     button[data-testid="baseButton-primary"] em {
-        border-left: 2px solid rgba(0, 255, 204, 0.5) !important;
+        border-left: 2px solid rgba(0, 255, 204, 0.4) !important;
         color: #8E8E93 !important;
+    }
+    /* 選中後：英文歌名微亮 */
+    button[data-testid="baseButton-primary"] h3 {
+        color: #FFFFFF !important;
+        text-shadow: 0 0 20px rgba(0, 255, 204, 0.12) !important;
+    }
+    /* 選中後：英文意境提亮 */
+    button[data-testid="baseButton-primary"] strong {
+        color: #D1D5DB !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -271,7 +305,7 @@ if st.session_state.step == 1:
         inject_hierarchy_card_css()
         st.markdown("### 🎛️ Stage 1: Select Your Aesthetic Songs")
         st.markdown(
-            "<span style='color:#A1A1AA; font-size:14px;'>v14.0：解決字海疲勞，強烈選中狀態，完美階梯排版。點擊卡片任何位置選取。</span>", unsafe_allow_html=True)
+            "<span style='color:#71717A; font-size:13px; letter-spacing:0.5px;'>點擊卡片選取歌曲 · 可多選 · 選中卡片會發光</span>", unsafe_allow_html=True)
         st.write("")
 
         cols = st.columns(3, gap="medium")
