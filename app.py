@@ -58,7 +58,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     letter-spacing: 1px;
     background: linear-gradient(270deg, #00ffcc, #b026ff, #00E676, #00ffcc);
     background-size: 300% 300%;
-    animation: gradient-text 5s ease infinite;
+    animation: gradient-text 5s ease 1 forwards;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     margin: 0; line-height: 1.2;
 }
@@ -141,10 +141,16 @@ button[data-testid^="stBaseButton"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type
 }
 button:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))) p:nth-of-type(1) { font-size: 14px !important; font-weight: 700 !important; color: #FFFFFF !important; margin-bottom: 6px !important; line-height: 1.2 !important; }
 button:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))) p:nth-of-type(2) { font-size: 13px !important; color: rgba(255,255,255,0.58) !important; line-height: 1.5 !important; }
+button[data-testid="baseButton-secondary"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))):hover { background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.45) !important; transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important; }
+button[data-testid="baseButton-primary"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))):hover,
+button[data-testid="stBaseButton-primary"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))):hover { transform: translateY(-2px) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 12px rgba(0,255,204,0.4) !important; }
 
 /* CSS variables & theme */
 :root { --primary-color: #00ffcc !important; }
 button:focus, button:focus-visible { outline: 2px solid rgba(0,255,204,0.50) !important; outline-offset: 2px !important; box-shadow: none !important; }
+
+/* All buttons */
+button[data-testid^="baseButton"], button[data-testid^="stBaseButton"] { cursor: pointer !important; }
 
 /* Primary buttons */
 button[data-testid="baseButton-primary"]:not(:has(p:nth-of-type(5))),
@@ -184,7 +190,7 @@ a, a:visited { color: #00ffcc !important; }
 [data-testid="stImage"] img { border-radius: 12px !important; border: 1px solid rgba(255,255,255,0.10) !important; }
 [data-testid="stFileUploaderDropzone"] { background: rgba(255,255,255,0.02) !important; border: 1.5px dashed rgba(255,255,255,0.12) !important; border-radius: 12px !important; }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-thumb { background: rgba(0,255,204,0.22); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(0,255,204,0.38); border-radius: 2px; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -375,7 +381,7 @@ with st.sidebar:
 
     st.divider()
     st.markdown(
-        "<div style='font-size:11px;color:rgba(255,255,255,0.45);line-height:1.7;'>"
+        "<div style='font-size:11px;color:rgba(255,255,255,0.56);line-height:1.7;'>"
         "使用 Google Gemini API。<br>"
         "Key 僅存於本次 session，<br>不會傳送至任何第三方。"
         "</div>",
@@ -533,13 +539,13 @@ def _he(t: str) -> str:
 
 _BASE_CSS = (
     "* { box-sizing: border-box; margin: 0; padding: 0; }"
-    "html, body { background: transparent; font-family: -apple-system, 'Segoe UI', sans-serif; overflow: hidden; }"
+    "html, body { background: transparent; font-family: 'Poppins', -apple-system, 'Segoe UI', sans-serif; overflow: hidden; }"
     ".lbl { font-size: 12px; font-weight: 600; color: #00ffcc; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }"
     ".card { background: rgba(10,10,20,0.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px 20px; }"
     ".copy-btn { background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.25); border-radius: 6px; color: #00ffcc; font-size: 12px; font-weight: 600; padding: 4px 12px; cursor: pointer; font-family: inherit; transition: background 0.2s; }"
-    ".copy-btn:hover, .copy-btn.ok { background: rgba(0,255,204,0.2); border-color: rgba(0,255,204,0.5); }"
+    ".copy-btn:hover, .copy-btn.ok { background: rgba(0,255,204,0.2); border-color: rgba(0,255,204,0.5); cursor: pointer; }"
     ".trans-btn { background: rgba(176,38,255,0.1); border: 1px solid rgba(176,38,255,0.3); border-radius: 6px; color: #b026ff; font-size: 12px; font-weight: 600; padding: 4px 10px; cursor: pointer; font-family: inherit; transition: background 0.2s; margin-right: 6px; }"
-    ".trans-btn:hover { background: rgba(176,38,255,0.22); border-color: rgba(176,38,255,0.55); }"
+    ".trans-btn:hover { background: rgba(176,38,255,0.22); border-color: rgba(176,38,255,0.55); cursor: pointer; }"
     ".content { color: rgba(255,255,255,0.75); font-size: 15px; line-height: 1.85; }"
     ".btn-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-bottom: 12px; }"
     ".sec { margin-bottom: 20px; }"
@@ -553,6 +559,7 @@ _BASE_CSS = (
     ".stheme-lbl { font-size: 11px; color: #00ffcc; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }"
     ".stheme-en { font-size: 13px; color: rgba(255,255,255,0.62); line-height: 1.55; margin-bottom: 3px; }"
     ".stheme-zh { font-size: 13px; color: rgba(255,255,255,0.50); line-height: 1.55; font-style: italic; }"
+    "@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }"
 )
 
 _JS = (
@@ -588,6 +595,7 @@ _JS = (
 def _html_page(body: str) -> str:
     return (
         f'<!DOCTYPE html><html><head><meta charset="UTF-8">'
+        f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">'
         f'<style>{_BASE_CSS}</style></head>'
         f'<body>{body}<script>{_JS}</script></body></html>'
     )
@@ -776,7 +784,7 @@ if step == 1:
                     f"border-radius:14px;padding:22px 20px;text-align:center;'>"
                     f"<div style='font-size:28px;margin-bottom:10px;'>{_icon}</div>"
                     f"<div style='font-size:14px;font-weight:600;color:rgba(255,255,255,0.80);margin-bottom:6px;'>{_title}</div>"
-                    f"<div style='font-size:13px;color:rgba(255,255,255,0.50);line-height:1.6;'>{_desc}</div>"
+                    f"<div style='font-size:13px;color:rgba(255,255,255,0.58);line-height:1.6;'>{_desc}</div>"
                     f"</div>",
                     unsafe_allow_html=True,
                 )
@@ -816,24 +824,27 @@ if step == 1:
 
         st.markdown("<div style='border-top:1px solid rgba(255,255,255,0.07);margin-top:16px;'></div>",
                     unsafe_allow_html=True)
-        ac0, ac1, ac2, ac3 = st.columns([2, 1, 1, 3])
-        with ac0:
+        tool_c0, tool_c1, tool_c2, _ = st.columns([2, 1, 1, 5])
+        with tool_c0:
             st.markdown(
                 f"<div style='display:flex;align-items:center;padding-top:6px;'>"
-                f"<span style='font-size:13px;color:rgba(255,255,255,0.5);'>"
+                f"<span style='font-size:13px;color:rgba(255,255,255,0.56);'>"
                 f"<span style='font-size:20px;font-weight:800;color:#00ffcc;font-family:Righteous,sans-serif;'>{n_sel}</span>"
                 f" / {len(songs)} ✓</span></div>",
                 unsafe_allow_html=True,
             )
-        with ac1:
+        with tool_c1:
             if st.button("✓ 全選", use_container_width=True):
                 st.session_state.selected_song_ids = [s["id"] for s in songs]
                 st.rerun()
-        with ac2:
+        with tool_c2:
             if st.button("✕ 清除", use_container_width=True):
                 st.session_state.selected_song_ids = []
                 st.rerun()
-        with ac3:
+
+        st.write("")
+        nav_l, _, nav_r = st.columns([1, 4, 1])
+        with nav_r:
             if st.button("🎨 概念方向 →", type="primary", use_container_width=True):
                 if not st.session_state.selected_song_ids:
                     st.warning("⚠️ 請至少選一首歌。")
@@ -1019,7 +1030,7 @@ elif step == 4:
 # ─────────────────────────────────────────────────────────────────────────────
 st.write("")
 st.markdown(
-    "<div style='text-align:center;color:rgba(255,255,255,0.50);font-size:11px;"
+    "<div style='text-align:center;color:rgba(255,255,255,0.56);font-size:11px;"
     "letter-spacing:1px;margin-top:48px;'>sLoth rAdio · YouTube Title Studio · Powered by Gemini</div>",
     unsafe_allow_html=True,
 )
