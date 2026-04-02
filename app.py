@@ -512,8 +512,8 @@ Return a single JSON object with these exact keys:
 - "long_story_zh": Traditional Chinese translation of long_story, equally poetic
 - "short_story": Instagram-caption English with emojis (3-4 short paragraphs, ~130 words)
 - "short_story_zh": Traditional Chinese translation of short_story
-- "titles": JSON array of 12 SEO-optimized YouTube titles in English. STRICT FORMAT for each: "{Catchy Short Name}… {Genre e.g. Chill Lofi/Cozy R&B/Soothing Jazz} for {Use-Case Keywords} {emoji} {emoji}". Example: "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm ☕ 🌙". The short name must be 2-5 evocative words, the subtitle must include a genre keyword (Lofi/R&B/Jazz) plus 2-3 use-case words joined by commas or '&'. End with exactly 2 emojis.
-- "titles_zh": JSON array of 12 matching Traditional Chinese YouTube titles in SAME format: "{中文短標題}… {類型} for {用途關鍵字} {emoji} {emoji}"
+- "titles": JSON array of 12 SEO-optimized YouTube titles in English, RANKED from highest to lowest predicted click-through rate. STRICT FORMAT for each: "{Catchy Short Name}… {Genre e.g. Chill Lofi/Cozy R&B/Soothing Jazz} for {Use-Case Keywords} {emoji} {emoji}". Example: "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm ☕ 🌙". The short name must be 2-5 evocative words, the subtitle must include a genre keyword (Lofi/R&B/Jazz) plus 2-3 use-case words joined by commas or '&'. End with exactly 2 emojis. Put the title you predict will get the MOST clicks first.
+- "titles_zh": JSON array of 12 matching Traditional Chinese YouTube titles in SAME format and SAME ranking order
 - "tags": comma-separated string of 35-45 YouTube SEO tags, mix broad and niche lofi keywords
 
 Return ONLY a valid JSON object. No markdown, no explanation."""
@@ -549,9 +549,8 @@ _BASE_CSS = (
     ".content { color: rgba(255,255,255,0.75); font-size: 15px; line-height: 1.85; }"
     ".btn-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-bottom: 12px; }"
     ".sec { margin-bottom: 20px; }"
-    ".title-bullet { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }"
-    ".title-bullet:last-child { border-bottom: none; }"
-    ".bullet-dot { color: rgba(255,255,255,0.45); font-size: 18px; flex-shrink: 0; line-height: 1.4; }"
+    ".title-row { display: flex; align-items: flex-start; gap: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 18px; margin-bottom: 8px; }"
+    ".tnum { font-size: 14px; color: #00ffcc; flex-shrink: 0; padding-top: 2px; min-width: 28px; font-weight: 700; }"
     ".ttxt-wrap { flex: 1; } .ttxt { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.92); line-height: 1.55; }"
     ".tag-pill { display: inline-block; background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.2); border-radius: 20px; padding: 3px 11px; margin: 3px; color: #00ffcc; font-size: 13px; font-weight: 500; }"
     ".song-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }"
@@ -619,11 +618,9 @@ def _story_sec(label: str, en: str, zh: str) -> str:
 
 def _titles_sec(titles_en: list, titles_zh: list) -> str:
     pairs = list(zip(titles_en, titles_zh or titles_en))
-    all_en = "\n".join(en for en, _ in pairs)
-    all_zh = "\n".join(zh for _, zh in pairs)
     rows = "".join(
-        f'<div class="title-bullet">'
-        f'<span class="bullet-dot">&bull;</span>'
+        f'<div class="title-row">'
+        f'<span class="tnum">#{i}</span>'
         f'<div class="ttxt-wrap">'
         f'<span class="en-block ttxt">{_he(en)}</span>'
         f'<span class="zh-block ttxt" style="display:none">{_he(zh)}</span>'
@@ -631,18 +628,16 @@ def _titles_sec(titles_en: list, titles_zh: list) -> str:
         f'<button class="copy-btn" style="flex-shrink:0;align-self:center;padding:3px 8px;font-size:11px;"'
         f' data-en="{_ae(en)}" data-zh="{_ae(zh)}" onclick="doCopyBi(this)">複製</button>'
         f'</div>'
-        for en, zh in pairs
+        for i, (en, zh) in enumerate(pairs, 1)
     )
     return (
         f'<div class="sec" data-lang="en">'
         f'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
         f'<div class="lbl" style="margin:0;">🏆 High-Click Titles'
         f'&nbsp;<span style="color:rgba(255,255,255,0.50);font-size:12px;font-weight:400;letter-spacing:0;">'
-        f'{len(pairs)} titles</span></div>'
-        f'<div style="display:flex;gap:6px;">'
+        f'{len(pairs)} titles · ranked by CTR</span></div>'
         f'<button class="trans-btn" onclick="toggleLang(this)">🌐 中文</button>'
-        f'<button class="copy-btn" data-en="{_ae(all_en)}" data-zh="{_ae(all_zh)}" onclick="doCopyBi(this)">全部複製</button>'
-        f'</div></div>'
+        f'</div>'
         f'{rows}</div>'
     )
 
