@@ -1,198 +1,303 @@
 """
-sLoth rAdio · Title Studio
-YouTube SEO Pipeline powered by Google Gemini AI
+sLoth rAdio · Title Studio — Dynamic Wizard Mode (DEMO)
+No API key required. Uses mock data to demonstrate the 4-step wizard flow.
 
 UI Language: Traditional Chinese
 Design: OLED Dark + Neon Teal (#00ffcc / #b026ff)
 """
 
-import json
+import time
 import streamlit as st
-from PIL import Image
-
-try:
-    from google import genai
-    from google.genai import types as genai_types
-except ImportError:
-    st.error(
-        "❌ **缺少 `google-genai` 套件**\n\n"
-        "請在 Streamlit Cloud 管理頁面：\n"
-        "1. 點擊右下角 **Manage app**\n"
-        "2. 點擊 **Reboot** 或三點選單中的 **Clear cache and deploy**\n\n"
-        "如問題持續，請確認 `requirements.txt` 中包含 `google-genai>=1.0.0`"
-    )
-    st.stop()
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  PAGE CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="sLoth rAdio · Title Studio",
+    page_title="sLoth rAdio · Title Studio (Demo)",
     page_icon="🎵",
     layout="wide",
 )
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  GLOBAL CSS  ── OLED Dark + Bento Grid design system
+#  GLOBAL CSS  ── OLED Dark + Neon Cyberpunk design system
 # ─────────────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap&font-display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap');
 
+/* ── Base ── */
 html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; color-scheme: dark; }
 .stApp {
     background-color: #0A0A14 !important;
-    background-image: radial-gradient(rgba(0,255,204,0.03) 1px, transparent 1px) !important;
-    background-size: 30px 30px !important;
+    background-image:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(0,255,204,0.04) 0%, transparent 60%),
+        radial-gradient(rgba(0,255,204,0.025) 1px, transparent 1px) !important;
+    background-size: 100% 100%, 30px 30px !important;
 }
-.block-container { padding: 2rem 2.5rem 4rem !important; max-width: 1280px !important; }
+.block-container { padding: 1.5rem 2.5rem 3rem !important; max-width: 1200px !important; }
 .stApp > header { background: transparent !important; }
 
-@keyframes gradient-text {
-    0%   { background-position: 0% 50%; }
-    50%  { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+/* ── Animations ── */
+@keyframes gradient-text { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+@keyframes neon-breathe { 0%, 100% { box-shadow: 0 0 8px rgba(0,255,204,0.15), inset 0 0 8px rgba(0,255,204,0.03); } 50% { box-shadow: 0 0 16px rgba(0,255,204,0.28), inset 0 0 12px rgba(0,255,204,0.05); } }
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
-.app-title {
-    font-family: 'Righteous', sans-serif; font-size: 38px; font-weight: 400;
-    letter-spacing: 1px;
-    background: linear-gradient(270deg, #00ffcc, #b026ff, #00E676, #00ffcc);
-    background-size: 300% 300%;
+
+/* ── Header ── */
+.hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.hdr-left { display: flex; align-items: baseline; gap: 14px; }
+.hdr-title {
+    font-family: 'Righteous', sans-serif; font-size: 32px; font-weight: 400; letter-spacing: 1px;
+    background: linear-gradient(270deg, #00ffcc, #b026ff, #00E676, #00ffcc); background-size: 300% 300%;
     animation: gradient-text 5s ease 1 forwards;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    margin: 0; line-height: 1.2;
 }
-@media (prefers-reduced-motion: reduce) {
-    .app-title { animation: none !important; }
-    * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
-}
-.app-subtitle { color: rgba(255,255,255,0.52); font-size: 12px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
-
-/* Pipeline Stepper */
-.stepper { display: flex; align-items: center; gap: 0; margin: 28px 0 32px; }
-.step-item { display: flex; align-items: center; gap: 10px; flex: 1; }
-.step-item:last-child { flex: 0; }
-.step-dot { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.45); background: transparent; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.45); flex-shrink: 0; transition: all 0.3s ease; }
-.step-dot.active { border-color: #00ffcc; background: rgba(0,255,204,0.16); color: #00ffcc; box-shadow: 0 0 18px rgba(0,255,204,0.55), 0 0 6px rgba(0,255,204,0.75); }
-.step-dot.done { border-color: rgba(0,255,204,0.5); background: rgba(0,255,204,0.08); color: rgba(0,255,204,0.7); }
-.step-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.55); white-space: nowrap; }
-.step-label.active { color: #00ffcc; font-weight: 700; }
-.step-label.done { color: rgba(0,255,204,0.5); }
-.step-connector { height: 1px; background: rgba(255,255,255,0.08); flex: 1; margin: 0 12px; }
-.step-connector.done { background: rgba(0,255,204,0.25); }
-
-/* Section headings */
-.section-heading { font-family: 'Righteous', sans-serif; font-size: 20px; color: #FFFFFF; margin: 0 0 6px; letter-spacing: 0.5px; }
-.section-sub { font-size: 14px; color: rgba(255,255,255,0.55); margin: 0 0 24px; }
-
-/* Result cards */
-.result-card { background: rgba(10,10,20,0.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
-.result-label { font-size: 12px; font-weight: 600; color: #00ffcc; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
-
-/* Song Cards */
-[data-testid="stVerticalBlock"]:has(button:has(p:nth-of-type(5)))
-    > div[data-testid="element-container"] {
-    height: 260px !important; min-height: 260px !important; max-height: 260px !important;
-    overflow: hidden !important; flex-shrink: 0 !important; padding: 0 !important; margin: 0 0 8px 0 !important;
-}
-[data-testid="stVerticalBlock"]:has(button:has(p:nth-of-type(5)))
-    > div[data-testid="element-container"]
-    > [data-testid="stBaseButtonContainer"],
-[data-testid="stVerticalBlock"]:has(button:has(p:nth-of-type(5)))
-    > div[data-testid="element-container"]
-    > div[class*="ButtonContainer"] {
-    height: 260px !important; max-height: 260px !important; overflow: hidden !important; padding: 0 !important; margin: 0 !important;
-}
-button[data-testid^="baseButton"]:has(p:nth-of-type(5)),
-button[data-testid^="stBaseButton"]:has(p:nth-of-type(5)) {
-    border-radius: 14px !important; padding: 16px 18px !important; width: 100% !important;
-    height: 260px !important; min-height: 260px !important; max-height: 260px !important;
-    display: flex !important; flex-direction: column !important; align-items: flex-start !important;
-    justify-content: flex-start !important; text-align: left !important; white-space: normal !important;
-    overflow: hidden !important; cursor: pointer !important; position: relative !important;
-    transition: border-color 0.2s, background 0.2s, transform 0.18s, box-shadow 0.2s !important;
-}
-button[data-testid="baseButton-secondary"]:has(p:nth-of-type(5)) { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.1) !important; box-shadow: none !important; }
-button[data-testid="baseButton-secondary"]:has(p:nth-of-type(5)):hover { background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.45) !important; transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important; }
-button[data-testid="baseButton-primary"]:has(p:nth-of-type(5)),
-button[data-testid="stBaseButton-primary"]:has(p:nth-of-type(5)) { background: rgba(255,255,255,0.04) !important; border: 1.5px solid #00ffcc !important; box-shadow: 0 0 12px rgba(0,255,204,0.18) !important; }
-button[data-testid="baseButton-primary"]:has(p:nth-of-type(5)):hover,
-button[data-testid="stBaseButton-primary"]:has(p:nth-of-type(5)):hover { transform: translateY(-2px) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 12px rgba(0,255,204,0.4) !important; }
-
-/* Song card typography */
-button:has(p:nth-of-type(5)) p { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-button:has(p:nth-of-type(5)) p:nth-of-type(1) { font-size: 11px !important; font-weight: 700 !important; letter-spacing: 1.5px !important; color: rgba(255,255,255,0.45) !important; margin-bottom: 10px !important; line-height: 1 !important; }
-button[data-testid="baseButton-primary"]:has(p:nth-of-type(5)) p:nth-of-type(1) { color: #00ffcc !important; }
-button:has(p:nth-of-type(5)) p:nth-of-type(2) { font-size: 16px !important; font-weight: 700 !important; line-height: 1.3 !important; margin-bottom: 4px !important; }
-button:has(p:nth-of-type(5)) p:nth-of-type(2) strong { color: #FFFFFF !important; }
-button:has(p:nth-of-type(5)) p:nth-of-type(3) { font-size: 13px !important; color: rgba(255,255,255,0.56) !important; letter-spacing: 0.5px !important; margin-bottom: 12px !important; line-height: 1.3 !important; padding-bottom: 10px !important; border-bottom: 1px solid rgba(255,255,255,0.08) !important; }
-button[data-testid="baseButton-primary"]:has(p:nth-of-type(5)) p:nth-of-type(3) { color: rgba(255,255,255,0.68) !important; border-bottom-color: rgba(0,255,204,0.18) !important; }
-button:has(p:nth-of-type(5)) p:nth-of-type(4) { font-size: 13px !important; color: rgba(255,255,255,0.75) !important; line-height: 1.58 !important; margin-bottom: 4px !important; display: -webkit-box !important; -webkit-line-clamp: 2 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; }
-button:has(p:nth-of-type(5)) p:nth-of-type(5) { display: -webkit-box !important; -webkit-line-clamp: 2 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; }
-button:has(p:nth-of-type(5)) p:nth-of-type(5) em { font-size: 12px !important; font-style: normal !important; color: rgba(255,255,255,0.58) !important; line-height: 1.58 !important; }
-
-/* Concept cards */
-button[data-testid^="baseButton"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))),
-button[data-testid^="stBaseButton"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))) {
-    border-radius: 14px !important; padding: 18px 20px !important; width: 100% !important;
-    min-height: 96px !important; height: auto !important; display: flex !important;
-    flex-direction: column !important; align-items: flex-start !important; justify-content: center !important;
-    text-align: left !important; white-space: normal !important; cursor: pointer !important; transition: all 0.2s ease !important;
-}
-button:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))) p:nth-of-type(1) { font-size: 14px !important; font-weight: 700 !important; color: #FFFFFF !important; margin-bottom: 6px !important; line-height: 1.2 !important; }
-button:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))) p:nth-of-type(2) { font-size: 13px !important; color: rgba(255,255,255,0.58) !important; line-height: 1.5 !important; }
-button[data-testid="baseButton-secondary"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))):hover { background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.45) !important; transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important; }
-button[data-testid="baseButton-primary"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))):hover,
-button[data-testid="stBaseButton-primary"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))):hover { transform: translateY(-2px) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 12px rgba(0,255,204,0.4) !important; }
-
-/* CSS variables & theme */
-:root { --primary-color: #00ffcc !important; }
-button:focus, button:focus-visible { outline: 2px solid rgba(0,255,204,0.50) !important; outline-offset: 2px !important; box-shadow: none !important; }
-
-/* All buttons */
-button[data-testid^="baseButton"], button[data-testid^="stBaseButton"] { cursor: pointer !important; }
-
-/* Primary buttons */
-button[data-testid="baseButton-primary"]:not(:has(p:nth-of-type(5))),
-button[data-testid="stBaseButton-primary"]:not(:has(p:nth-of-type(5))) {
-    background: linear-gradient(135deg, rgba(0,255,204,0.13) 0%, rgba(176,38,255,0.10) 100%) !important;
-    border: 1px solid rgba(0,255,204,0.42) !important; color: #ccfff5 !important;
-    font-weight: 600 !important; transition: all 0.25s ease !important;
-}
-button[data-testid="baseButton-primary"]:not(:has(p:nth-of-type(5))) p,
-button[data-testid="stBaseButton-primary"]:not(:has(p:nth-of-type(5))) p { color: #ccfff5 !important; }
-button[data-testid="baseButton-primary"]:not(:has(p:nth-of-type(5))):hover,
-button[data-testid="stBaseButton-primary"]:not(:has(p:nth-of-type(5))):hover {
-    background: linear-gradient(135deg, rgba(0,255,204,0.20) 0%, rgba(176,38,255,0.16) 100%) !important;
-    border-color: rgba(0,255,204,0.65) !important; transform: translateY(-1px) !important;
-    box-shadow: 0 0 22px rgba(0,255,204,0.16) !important;
+.hdr-sub { color: rgba(255,255,255,0.40); font-size: 11px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; }
+.demo-pill {
+    display: inline-block; background: rgba(255,180,0,0.10); border: 1px solid rgba(255,180,0,0.25);
+    border-radius: 20px; padding: 2px 12px; font-size: 10px; font-weight: 700;
+    color: rgba(255,180,0,0.85); letter-spacing: 1.5px; text-transform: uppercase; vertical-align: middle; margin-left: 10px;
 }
 
-/* Secondary buttons */
-button[data-testid="baseButton-secondary"]:not(:has(p:nth-of-type(5))),
-button[data-testid="stBaseButton-secondary"]:not(:has(p:nth-of-type(5))) {
-    background: rgba(255,255,255,0.03) !important; border: 1px solid rgba(255,255,255,0.10) !important;
-    color: rgba(255,255,255,0.62) !important; transition: all 0.25s ease !important;
+/* ── Stepper ── */
+.stepper { display: flex; align-items: center; margin: 16px 0 24px; }
+.s-item { display: flex; align-items: center; gap: 8px; }
+.s-item:not(:last-child) { flex: 1; }
+.s-dot {
+    width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0; transition: all 0.3s ease;
+    border: 2px solid rgba(255,255,255,0.20); color: rgba(255,255,255,0.30); background: transparent;
 }
-button[data-testid="baseButton-secondary"]:not(:has(p:nth-of-type(5))):hover,
-button[data-testid="stBaseButton-secondary"]:not(:has(p:nth-of-type(5))):hover {
-    background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.20) !important;
-    color: rgba(255,255,255,0.88) !important; box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
+.s-dot.active { border-color: #00ffcc; color: #00ffcc; background: rgba(0,255,204,0.12); box-shadow: 0 0 14px rgba(0,255,204,0.5); }
+.s-dot.done { border-color: rgba(0,255,204,0.4); color: rgba(0,255,204,0.6); background: rgba(0,255,204,0.06); }
+.s-lbl { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.35); white-space: nowrap; }
+.s-lbl.active { color: #00ffcc; font-weight: 700; }
+.s-lbl.done { color: rgba(0,255,204,0.45); }
+.s-line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); margin: 0 14px; }
+.s-line.done { background: linear-gradient(90deg, rgba(0,255,204,0.3), rgba(0,255,204,0.08)); }
+
+/* ── Glass Container ── */
+.glass {
+    background: rgba(14,14,24,0.75); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 20px;
+    padding: 36px 40px 32px; margin-bottom: 20px; position: relative; overflow: hidden;
+}
+.glass::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,204,0.15), rgba(176,38,255,0.1), transparent);
 }
 
-/* Inputs */
-[data-baseweb="input"] { background: rgba(255,255,255,0.04) !important; border-color: rgba(255,255,255,0.10) !important; border-radius: 10px !important; }
-[data-baseweb="input"]:focus-within, [data-baseweb="textarea"]:focus-within { border-color: rgba(0,255,204,0.52) !important; box-shadow: 0 0 0 2px rgba(0,255,204,0.10) !important; }
+/* ── Section text ── */
+.sec-title { font-family: 'Righteous', sans-serif; font-size: 22px; color: #FFFFFF; margin: 0 0 4px; letter-spacing: 0.5px; }
+.sec-desc { font-size: 13px; color: rgba(255,255,255,0.45); margin: 0 0 28px; line-height: 1.6; }
 
-/* Misc */
-hr { border-color: rgba(255,255,255,0.06) !important; }
+/* ── Card-style buttons (icon + name, 2 paragraphs) ── */
+button[data-testid^="baseButton"]:has(p:nth-of-type(2)),
+button[data-testid^="stBaseButton"]:has(p:nth-of-type(2)) {
+    min-height: 100px !important; height: 100px !important;
+    display: flex !important; flex-direction: column !important;
+    justify-content: center !important; align-items: center !important;
+    text-align: center !important; white-space: normal !important;
+    padding: 12px 8px !important; gap: 0 !important;
+}
+button:has(p:nth-of-type(2)) p { margin: 0 !important; padding: 0 !important; }
+button:has(p:nth-of-type(2)) p:nth-of-type(1) { font-size: 28px !important; line-height: 1.2 !important; margin-bottom: 6px !important; }
+button:has(p:nth-of-type(2)) p:nth-of-type(2) { font-size: 13px !important; font-weight: 600 !important; }
+button[data-testid="baseButton-secondary"]:has(p:nth-of-type(2)) p:nth-of-type(2) { color: rgba(255,255,255,0.75) !important; }
+
+/* ── All buttons base ── */
+button[data-testid^="baseButton"], button[data-testid^="stBaseButton"] {
+    cursor: pointer !important; border-radius: 14px !important; transition: all 0.25s ease !important;
+}
+
+/* ── Secondary (unselected) ── */
+button[data-testid="baseButton-secondary"],
+button[data-testid="stBaseButton-secondary"] {
+    background: rgba(255,255,255,0.025) !important; border: 1.5px solid rgba(255,255,255,0.10) !important;
+    color: rgba(255,255,255,0.55) !important;
+}
+button[data-testid="baseButton-secondary"]:hover,
+button[data-testid="stBaseButton-secondary"]:hover {
+    background: rgba(255,255,255,0.06) !important; border-color: rgba(255,255,255,0.30) !important;
+    transform: translateY(-2px) !important; box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+
+/* ── Primary (selected / action) ── */
+button[data-testid="baseButton-primary"],
+button[data-testid="stBaseButton-primary"] {
+    background: linear-gradient(135deg, rgba(0,255,204,0.08), rgba(176,38,255,0.06)) !important;
+    border: 1.5px solid rgba(0,255,204,0.50) !important; color: #00ffcc !important;
+    font-weight: 600 !important; animation: neon-breathe 3s ease-in-out infinite !important;
+}
+button[data-testid="baseButton-primary"] p,
+button[data-testid="stBaseButton-primary"] p { color: #00ffcc !important; }
+button[data-testid="baseButton-primary"]:hover,
+button[data-testid="stBaseButton-primary"]:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 0 28px rgba(0,255,204,0.25), 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+
+/* ── Info / Review cards ── */
+.info-card {
+    background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; padding: 18px 22px; margin-bottom: 16px;
+}
+.review-card {
+    background: rgba(176,38,255,0.04); border-left: 3px solid #b026ff;
+    border-radius: 0 14px 14px 0; padding: 20px 24px; margin-bottom: 20px;
+}
+.review-label { font-size: 11px; font-weight: 600; color: #b026ff; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 8px; }
+.review-text { color: rgba(255,255,255,0.65); font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
+
+/* ── Chip / pill ── */
+.chip {
+    display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; margin: 3px 4px;
+}
+.chip-teal { background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.25); color: #00ffcc; }
+.chip-purple { background: rgba(176,38,255,0.08); border: 1px solid rgba(176,38,255,0.25); color: #b026ff; }
+
+/* ── Card description (under buttons) ── */
+.card-desc { text-align: center; font-size: 11px; color: rgba(255,255,255,0.38); margin-top: 6px; line-height: 1.4; }
+
+/* ── Counter ── */
+.counter { text-align: center; margin: 12px 0 4px; font-size: 13px; color: rgba(255,255,255,0.40); }
+.counter b { font-size: 20px; font-family: 'Righteous', sans-serif; }
+.counter b.teal { color: #00ffcc; }
+.counter b.purple { color: #b026ff; }
+
+/* ── Feature cards ── */
+.feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
+.feat-card {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px; padding: 28px 20px; text-align: center; transition: all 0.25s ease;
+}
+.feat-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-2px); }
+.feat-icon { font-size: 28px; margin-bottom: 12px; }
+.feat-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.80); margin-bottom: 6px; }
+.feat-desc { font-size: 12px; color: rgba(255,255,255,0.42); line-height: 1.6; }
+
+/* ── Nav spacer ── */
+.nav-spacer { height: 12px; }
+
+/* ── Inputs ── */
+[data-baseweb="textarea"] { border-radius: 14px !important; }
+[data-baseweb="textarea"] textarea { background: rgba(255,255,255,0.03) !important; color: rgba(255,255,255,0.85) !important; font-size: 14px !important; line-height: 1.7 !important; }
+[data-baseweb="textarea"]:focus-within { border-color: rgba(0,255,204,0.45) !important; box-shadow: 0 0 0 2px rgba(0,255,204,0.08), 0 0 20px rgba(0,255,204,0.06) !important; }
+
+/* ── Misc ── */
+hr { border-color: rgba(255,255,255,0.05) !important; }
 a, a:visited { color: #00ffcc !important; }
-[data-testid="stImage"] img { border-radius: 12px !important; border: 1px solid rgba(255,255,255,0.10) !important; }
-[data-testid="stFileUploaderDropzone"] { background: rgba(255,255,255,0.02) !important; border: 1.5px dashed rgba(255,255,255,0.12) !important; border-radius: 12px !important; }
+button:focus, button:focus-visible { outline: 2px solid rgba(0,255,204,0.45) !important; outline-offset: 2px !important; }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-thumb { background: rgba(0,255,204,0.38); border-radius: 2px; }
+::-webkit-scrollbar-thumb { background: rgba(0,255,204,0.30); border-radius: 2px; }
+.stSlider > div { padding-left: 0 !important; }
+
+/* ── Footer ── */
+.footer { text-align: center; color: rgba(255,255,255,0.25); font-size: 10px; letter-spacing: 2px; margin-top: 40px; text-transform: uppercase; }
 </style>
 """, unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  MOCK DATA  ── realistic lofi-themed content for demo
+# ─────────────────────────────────────────────────────────────────────────────
+_MOCK_TITLES_EN = [
+    "Midnight Pages… Chill Lofi for Late Night Study & Focus 📚 🌙",
+    "Rainy Café Daydream… Cozy Lofi for Relaxation & Calm ☕ 🌧️",
+    "Warm Silence… Soothing Jazz Lofi for Sleep & Comfort 🕯️ 💤",
+    "Paper & Ink… Gentle Lofi for Writing, Reading & Peace ✒️ 🍃",
+    "Golden Hour Drift… Soft Lofi for Afternoon Chill & Vibes 🌅 🎧",
+]
+_MOCK_TITLES_ZH = [
+    "午夜書頁… 深夜讀書＆專注的 Chill Lofi 📚 🌙",
+    "雨天咖啡白日夢… 放鬆＆平靜的溫暖 Lofi ☕ 🌧️",
+    "溫暖的沉默… 助眠＆舒適的爵士 Lofi 🕯️ 💤",
+    "紙與墨… 書寫、閱讀＆寧靜的輕柔 Lofi ✒️ 🍃",
+    "金色時光漫遊… 午後放鬆＆氛圍的柔和 Lofi 🌅 🎧",
+]
+_MOCK_TAGS = (
+    "lofi, lofi music, chill lofi, lofi hip hop, lofi beats, study music, "
+    "relax music, chill music, cozy lofi, rainy day lofi, lofi cafe, "
+    "late night lofi, lofi jazz, soothing music, ambient lofi, sleep lofi, "
+    "focus music, lo-fi, chillhop, lofi radio, lofi mix, soft lofi, "
+    "reading music, writing music, peaceful music, calm beats, "
+    "midnight study lofi, rainy cafe ambience, warm lofi vibes, "
+    "aesthetic lofi, lofi for work, deep focus lofi, cozy night lofi, "
+    "gentle piano lofi, autumn lofi, winter lofi playlist, lofi 2024, "
+    "morning coffee lofi, sunday lofi, healing lofi beats"
+)
+_MOCK_LONG_STORY_EN = (
+    "You sit by the window, watching raindrops trace slow paths down the glass. "
+    "The café is nearly empty — just you, a half-finished cup of tea, and the quiet hum of a lofi playlist "
+    "drifting from somewhere behind the counter.\n\n"
+    "Outside, the city feels far away. Streetlights blur into soft halos through the rain, "
+    "and the occasional car passes like a whisper. You open your notebook, but there's no rush to write. "
+    "Tonight, just being here is enough.\n\n"
+    "The barista wipes down the espresso machine with practiced ease, glancing at the clock but never hurrying. "
+    "A stack of old paperbacks sits on the shelf by the door — someone left them here months ago, "
+    "and now they belong to no one and everyone.\n\n"
+    "You pick up your pen. The first sentence comes slowly, then another, then a whole paragraph "
+    "that feels like it was always waiting inside you. The rain keeps its gentle rhythm, "
+    "and the lofi beats carry you forward, one soft note at a time.\n\n"
+    "When you finally look up, the tea has gone cold and the rain has stopped. "
+    "But the words on the page glow warm, and you smile — knowing that some of the best things "
+    "are written in the quiet hours, when no one is watching."
+)
+_MOCK_LONG_STORY_ZH = (
+    "你坐在窗邊，看著雨滴在玻璃上緩緩滑落。咖啡廳裡幾乎空無一人——"
+    "只有你、一杯喝了一半的茶，和從吧台後方某處飄來的 lofi 音樂。\n\n"
+    "窗外，城市彷彿很遙遠。街燈在雨中暈成柔和的光圈，"
+    "偶爾有車經過，像一聲低語。你翻開筆記本，但不急著寫。"
+    "今夜，就只是待在這裡，已經足夠。\n\n"
+    "咖啡師熟練地擦拭義式咖啡機，看了一眼時鐘，卻從不趕時間。"
+    "門邊的書架上放著一疊舊平裝書——幾個月前有人留下的，"
+    "現在它們不屬於任何人，又屬於每個人。\n\n"
+    "你拿起筆。第一句話來得很慢，然後又一句，接著是一整段——"
+    "那些文字彷彿一直在你心裡等候。雨聲保持著溫柔的節奏，"
+    "lofi 的音符帶著你前行，一個柔和的音符接著一個。\n\n"
+    "當你終於抬起頭，茶已經涼了，雨也停了。"
+    "但紙上的文字散發著溫暖的光，你微笑——因為最好的東西，"
+    "往往是在安靜的時刻、無人注視時寫下的。"
+)
+_MOCK_SHORT_STORY_EN = (
+    "Late night. Warm lights. A half-finished cup of tea and nowhere to be. ☕🌙\n\n"
+    "The rain taps gently on the window while lofi melodies fill the quiet corners of the café. "
+    "You write. You dream. You breathe. 📝✨\n\n"
+    "Some nights don't need a plan — just a playlist, a pen, and the permission to simply exist. "
+    "This is one of those nights. 🌧️💫\n\n"
+    "Stay cozy. Stay curious. The best stories begin in silence. 🍃"
+)
+_MOCK_SHORT_STORY_ZH = (
+    "深夜。暖光。一杯喝了一半的茶，哪裡也不用去。☕🌙\n\n"
+    "雨輕輕敲著窗戶，lofi 旋律填滿了咖啡廳安靜的角落。"
+    "你書寫。你做夢。你呼吸。📝✨\n\n"
+    "有些夜晚不需要計畫——只需要一張播放清單、一支筆，"
+    "和允許自己單純存在的勇氣。今夜就是這樣的夜晚。🌧️💫\n\n"
+    "保持溫暖。保持好奇。最好的故事，始於寂靜。🍃"
+)
+_MOCK_TRACKLIST = [
+    {"id": 1, "en_title": "Midnight Pages", "zh_title": "午夜書頁",
+     "en_theme": "Quiet pen scratches under a dim desk lamp", "zh_theme": "昏暗檯燈下筆尖沙沙的聲音"},
+    {"id": 2, "en_title": "Rainy Café", "zh_title": "雨天咖啡館",
+     "en_theme": "Raindrops on glass and the scent of fresh brew", "zh_theme": "玻璃上的雨滴和新煮咖啡的香氣"},
+    {"id": 3, "en_title": "Paper & Ink", "zh_title": "紙與墨",
+     "en_theme": "A worn journal filled with half-finished thoughts", "zh_theme": "一本寫滿未完思緒的舊日記"},
+    {"id": 4, "en_title": "Warm Silence", "zh_title": "溫暖的沉默",
+     "en_theme": "Two cups of tea, no words needed", "zh_theme": "兩杯茶，不需要言語"},
+    {"id": 5, "en_title": "Golden Hour Drift", "zh_title": "金色時光漫遊",
+     "en_theme": "Sunlight fading through linen curtains", "zh_theme": "陽光透過亞麻窗簾漸漸消逝"},
+    {"id": 6, "en_title": "Autumn Letters", "zh_title": "秋日信箋",
+     "en_theme": "A letter you meant to send but never did", "zh_theme": "一封你想寄出卻始終沒寄的信"},
+    {"id": 7, "en_title": "Foggy Window Sill", "zh_title": "霧氣窗台",
+     "en_theme": "Drawing shapes on a fogged-up window", "zh_theme": "在起霧的玻璃上隨手畫圖案"},
+    {"id": 8, "en_title": "Bookshop Lullaby", "zh_title": "書店搖籃曲",
+     "en_theme": "Old books and the creak of wooden floors", "zh_theme": "舊書和木地板的吱嘎聲"},
+    {"id": 9, "en_title": "Slow Morning", "zh_title": "緩慢的早晨",
+     "en_theme": "No alarm, just birdsong and soft light", "zh_theme": "沒有鬧鐘，只有鳥鳴和柔光"},
+    {"id": 10, "en_title": "Last Train Home", "zh_title": "末班車回家",
+     "en_theme": "City lights blurring past a tired smile", "zh_theme": "城市燈光在疲倦的微笑前模糊而過"},
+]
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -200,334 +305,48 @@ a, a:visited { color: #00ffcc !important; }
 # ─────────────────────────────────────────────────────────────────────────────
 _DEFAULTS = {
     "step": 1,
-    "song_data": [],
-    "selected_song_ids": [],
-    "concept_options": [],
-    "selected_concept": None,
-    "final_results": {},
-    "n_songs": 10,
-    "_api_key": "",
-    "_api_key_verified": False,
-    "_model": "",         # model name confirmed working for this key
+    "selected_outputs": [],      # 想生成咩：titles / tags / long_story / short_story / tracklist
+    "existing_materials": [],    # 已有嘅材料（同樣 5 類）
+    "user_context": "",          # Step 3 用戶輸入
+    "n_songs": 15,               # 歌單數量
+    "results": {},               # AI / mock 結果
 }
 for k, v in _DEFAULTS.items():
     if k not in st.session_state:
         st.session_state[k] = v
 
 
-def next_step():
-    st.session_state.step += 1
-
-
-def go_to(n):
-    st.session_state.step = n
-
-
 def reset_pipeline():
-    for k in ("song_data", "selected_song_ids", "concept_options"):
-        st.session_state[k] = []
-    st.session_state.selected_concept = None
-    st.session_state.final_results = {}
-    st.session_state.step = 1
+    for k, v in _DEFAULTS.items():
+        st.session_state[k] = v if not isinstance(
+            v, (list, dict)) else type(v)()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  GEMINI — API KEY VERIFICATION
-#  Strategy: try a curated list of current model names directly.
-#  models.list() is NOT used because it fails silently for many key types.
+#  MOCK AI  (demo mode — no API key needed)
 # ─────────────────────────────────────────────────────────────────────────────
-
-# Ordered by preference (newest flash first, then stable fallbacks)
-_MODEL_CANDIDATES = [
-    "gemini-2.5-flash-preview-04-17",
-    "gemini-2.5-pro-exp-03-25",
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
-    "gemini-2.0-flash-exp",
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-8b",
-    "gemini-1.5-pro",
-]
-
-
-def _try_model(client, model_name: str) -> tuple[bool, str]:
-    """Return (True, "") if successful, or (False, error_message)."""
-    try:
-        client.models.generate_content(
-            model=model_name,
-            contents="hi",
-            config=genai_types.GenerateContentConfig(max_output_tokens=1),
-        )
-        return True, ""
-    except Exception as e:
-        return False, str(e)
-
-
-def verify_api_key(key: str) -> tuple[bool, str]:
-    """
-    Verify an API key by trying each candidate model.
-    Returns (ok, model_name) on success, or (False, error_message) on failure.
-    """
-    if not key or not key.strip():
-        return False, "請輸入 API Key"
-    key = key.strip()
-    try:
-        client = genai.Client(api_key=key)
-    except Exception as e:
-        return False, f"無法建立 Gemini 客戶端：{e}"
-
-    last_error = ""
-    for model in _MODEL_CANDIDATES:
-        success, err_msg = _try_model(client, model)
-        if success:
-            return True, model   # 成功，回傳使用的 model 名稱
-        else:
-            last_error = err_msg  # 記錄錯誤訊息
-
-    return False, (
-        f"無法使用 Gemini API。\n"
-        f"❌ 伺服器真正錯誤訊息：{last_error}\n\n"
-        "可能原因：\n"
-        "⊙ API Key 無效或已過期\n"
-        "⊙ 地區 IP 限制（如果在香港執行，請確保 Terminal/IDE 有連上 VPN）"
-    )
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  SIDEBAR — API KEY INPUT & VERIFICATION
-# ─────────────────────────────────────────────────────────────────────────────
-with st.sidebar:
-    st.markdown(
-        "<div style='font-family:Righteous,sans-serif;font-size:18px;"
-        "color:#00ffcc;letter-spacing:1px;margin-bottom:12px;'>⚙️ 設定</div>",
-        unsafe_allow_html=True,
-    )
-
-    # Check Streamlit Secrets first
-    _secret_key = ""
-    try:
-        _secret_key = st.secrets.get("GEMINI_API_KEY", "")
-    except Exception:
-        pass
-
-    if _secret_key:
-        # Auto-verify on first load
-        if not st.session_state._api_key_verified:
-            st.session_state._api_key = _secret_key
-            with st.spinner("🔍 驗證 Secrets 金鑰中..."):
-                _ok, _result = verify_api_key(_secret_key)
-            if _ok:
-                st.session_state._api_key_verified = True
-                st.session_state._model = _result
-                st.rerun()
-            else:
-                st.error(f"❌ Secrets 金鑰驗證失敗：\n{_result}")
-        else:
-            _short = st.session_state._model.replace("models/", "")
-            st.markdown(
-                f"<div style='font-size:12px;color:rgba(0,255,204,0.8);padding:10px 12px;"
-                f"background:rgba(0,255,204,0.07);border:1px solid rgba(0,255,204,0.2);"
-                f"border-radius:8px;'>✅ Secrets 金鑰已驗證<br>"
-                f"<span style='color:rgba(255,255,255,0.50);font-size:11px;'>{_short}</span></div>",
-                unsafe_allow_html=True,
-            )
-    else:
-        # Manual input
-        _typed = st.text_input(
-            "🔑 Gemini API Key",
-            value=st.session_state._api_key,
-            type="password",
-            placeholder="AIza...",
-            help="前往 aistudio.google.com 免費取得",
-        )
-        # Reset verification if key changed
-        if _typed != st.session_state._api_key:
-            st.session_state._api_key = _typed
-            st.session_state._api_key_verified = False
-            st.session_state._model = ""
-
-        if st.session_state._api_key_verified:
-            _short = st.session_state._model.replace("models/", "")
-            st.markdown(
-                f"<div style='font-size:12px;color:rgba(0,255,204,0.8);padding:10px 12px;"
-                f"background:rgba(0,255,204,0.07);border:1px solid rgba(0,255,204,0.2);"
-                f"border-radius:8px;margin-top:6px;'>✅ 金鑰驗證通過<br>"
-                f"<span style='color:rgba(255,255,255,0.50);font-size:11px;'>{_short}</span></div>",
-                unsafe_allow_html=True,
-            )
-            if st.button("🔄 更換金鑰", use_container_width=True):
-                st.session_state._api_key = ""
-                st.session_state._api_key_verified = False
-                st.session_state._model = ""
-                st.rerun()
-
-        elif st.session_state._api_key:
-            if st.button("🔍 驗證金鑰", type="primary", use_container_width=True):
-                with st.spinner("驗證中，請稍候..."):
-                    _ok, _result = verify_api_key(st.session_state._api_key)
-                if _ok:
-                    st.session_state._api_key_verified = True
-                    st.session_state._model = _result
-                    st.rerun()
-                else:
-                    st.error(f"❌ 驗證失敗\n\n{_result}")
-        else:
-            st.markdown(
-                "<div style='font-size:12px;color:rgba(255,180,0,0.8);padding:8px 10px;"
-                "background:rgba(255,180,0,0.06);border:1px solid rgba(255,180,0,0.2);"
-                "border-radius:8px;margin-top:6px;'>⚠️ 請輸入 API Key 並驗證</div>",
-                unsafe_allow_html=True,
-            )
-
-    st.divider()
-    st.markdown(
-        "<div style='font-size:11px;color:rgba(255,255,255,0.56);line-height:1.7;'>"
-        "使用 Google Gemini API。<br>"
-        "Key 僅存於本次 session，<br>不會傳送至任何第三方。"
-        "</div>",
-        unsafe_allow_html=True,
-    )
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  API KEY GATE — block access until verified
-# ─────────────────────────────────────────────────────────────────────────────
-if not st.session_state._api_key_verified:
-    st.markdown("""
-    <div style='display:flex;flex-direction:column;align-items:center;
-         justify-content:center;padding:80px 20px;text-align:center;'>
-      <div style='margin-bottom:24px;color:#00ffcc;'>
-      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"></path>
-        <path d="m21 2-9.6 9.6"></path>
-        <circle cx="7.5" cy="15.5" r="5.5"></circle>
-      </svg>
-    </div>
-      <div style='font-family:Righteous,sans-serif;font-size:28px;
-           background:linear-gradient(90deg,#00ffcc,#b026ff);
-           -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-           margin-bottom:12px;'>Title Studio</div>
-      <div style='font-size:14px;color:rgba(255,255,255,0.45);
-           letter-spacing:1px;margin-bottom:32px;'>sLoth rAdio · Gemini AI</div>
-      <div style='font-size:15px;color:rgba(255,255,255,0.6);
-           background:rgba(255,255,255,0.04);
-           border:1px solid rgba(255,255,255,0.08);
-           border-radius:14px;padding:24px 32px;max-width:420px;line-height:2;'>
-        請在左側側欄輸入<br>
-        <span style='color:#00ffcc;font-weight:600;'>Gemini API Key</span>
-        並按下「驗證金鑰」<br>
-        驗證通過後即可使用 Title Studio。
-      </div>
-    </div>
-    """, unsafe_allow_html=True)
-    st.stop()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  GEMINI AI HELPERS  (only called after key is verified)
-# ─────────────────────────────────────────────────────────────────────────────
-def _gemini_client():
-    return genai.Client(api_key=st.session_state._api_key)
-
-
-def _call_json(prompt: str) -> dict | list | None:
-    """Call Gemini and parse JSON response. Returns None on failure."""
-    try:
-        client = _gemini_client()
-        resp = client.models.generate_content(
-            model=st.session_state._model,
-            contents=prompt,
-            config=genai_types.GenerateContentConfig(
-                temperature=0.9,
-                response_mime_type="application/json",
-            ),
-        )
-        return json.loads(resp.text)
-    except Exception as e:
-        st.warning(f"⚠️ Gemini 呼叫失敗：{e}")
-        return None
-
-
-def ai_generate_songs(n: int) -> list[dict]:
-    prompt = f"""You are a creative lofi music curator. Generate {n} unique lofi music track concepts.
-Return a JSON array with exactly {n} objects. Each object must have:
-- "en_title": evocative English title (2-5 words, poetic)
-- "zh_title": poetic Traditional Chinese translation (3-6 characters)
-- "en_theme": one vivid sensory English sentence (max 15 words) describing the mood/scene
-- "zh_theme": poetic Traditional Chinese translation of en_theme
-
-Aesthetics: cozy, introspective, lofi/chillhop everyday quiet moments.
-Return ONLY a valid JSON array. No markdown, no explanation."""
-    data = _call_json(prompt)
-    if not isinstance(data, list) or len(data) < 1:
-        return []
-    result = []
-    for i, item in enumerate(data[:n]):
-        result.append({
-            "id": i + 1,
-            "en_title": str(item.get("en_title", f"Track {i+1}")),
-            "zh_title": str(item.get("zh_title", f"曲目 {i+1}")),
-            "en_theme": str(item.get("en_theme", "")),
-            "zh_theme": str(item.get("zh_theme", "")),
-        })
+def mock_generate(selected_outputs: list, n_songs: int) -> dict:
+    """Simulate AI generation with mock data. Returns only the requested keys."""
+    time.sleep(1.5)  # 模擬 loading
+    result = {}
+    if "titles" in selected_outputs:
+        result["titles"] = _MOCK_TITLES_EN
+        result["titles_zh"] = _MOCK_TITLES_ZH
+    if "tags" in selected_outputs:
+        result["tags"] = _MOCK_TAGS
+    if "long_story" in selected_outputs:
+        result["long_story"] = _MOCK_LONG_STORY_EN
+        result["long_story_zh"] = _MOCK_LONG_STORY_ZH
+    if "short_story" in selected_outputs:
+        result["short_story"] = _MOCK_SHORT_STORY_EN
+        result["short_story_zh"] = _MOCK_SHORT_STORY_ZH
+    if "tracklist" in selected_outputs:
+        result["tracklist"] = _MOCK_TRACKLIST[:n_songs]
     return result
 
 
-def ai_generate_concepts(sel_songs: list[dict], vibe: str) -> list[tuple[str, str]]:
-    song_names = "、".join(s["zh_title"] for s in sel_songs[:6])
-    prompt = f"""You are a creative director for a lofi music YouTube channel.
-Songs: {song_names}
-Vibe keywords: "{vibe or '無特定氛圍'}"
-
-Generate exactly 3 distinct visual/story concept directions.
-Return a JSON array of 3 objects with:
-- "title": Traditional Chinese concept title with ONE leading emoji (max 10 chars total)
-- "desc": one atmospheric Traditional Chinese sentence describing the scene (max 30 chars)
-
-Make each concept different: vary time of day, setting, emotional angle.
-Return ONLY a valid JSON array. No markdown, no explanation."""
-    data = _call_json(prompt)
-    if not isinstance(data, list) or len(data) < 3:
-        return []
-    return [
-        (str(item.get("title", f"概念 {i+1}")), str(item.get("desc", "")))
-        for i, item in enumerate(data[:3])
-    ]
-
-
-def ai_generate_assets(sel_songs: list[dict], concept: str) -> dict:
-    song_list = "\n".join(
-        f"- {s['en_title']} / {s['zh_title']}: {s['en_theme']}"
-        for s in sel_songs
-    )
-    prompt = f"""You are a YouTube SEO copywriter for a lofi music channel called "sLoth rAdio".
-
-Songs in this video:
-{song_list}
-
-Creative concept: {concept}
-
-Return a single JSON object with these exact keys:
-- "long_story": atmospheric English prose (4-6 paragraphs, 280-380 words), second-person "you", immersive slice-of-life
-- "long_story_zh": Traditional Chinese translation of long_story, equally poetic
-- "short_story": Instagram-caption English with emojis (3-4 short paragraphs, ~130 words)
-- "short_story_zh": Traditional Chinese translation of short_story
-- "titles": JSON array of 12 SEO-optimized YouTube titles in English, RANKED from highest to lowest predicted click-through rate. STRICT FORMAT for each: "{{Catchy Short Name}}… {{Genre e.g. Chill Lofi/Cozy R&B/Soothing Jazz}} for {{Use-Case Keywords}} {{emoji}} {{emoji}}". Example: "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm ☕ 🌙". The short name must be 2-5 evocative words, the subtitle must include a genre keyword (Lofi/R&B/Jazz) plus 2-3 use-case words joined by commas or '&'. End with exactly 2 emojis. Put the title you predict will get the MOST clicks first.
-- "titles_zh": JSON array of 12 matching Traditional Chinese YouTube titles in SAME format and SAME ranking order
-- "tags": comma-separated string of 35-45 YouTube SEO tags, mix broad and niche lofi keywords
-
-Return ONLY a valid JSON object. No markdown, no explanation."""
-    data = _call_json(prompt)
-    if not isinstance(data, dict) or not data.get("long_story"):
-        return {}
-    for key in ("titles", "titles_zh"):
-        if not isinstance(data.get(key), list):
-            data[key] = []
-    return data
-
-
 # ─────────────────────────────────────────────────────────────────────────────
-#  HTML HELPERS  (dashboard iframes)
+#  HTML HELPERS  (dashboard iframes — reused from original)
 # ─────────────────────────────────────────────────────────────────────────────
 def _ae(t: str) -> str:
     return t.replace('&', '&amp;').replace('"', '&quot;').replace("'", '&#39;').replace('<', '&lt;').replace('>', '&gt;')
@@ -539,26 +358,28 @@ def _he(t: str) -> str:
 
 _BASE_CSS = (
     "* { box-sizing: border-box; margin: 0; padding: 0; }"
-    "html, body { background: transparent; font-family: 'Poppins', -apple-system, 'Segoe UI', sans-serif; overflow: hidden; }"
-    ".lbl { font-size: 12px; font-weight: 600; color: #00ffcc; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }"
-    ".card { background: rgba(10,10,20,0.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px 20px; }"
-    ".copy-btn { background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.25); border-radius: 6px; color: #00ffcc; font-size: 12px; font-weight: 600; padding: 4px 12px; cursor: pointer; font-family: inherit; transition: background 0.2s; }"
-    ".copy-btn:hover, .copy-btn.ok { background: rgba(0,255,204,0.2); border-color: rgba(0,255,204,0.5); cursor: pointer; }"
-    ".trans-btn { background: rgba(176,38,255,0.1); border: 1px solid rgba(176,38,255,0.3); border-radius: 6px; color: #b026ff; font-size: 12px; font-weight: 600; padding: 4px 10px; cursor: pointer; font-family: inherit; transition: background 0.2s; margin-right: 6px; }"
-    ".trans-btn:hover { background: rgba(176,38,255,0.22); border-color: rgba(176,38,255,0.55); cursor: pointer; }"
-    ".content { color: rgba(255,255,255,0.75); font-size: 15px; line-height: 1.85; }"
-    ".btn-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-bottom: 12px; }"
-    ".sec { margin-bottom: 20px; }"
-    ".title-row { display: flex; align-items: flex-start; gap: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 18px; margin-bottom: 8px; }"
-    ".tnum { font-size: 14px; color: #00ffcc; flex-shrink: 0; padding-top: 2px; min-width: 28px; font-weight: 700; }"
-    ".ttxt-wrap { flex: 1; } .ttxt { font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.92); line-height: 1.55; }"
-    ".tag-pill { display: inline-block; background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.2); border-radius: 20px; padding: 3px 11px; margin: 3px; color: #00ffcc; font-size: 13px; font-weight: 500; }"
-    ".song-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }"
+    "html, body { background: transparent; font-family: 'Poppins', -apple-system, sans-serif; overflow-x: hidden; color: #e8e8f0; }"
+    ".lbl { font-size: 11px; font-weight: 700; color: #00ffcc; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 12px; }"
+    ".card { background: rgba(14,14,24,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px 22px; }"
+    ".copy-btn { background: rgba(0,255,204,0.06); border: 1px solid rgba(0,255,204,0.20); border-radius: 8px; color: #00ffcc; font-size: 11px; font-weight: 600; padding: 5px 14px; cursor: pointer; font-family: inherit; transition: all 0.2s; }"
+    ".copy-btn:hover, .copy-btn.ok { background: rgba(0,255,204,0.15); border-color: rgba(0,255,204,0.45); }"
+    ".trans-btn { background: rgba(176,38,255,0.06); border: 1px solid rgba(176,38,255,0.20); border-radius: 8px; color: #b026ff; font-size: 11px; font-weight: 600; padding: 5px 12px; cursor: pointer; font-family: inherit; transition: all 0.2s; margin-right: 6px; }"
+    ".trans-btn:hover { background: rgba(176,38,255,0.18); border-color: rgba(176,38,255,0.45); }"
+    ".content { color: rgba(255,255,255,0.72); font-size: 14px; line-height: 1.9; }"
+    ".btn-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-bottom: 14px; }"
+    ".sec { margin-bottom: 24px; }"
+    ".title-row { display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 18px; margin-bottom: 8px; transition: border-color 0.2s; }"
+    ".title-row:hover { border-color: rgba(0,255,204,0.18); }"
+    ".tnum { font-size: 13px; color: #00ffcc; flex-shrink: 0; min-width: 26px; font-weight: 700; font-family: 'Righteous', sans-serif; }"
+    ".ttxt-wrap { flex: 1; } .ttxt { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.88); line-height: 1.5; }"
+    ".tag-pill { display: inline-block; background: rgba(0,255,204,0.06); border: 1px solid rgba(0,255,204,0.15); border-radius: 20px; padding: 4px 12px; margin: 3px; color: #00ffcc; font-size: 12px; font-weight: 500; transition: background 0.2s; }"
+    ".tag-pill:hover { background: rgba(0,255,204,0.12); }"
+    ".song-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }"
     ".song-row:last-child { border-bottom: none; }"
-    ".sinfo { flex: 1; } .stitle { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.92); margin-bottom: 6px; line-height: 1.4; }"
-    ".stheme-lbl { font-size: 11px; color: #00ffcc; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }"
-    ".stheme-en { font-size: 13px; color: rgba(255,255,255,0.62); line-height: 1.55; margin-bottom: 3px; }"
-    ".stheme-zh { font-size: 13px; color: rgba(255,255,255,0.50); line-height: 1.55; font-style: italic; }"
+    ".sinfo { flex: 1; } .stitle { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.88); margin-bottom: 6px; line-height: 1.4; }"
+    ".stheme-lbl { font-size: 10px; color: #00ffcc; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }"
+    ".stheme-en { font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.5; margin-bottom: 2px; }"
+    ".stheme-zh { font-size: 12px; color: rgba(255,255,255,0.40); line-height: 1.5; font-style: italic; }"
     "@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }"
 )
 
@@ -595,7 +416,7 @@ _JS = (
 def _html_page(body: str) -> str:
     return (
         f'<!DOCTYPE html><html><head><meta charset="UTF-8">'
-        f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap">'
+        f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap">'
         f'<style>{_BASE_CSS}</style></head>'
         f'<body>{body}<script>{_JS}</script></body></html>'
     )
@@ -678,361 +499,351 @@ def _songs_sec(songs: list) -> str:
         )
     n = len(songs)
     return (
-        f'<div class="sec"><div class="lbl">🎵 Selected Songs'
+        f'<div class="sec"><div class="lbl">🎵 Tracklist'
         f'&nbsp;<span style="color:rgba(255,255,255,0.50);font-size:11px;font-weight:400;letter-spacing:0;">'
         f'{n} track{"s" if n != 1 else ""}</span></div>'
         f'<div class="card">{rows}</div></div>'
     )
 
 
-def build_dashboard(songs, long_en, long_zh, short_en, short_zh, titles_en, titles_zh, tags) -> str:
-    body = (
-        _songs_sec(songs)
-        + _story_sec("📖 Long Story", long_en, long_zh)
-        + _story_sec("💬 Short Story", short_en, short_zh)
-        + _titles_sec(titles_en, titles_zh)
-        + _tags_sec(tags)
-    )
+def build_dashboard(results: dict, selected_outputs: list) -> str:
+    """Build HTML dashboard with only the selected output sections."""
+    body = ""
+    if "tracklist" in selected_outputs and results.get("tracklist"):
+        body += _songs_sec(results["tracklist"])
+    if "long_story" in selected_outputs and results.get("long_story"):
+        body += _story_sec("📖 Long Story",
+                           results["long_story"], results.get("long_story_zh", ""))
+    if "short_story" in selected_outputs and results.get("short_story"):
+        body += _story_sec("💬 Short Story",
+                           results["short_story"], results.get("short_story_zh", ""))
+    if "titles" in selected_outputs and results.get("titles"):
+        body += _titles_sec(results["titles"], results.get("titles_zh", []))
+    if "tags" in selected_outputs and results.get("tags"):
+        body += _tags_sec(results["tags"])
     return _html_page(body)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  APP HEADER
+#  OPTION DEFINITIONS (shared by Step 1 & Step 2)
 # ─────────────────────────────────────────────────────────────────────────────
-hcol1, hcol2 = st.columns([2, 1])
-with hcol1:
-    st.markdown(
-        "<div class='app-title'>Title Studio</div>"
-        "<div class='app-subtitle'>sLoth rAdio · Gemini AI</div>",
-        unsafe_allow_html=True,
-    )
-with hcol2:
-    if st.session_state.step > 1 or st.session_state.song_data:
-        _ic1, _ic2 = st.columns([3, 1])
-        with _ic1:
-            st.markdown(
-                "<div style='display:flex;align-items:center;height:100%;justify-content:flex-end;'>"
-                "<span style='color:rgba(255,255,255,0.50);font-size:12px;letter-spacing:2px;text-transform:uppercase;'>"
-                "AI · YouTube SEO Pipeline</span></div>",
-                unsafe_allow_html=True,
-            )
-        with _ic2:
-            if st.button("🔄 重置", key="hdr_reset", use_container_width=True):
-                reset_pipeline()
-                st.rerun()
-    else:
-        st.markdown(
-            "<div style='display:flex;align-items:center;justify-content:flex-end;height:100%;'>"
-            "<span style='color:rgba(255,255,255,0.50);font-size:12px;letter-spacing:2px;text-transform:uppercase;'>"
-            "AI · YouTube SEO Pipeline</span></div>",
-            unsafe_allow_html=True,
-        )
+_OPTIONS = [
+    ("titles",      "🏆", "YouTube 標題",  "5 個高點擊率標題"),
+    ("tags",        "🏷️", "YouTube 標籤",  "450-500 字元 SEO Tags"),
+    ("long_story",  "📖", "長故事",         "4-6 段沉浸式散文"),
+    ("short_story", "💬", "短故事",         "Instagram 風格短文"),
+    ("tracklist",   "🎵", "Suno 歌單",     "詩意歌名與意境"),
+]
 
-# Stepper
+_MATERIAL_LABELS = {
+    "titles": "標題", "tags": "標籤",
+    "long_story": "長故事", "short_story": "短故事", "tracklist": "歌單",
+}
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  HEADER
+# ═════════════════════════════════════════════════════════════════════════════
+st.markdown(
+    "<div class='hdr'>"
+    "<div class='hdr-left'>"
+    "<span class='hdr-title'>Title Studio</span>"
+    "<span class='demo-pill'>Demo</span>"
+    "<span class='hdr-sub'>sLoth rAdio</span>"
+    "</div></div>",
+    unsafe_allow_html=True,
+)
+
+# ── Stepper ──
 step = st.session_state.step
-_steps = ["🎵 選歌", "🎨 概念", "✍️ 素材", "📊 成果"]
+_steps = ["🎯 目標", "📦 材料", "📝 輸入", "📊 成果"]
 _sh = "<div class='stepper'>"
 for _i, _lbl in enumerate(_steps, 1):
-    _st = "active" if _i == step else ("done" if _i < step else "")
-    _sh += f"<div class='step-item'><div class='step-dot {_st}'>{'✓' if _i < step else _i}</div><span class='step-label {_st}'>{_lbl}</span></div>"
+    cls = "active" if _i == step else ("done" if _i < step else "")
+    _sh += f"<div class='s-item'><div class='s-dot {cls}'>{'✓' if _i < step else _i}</div><span class='s-lbl {cls}'>{_lbl}</span></div>"
     if _i < len(_steps):
-        _sh += f"<div class='step-connector {'done' if _i < step else ''}'></div>"
+        _sh += f"<div class='s-line {'done' if _i < step else ''}'></div>"
 _sh += "</div>"
 st.markdown(_sh, unsafe_allow_html=True)
-st.divider()
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  STAGE 1 — Music Ideation
-# ─────────────────────────────────────────────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════════════════
+#  STEP 1 — 確認目標
+# ═════════════════════════════════════════════════════════════════════════════
 if step == 1:
-    if not st.session_state.song_data:
-        st.markdown(
-            "<div class='section-heading'>🎵 Music Ideation</div>"
-            "<div class='section-sub'>選擇數量 · 一鍵生成詩意歌名與意境</div>",
-            unsafe_allow_html=True,
-        )
-        _, ctr, _ = st.columns([1, 2, 1])
-        with ctr:
-            st.markdown(
-                "<div style='color:rgba(255,255,255,0.55);font-size:12px;letter-spacing:2px;"
-                "text-transform:uppercase;margin-bottom:6px;'>🎚️ 生成數量</div>",
-                unsafe_allow_html=True,
-            )
-            n = st.slider("n", min_value=1, max_value=20,
-                          value=st.session_state.n_songs, step=1,
-                          label_visibility="collapsed")
-            st.session_state.n_songs = n
-            if st.button(f"✨  生成 {n} 首歌曲", type="primary", use_container_width=True):
-                with st.spinner("✨ AI 生成中..."):
-                    songs = ai_generate_songs(n)
-                if songs:
-                    st.session_state.song_data = songs
-                    st.rerun()
+    st.markdown("<div class='glass'>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='sec-title'>今日想我幫手生成啲咩？</div>"
+        "<div class='sec-desc'>可多選 · 至少揀一項先可以繼續</div>",
+        unsafe_allow_html=True,
+    )
 
-        st.write("")
-        fc1, fc2, fc3 = st.columns(3)
-        for _col, (_icon, _title, _desc) in zip(
-            [fc1, fc2, fc3],
-            [
-                ("🎵", "AI 歌單生成", "一鍵產生詩意歌名與意境，快速建立創作素材庫"),
-                ("🎨", "視覺概念提煉", "輸入氛圍關鍵字，AI 生成 3 個差異化故事方向"),
-                ("📋", "完整 SEO 套件", "長文故事 · 短文貼文 · 高點擊標題 · Tags 全套輸出"),
-            ],
-        ):
-            with _col:
-                st.markdown(
-                    f"<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);"
-                    f"border-radius:14px;padding:22px 20px;text-align:center;'>"
-                    f"<div style='font-size:28px;margin-bottom:10px;'>{_icon}</div>"
-                    f"<div style='font-size:14px;font-weight:600;color:rgba(255,255,255,0.80);margin-bottom:6px;'>{_title}</div>"
-                    f"<div style='font-size:13px;color:rgba(255,255,255,0.58);line-height:1.6;'>{_desc}</div>"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-    else:
-        n_sel = len(st.session_state.selected_song_ids)
-        st.markdown(
-            "<div class='section-heading'>🎵 選擇歌曲</div>"
-            "<div class='section-sub'>點選卡片 · 可多選 · 再按取消</div>",
-            unsafe_allow_html=True,
-        )
-        songs = st.session_state.song_data
-        NUM_COLS = min(4, len(songs))
-        cols = st.columns(NUM_COLS, gap="small")
-        for ci, col in enumerate(cols):
-            with col:
-                for song in songs[ci::NUM_COLS]:
-                    is_sel = song["id"] in st.session_state.selected_song_ids
-                    _num = f"{song['id']:02d}"
-                    _check = "✓" if is_sel else _num
-                    lbl = (
-                        f"{_check}\n\n"
-                        f"**{song['en_title']}**\n\n"
-                        f"{song['zh_title']}\n\n"
-                        f"{song['en_theme']}\n\n"
-                        f"*— {song['zh_theme']}*"
-                    )
-                    if st.button(lbl, key=f"s{song['id']}",
-                                 type="primary" if is_sel else "secondary",
-                                 use_container_width=True):
-                        if is_sel:
-                            st.session_state.selected_song_ids.remove(
-                                song["id"])
-                        else:
-                            st.session_state.selected_song_ids.append(
-                                song["id"])
-                        st.rerun()
-
-        st.markdown("<div style='border-top:1px solid rgba(255,255,255,0.07);margin-top:16px;'></div>",
-                    unsafe_allow_html=True)
-        tool_c0, tool_c1, tool_c2, _ = st.columns([2, 1, 1, 5])
-        with tool_c0:
-            st.markdown(
-                f"<div style='display:flex;align-items:center;padding-top:6px;'>"
-                f"<span style='font-size:13px;color:rgba(255,255,255,0.56);'>"
-                f"<span style='font-size:20px;font-weight:800;color:#00ffcc;font-family:Righteous,sans-serif;'>{n_sel}</span>"
-                f" / {len(songs)} ✓</span></div>",
-                unsafe_allow_html=True,
-            )
-        with tool_c1:
-            if st.button("✓ 全選", use_container_width=True):
-                st.session_state.selected_song_ids = [s["id"] for s in songs]
-                st.rerun()
-        with tool_c2:
-            if st.button("✕ 清除", use_container_width=True):
-                st.session_state.selected_song_ids = []
-                st.rerun()
-
-        st.write("")
-        nav_l, _, nav_r = st.columns([1, 4, 1])
-        with nav_r:
-            if st.button("🎨 概念方向 →", type="primary", use_container_width=True):
-                if not st.session_state.selected_song_ids:
-                    st.warning("⚠️ 請至少選一首歌。")
+    cols = st.columns(5, gap="medium")
+    for ci, (key, icon, name, desc) in enumerate(_OPTIONS):
+        with cols[ci]:
+            is_sel = key in st.session_state.selected_outputs
+            if st.button(
+                f"{icon}\n\n**{name}**",
+                key=f"out_{key}",
+                type="primary" if is_sel else "secondary",
+                use_container_width=True,
+            ):
+                if is_sel:
+                    st.session_state.selected_outputs.remove(key)
                 else:
-                    next_step()
-                    st.rerun()
+                    st.session_state.selected_outputs.append(key)
+                st.rerun()
+            st.markdown(
+                f"<div class='card-desc'>{desc}</div>", unsafe_allow_html=True)
+
+    n_sel = len(st.session_state.selected_outputs)
+    st.markdown(
+        f"<div class='counter'>已選 <b class='teal'>{n_sel}</b> 項</div>", unsafe_allow_html=True)
+
+    # Navigation
+    st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
+    nav_l, _, nav_r = st.columns([1, 3, 1])
+    with nav_l:
+        if st.button("✓ 全選直入", use_container_width=True):
+            st.session_state.selected_outputs = [k for k, *_ in _OPTIONS]
+            st.session_state.existing_materials = []
+            st.session_state.step = 3
+            st.rerun()
+    with nav_r:
+        if st.button("下一步 →", type="primary", use_container_width=True, disabled=(n_sel == 0)):
+            st.session_state.step = 2
+            st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)  # close .glass
+
+    # Feature cards (landing — only when nothing selected)
+    if n_sel == 0:
+        st.markdown(
+            "<div class='feat-grid'>"
+            "<div class='feat-card'><div class='feat-icon'>✨</div><div class='feat-title'>動態嚮導</div><div class='feat-desc'>根據你嘅選擇，自動調整問題同 AI Prompt</div></div>"
+            "<div class='feat-card'><div class='feat-icon'>🎯</div><div class='feat-title'>精準生成</div><div class='feat-desc'>告訴 AI 你已有咩材料，生成更貼切嘅結果</div></div>"
+            "<div class='feat-card'><div class='feat-icon'>📋</div><div class='feat-title'>按需展示</div><div class='feat-desc'>只顯示你揀咗嘅內容，版面乾淨利落</div></div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  STAGE 2 — Visual Concept
-# ─────────────────────────────────────────────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════════════════
+#  STEP 2 — 現有材料
+# ═════════════════════════════════════════════════════════════════════════════
 elif step == 2:
+    st.markdown("<div class='glass'>", unsafe_allow_html=True)
     st.markdown(
-        "<div class='section-heading'>🎨 概念方向</div>"
-        "<div class='section-sub'>輸入氛圍關鍵字 · AI 生成 3 個故事方向</div>",
+        "<div class='sec-title'>你手上已經有啲咩材料？</div>"
+        "<div class='sec-desc'>可多選 · 冇都可以直接跳過</div>",
         unsafe_allow_html=True,
     )
 
-    sel_songs = [s for s in st.session_state.song_data
-                 if s["id"] in st.session_state.selected_song_ids]
-    names = "、".join(s["zh_title"] for s in sel_songs[:5])
-    if len(sel_songs) > 5:
-        names += f" ⋯ +{len(sel_songs) - 5}"
+    # Context chips — what they're generating
+    gen_chips = " ".join(
+        f"<span class='chip chip-teal'>{_MATERIAL_LABELS[k]}</span>" for k in st.session_state.selected_outputs)
     st.markdown(
-        f"<div class='result-card'><div class='result-label'>🎵 已選歌曲</div>"
-        f"<span style='color:rgba(255,255,255,0.7);font-size:15px;'>{names}</span></div>",
+        f"<div class='info-card'><span style='font-size:12px;color:rgba(255,255,255,0.45);'>你要生成：</span><br>{gen_chips}</div>",
         unsafe_allow_html=True,
     )
 
-    vibe = st.text_input("🌙 氛圍關鍵字（選填）", placeholder="凌晨的微雨 · 暖燈 · 黑膠唱片...")
+    # Filter out items the user wants to generate
+    available = [(k, ic, nm, ds) for k, ic, nm,
+                 ds in _OPTIONS if k not in st.session_state.selected_outputs]
 
-    b1, b_space, b2 = st.columns([1, 4, 1])
-    with b1:
-        if st.button("← 返回", use_container_width=True):
-            st.session_state.concept_options = []
-            go_to(1)
-            st.rerun()
-    with b2:
-        if st.button("🎲 生成方向", type="primary", use_container_width=True):
-            with st.spinner("🎨 構思中..."):
-                opts = ai_generate_concepts(sel_songs, vibe)
-            if opts:
-                st.session_state.concept_options = opts
-                if st.session_state.selected_concept not in [o[0] for o in opts]:
-                    st.session_state.selected_concept = None
-                st.rerun()
-
-    if st.session_state.concept_options:
-        st.write("")
-        st.markdown("<div class='result-label' style='margin-bottom:12px;'>🎯 選擇一個方向</div>",
-                    unsafe_allow_html=True)
-        ccols = st.columns(3, gap="small")
-        for ci, (title, desc) in enumerate(st.session_state.concept_options):
-            with ccols[ci]:
-                is_sel = st.session_state.selected_concept == title
-                if st.button(f"{title}\n\n{desc}", key=f"c{ci}",
-                             type="primary" if is_sel else "secondary",
-                             use_container_width=True):
-                    st.session_state.selected_concept = title
-                    st.rerun()
-
-        if st.session_state.selected_concept:
-            st.write("")
-            _, _, n2 = st.columns([1, 4, 1])
-            with n2:
-                if st.button("✍️ 生成 SEO 素材 →", type="primary", use_container_width=True):
-                    next_step()
-                    st.rerun()
-    else:
+    if not available:
         st.markdown(
-            "<div style='text-align:center;padding:40px 0 20px;'>"
-            "<div style='font-size:36px;margin-bottom:12px;'>🎲</div>"
-            "<div style='font-size:14px;letter-spacing:1px;color:rgba(255,255,255,0.45);'>"
-            "按下「生成方向」讓 AI 構思故事視角</div></div>",
+            "<div style='text-align:center;padding:32px 0;color:rgba(255,255,255,0.40);font-size:14px;'>"
+            "你選擇生成所有類型，冇需要提供已有材料。直接跳到輸入頁面吧！</div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        cols = st.columns(len(available), gap="medium")
+        for ci, (key, icon, name, _) in enumerate(available):
+            with cols[ci]:
+                is_sel = key in st.session_state.existing_materials
+                if st.button(f"{icon}\n\n**已有{name}**", key=f"mat_{key}",
+                             type="primary" if is_sel else "secondary", use_container_width=True):
+                    if is_sel:
+                        st.session_state.existing_materials.remove(key)
+                    else:
+                        st.session_state.existing_materials.append(key)
+                    st.rerun()
+
+    n_mat = len(st.session_state.existing_materials)
+    st.markdown(
+        f"<div class='counter'>已選 <b class='purple'>{n_mat}</b> 項材料</div>", unsafe_allow_html=True)
+
+    # Navigation
+    st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
+    nav_l, nav_skip, _, nav_r = st.columns([1, 1.5, 1.5, 1])
+    with nav_l:
+        if st.button("← 返回", key="s2_back", use_container_width=True):
+            st.session_state.existing_materials = []
+            st.session_state.step = 1
+            st.rerun()
+    with nav_skip:
+        if st.button("跳過，從零開始", key="s2_skip", use_container_width=True):
+            st.session_state.existing_materials = []
+            st.session_state.step = 3
+            st.rerun()
+    with nav_r:
+        if st.button("下一步 →", key="s2_next", type="primary", use_container_width=True):
+            st.session_state.step = 3
+            st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)  # close .glass
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  STEP 3 — 收集上下文
+# ═════════════════════════════════════════════════════════════════════════════
+elif step == 3:
+    st.markdown("<div class='glass'>", unsafe_allow_html=True)
+    st.markdown("<div class='sec-title'>📝 提供你嘅素材</div>",
+                unsafe_allow_html=True)
+
+    # Context summary chips
+    gen_chips = " ".join(
+        f"<span class='chip chip-teal'>{_MATERIAL_LABELS[k]}</span>" for k in st.session_state.selected_outputs)
+    mat_chips = " ".join(
+        f"<span class='chip chip-purple'>{_MATERIAL_LABELS[k]}</span>" for k in st.session_state.existing_materials)
+
+    summary = f"<div class='info-card'><div style='margin-bottom:8px;'><span style='font-size:12px;color:rgba(255,255,255,0.45);'>要生成：</span> {gen_chips}</div>"
+    if mat_chips:
+        summary += f"<div><span style='font-size:12px;color:rgba(255,255,255,0.45);'>已有材料：</span> {mat_chips}</div>"
+    summary += "</div>"
+    st.markdown(summary, unsafe_allow_html=True)
+
+    # Dynamic prompt
+    gen_names = "、".join(_MATERIAL_LABELS[k]
+                         for k in st.session_state.selected_outputs)
+    mat_names = "、".join(_MATERIAL_LABELS[k]
+                         for k in st.session_state.existing_materials)
+
+    if st.session_state.existing_materials:
+        hint = f"請將已有嘅 {mat_names} 同任何靈感貼喺下面，我會用嚟生成 {gen_names}："
+    elif st.session_state.selected_outputs == ["tracklist"]:
+        hint = "請描述你想要嘅風格或氛圍："
+    else:
+        hint = f"請將你現有嘅靈感、故事或歌單貼喺下面，我會幫你生成 {gen_names}："
+
+    st.markdown(
+        f"<div class='sec-desc' style='margin-bottom:12px;'>{hint}</div>", unsafe_allow_html=True)
+
+    user_input = st.text_area(
+        "content_input",
+        value=st.session_state.user_context,
+        height=220,
+        placeholder="例如：深夜獨自在咖啡廳讀書，窗外下著小雨，播放著溫暖的 lofi 音樂...",
+        label_visibility="collapsed",
+    )
+    st.session_state.user_context = user_input
+
+    # Song count slider
+    if "tracklist" in st.session_state.selected_outputs:
+        st.markdown(
+            "<div style='color:rgba(255,255,255,0.45);font-size:11px;letter-spacing:2px;"
+            "text-transform:uppercase;margin:14px 0 4px;'>🎚️ 歌單數量</div>",
+            unsafe_allow_html=True,
+        )
+        st.session_state.n_songs = st.slider(
+            "n_songs", min_value=1, max_value=20,
+            value=st.session_state.n_songs, step=1,
+            label_visibility="collapsed",
+        )
+
+    # Navigation
+    st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
+    nav_l, _, nav_r = st.columns([1, 3, 1])
+    with nav_l:
+        if st.button("← 返回", key="s3_back", use_container_width=True):
+            st.session_state.step = 2
+            st.rerun()
+    with nav_r:
+        gen_btn = st.button("✨ 開始生成", key="s3_gen",
+                            type="primary", use_container_width=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)  # close .glass
+
+    if gen_btn:
+        with st.status("⚙️ Demo 生成中...", expanded=True) as status:
+            st.write("🤖 使用 Mock Data 模擬 AI 生成...")
+            results = mock_generate(
+                st.session_state.selected_outputs, st.session_state.n_songs)
+            if results:
+                st.session_state.results = results
+                status.update(label="✅ 完成！", state="complete", expanded=False)
+            else:
+                status.update(label="❌ 生成失敗", state="error", expanded=False)
+        if st.session_state.results:
+            st.session_state.step = 4
+            st.rerun()
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  STEP 4 — 結果看板
+# ═════════════════════════════════════════════════════════════════════════════
+elif step == 4:
+    st.markdown("<div class='glass'>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='sec-title'>📊 成果總覽</div>"
+        "<div class='sec-desc'>複製你需要嘅內容 → YouTube Studio 🎬</div>",
+        unsafe_allow_html=True,
+    )
+
+    # Review card
+    ctx = st.session_state.user_context.strip()
+    if ctx:
+        mat_chips = " ".join(
+            f"<span class='chip chip-purple'>{_MATERIAL_LABELS[k]}</span>" for k in st.session_state.existing_materials)
+        mat_line = f"<div style='margin-top:10px;'>{mat_chips}</div>" if mat_chips else ""
+        st.markdown(
+            f"<div class='review-card'>"
+            f"<div class='review-label'>根據你提供的資訊</div>"
+            f"<div class='review-text'>{_he(ctx)}</div>"
+            f"{mat_line}</div>",
             unsafe_allow_html=True,
         )
 
+    # Dashboard iframe
+    r = st.session_state.results
+    selected = st.session_state.selected_outputs
+    html = build_dashboard(r, selected)
 
-# ─────────────────────────────────────────────────────────────────────────────
-#  STAGE 3 — SEO Assets
-# ─────────────────────────────────────────────────────────────────────────────
-elif step == 3:
-    st.markdown(
-        "<div class='section-heading'>✍️ SEO 素材</div>"
-        "<div class='section-sub'>生成故事 · 標題 · Tags</div>",
-        unsafe_allow_html=True,
-    )
+    h = 0
+    if "tracklist" in selected and r.get("tracklist"):
+        h += 110 * len(r["tracklist"]) + 80
+    if "long_story" in selected:
+        h += 420
+    if "short_story" in selected:
+        h += 300
+    if "titles" in selected and r.get("titles"):
+        h += 90 * len(r["titles"]) + 80
+    if "tags" in selected:
+        h += 260
+    h = max(h, 400)
 
-    sel_songs = [s for s in st.session_state.song_data
-                 if s["id"] in st.session_state.selected_song_ids]
-    concept = st.session_state.selected_concept or "—"
-    preview = " · ".join(s["zh_title"] for s in sel_songs[:4])
-    if len(sel_songs) > 4:
-        preview += f" +{len(sel_songs) - 4}"
+    st.components.v1.html(html, height=h, scrolling=True)
 
-    st.markdown(
-        f"<div class='result-card'><div class='result-label'>🎯 Creative Brief</div>"
-        f"<p style='color:rgba(255,255,255,0.6);font-size:14px;margin:0 0 4px;'>"
-        f"🎵 <span style='color:#fff;'>{len(sel_songs)} 首</span>"
-        f"<span style='color:rgba(255,255,255,0.50);font-size:13px;margin-left:8px;'>{preview}</span></p>"
-        f"<p style='color:rgba(255,255,255,0.6);font-size:14px;margin:0;'>"
-        f"🎨 <span style='color:#00ffcc;'>{concept}</span></p></div>",
-        unsafe_allow_html=True,
-    )
-
-    uploaded = st.file_uploader(
-        "🖼️ 上傳縮圖（選填）", type=["png", "jpg", "jpeg", "webp"])
-    if uploaded:
-        st.image(Image.open(uploaded), use_container_width=True)
-
-    st.write("")
-
-    if not st.session_state.final_results:
-        if st.button("🚀 生成所有素材", type="primary", use_container_width=True):
-            with st.status("⚙️ AI 生成中...", expanded=True) as status:
-                st.write("🤖 呼叫 Gemini，撰寫故事與 SEO 素材...")
-                results = ai_generate_assets(sel_songs, concept)
-                if results:
-                    st.session_state.final_results = results
-                    status.update(
-                        label="✅ 完成！", state="complete", expanded=False)
-                else:
-                    status.update(label="❌ 生成失敗，請稍後再試。",
-                                  state="error", expanded=False)
-            if st.session_state.final_results:
-                st.rerun()
-    else:
-        st.success("✅ 所有素材已就緒！")
-        c1, c_space, c2 = st.columns([1, 4, 1])
-        with c1:
-            if st.button("← 返回", use_container_width=True):
-                st.session_state.final_results = {}
-                go_to(2)
-                st.rerun()
-        with c2:
-            if st.button("📊 查看成果 →", type="primary", use_container_width=True):
-                next_step()
-                st.rerun()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  STAGE 4 — Final Dashboard
-# ─────────────────────────────────────────────────────────────────────────────
-elif step == 4:
-    st.markdown(
-        "<div class='section-heading'>📊 成果總覽</div>"
-        "<div class='section-sub'>複製 → YouTube Studio 🎬</div>",
-        unsafe_allow_html=True,
-    )
-
-    r = st.session_state.final_results
-    sel_songs = [s for s in st.session_state.song_data
-                 if s["id"] in st.session_state.selected_song_ids]
-
-    st.iframe(
-        build_dashboard(
-            sel_songs,
-            r.get("long_story", ""),
-            r.get("long_story_zh", ""),
-            r.get("short_story", ""),
-            r.get("short_story_zh", ""),
-            r.get("titles", []),
-            r.get("titles_zh", []),
-            r.get("tags", ""),
-        ),
-        height="content",
-    )
-
-    st.divider()
-    s4c1, s4space, s4c2 = st.columns([1, 4, 1])
-    with s4c1:
-        if st.button("← 返回", use_container_width=True):
-            go_to(3)
+    # Navigation
+    st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
+    nav_l, _, nav_r = st.columns([1, 3, 1])
+    with nav_l:
+        if st.button("← 返回修改", key="s4_back", use_container_width=True):
+            st.session_state.results = {}
+            st.session_state.step = 3
             st.rerun()
-    with s4c2:
-        if st.button("🔄 重新開始", use_container_width=True):
+    with nav_r:
+        if st.button("🔄 開始新企劃", key="s4_new", type="primary", use_container_width=True):
             reset_pipeline()
             st.rerun()
 
+    st.markdown("</div>", unsafe_allow_html=True)  # close .glass
 
-# ─────────────────────────────────────────────────────────────────────────────
+
+# ═════════════════════════════════════════════════════════════════════════════
 #  FOOTER
-# ─────────────────────────────────────────────────────────────────────────────
-st.write("")
-st.markdown(
-    "<div style='text-align:center;color:rgba(255,255,255,0.56);font-size:11px;"
-    "letter-spacing:1px;margin-top:48px;'>sLoth rAdio · YouTube Title Studio · Powered by Gemini</div>",
-    unsafe_allow_html=True,
-)
+# ═════════════════════════════════════════════════════════════════════════════
+st.markdown("<div class='footer'>sLoth rAdio · Title Studio · Dynamic Wizard Demo</div>",
+            unsafe_allow_html=True)
