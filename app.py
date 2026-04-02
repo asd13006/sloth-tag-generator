@@ -1,6 +1,7 @@
 import streamlit as st
-import streamlit.components.v1 as components
 import time
+import json
+import google.generativeai as genai
 from PIL import Image
 import io
 
@@ -694,7 +695,7 @@ a:hover {
 for key, default in [
     ("step", 1), ("song_data", []), ("selected_song_ids", []),
     ("concept_options", []), ("selected_concept", None), ("final_results", {}),
-    ("n_songs", 10),
+    ("n_songs", 10), ("_api_key", ""), ("_api_key_verified", False),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -702,6 +703,106 @@ for key, default in [
 
 def next_step():   st.session_state.step += 1
 def go_to(n):      st.session_state.step = n
+
+
+# ─────────────────────────────────────────
+#  Sidebar — API Key 設定與驗證
+# ─────────────────────────────────────────
+def _verify_api_key(key: str) -> bool:
+    """對 Gemini 發送最小測試請求，回傳金鑰是否有效。"""
+    try:
+        genai.configure(api_key=key)
+        m = genai.GenerativeModel("gemini-2.0-flash")
+        m.generate_content(
+            "hi",
+            generation_config=genai.types.GenerationConfig(
+                max_output_tokens=1),
+        )
+        return True
+    except Exception:
+        return False
+
+
+with st.sidebar:
+    st.markdown(
+        "<div style='font-family:Righteous,sans-serif;font-size:18px;"
+        "color:#00ffcc;letter-spacing:1px;margin-bottom:4px;'>⚙️ 設定</div>",
+        unsafe_allow_html=True,
+    )
+    _secret_key = ""
+    try:
+        _secret_key = st.secrets.get("GEMINI_API_KEY", "")
+    except Exception:
+        pass
+
+    if _secret_key:
+        # Secrets 金鑰：首次自動驗證
+        if not st.session_state._api_key_verified:
+            st.session_state._api_key = _secret_key
+            with st.spinner("🔍 驗證 Secrets 金鑰中..."):
+                if _verify_api_key(_secret_key):
+                    st.session_state._api_key_verified = True
+                else:
+                    st.error("❌ Secrets 金鑰無效，請重新設定。")
+        else:
+            st.markdown(
+                "<div style='font-size:12px;color:rgba(0,255,204,0.7);"
+                "padding:8px 10px;background:rgba(0,255,204,0.07);"
+                "border:1px solid rgba(0,255,204,0.2);border-radius:8px;'>"
+                "✅ API Key 已從 Secrets 載入並驗證</div>",
+                unsafe_allow_html=True,
+            )
+    else:
+        # 手動輸入金鑰
+        _typed = st.text_input(
+            "🔑 Gemini API Key",
+            value=st.session_state._api_key,
+            type="password",
+            placeholder="AIza...",
+            help="前往 aistudio.google.com 取得金鑰",
+        )
+        # 金鑰內容有變動 → 重置驗證狀態
+        if _typed != st.session_state._api_key:
+            st.session_state._api_key = _typed
+            st.session_state._api_key_verified = False
+
+        if st.session_state._api_key_verified:
+            st.markdown(
+                "<div style='font-size:12px;color:rgba(0,255,204,0.7);"
+                "padding:8px 10px;background:rgba(0,255,204,0.07);"
+                "border:1px solid rgba(0,255,204,0.2);border-radius:8px;"
+                "margin-top:4px;'>✅ 金鑰驗證通過</div>",
+                unsafe_allow_html=True,
+            )
+            if st.button("🔄 更換金鑰", use_container_width=True):
+                st.session_state._api_key = ""
+                st.session_state._api_key_verified = False
+                st.rerun()
+        elif st.session_state._api_key:
+            if st.button("🔍 驗證金鑰", type="primary", use_container_width=True):
+                with st.spinner("驗證中..."):
+                    if _verify_api_key(st.session_state._api_key):
+                        st.session_state._api_key_verified = True
+                        st.rerun()
+                    else:
+                        st.error("❌ 金鑰無效，請確認後重試。")
+        else:
+            st.markdown(
+                "<div style='font-size:12px;color:rgba(255,180,0,0.8);"
+                "padding:6px 10px;background:rgba(255,180,0,0.06);"
+                "border:1px solid rgba(255,180,0,0.2);border-radius:8px;"
+                "margin-top:4px;'>⚠️ 請輸入 API Key 並驗證</div>",
+                unsafe_allow_html=True,
+            )
+
+    st.divider()
+    st.markdown(
+        "<div style='font-size:11px;color:rgba(255,255,255,0.25);line-height:1.6;'>"
+        "使用 Google Gemini API。<br>"
+        "Key 僅存於本 session，不會傳送至第三方。"
+        "</div>",
+        unsafe_allow_html=True,
+    )
 
 
 # ─────────────────────────────────────────
@@ -951,7 +1052,7 @@ def _dashboard_html(songs, long_story, long_story_zh,
                     titles, titles_zh, tags_str):
     css = (
         "* { box-sizing: border-box; margin: 0; padding: 0; }"
-        "html { overflow-y: hidden; } body { background: transparent; font-family: -apple-system, 'Segoe UI', sans-serif; }"
+        "html { overflow-y: hidden; } body { background: transparent; font-family: -apple-system, 'Segoe UI', sans-serif; overflow: hidden; }"
         ".sec:last-child { margin-bottom: 0; }"
         ".lbl { font-size: 12px; font-weight: 600; color: #00ffcc; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }"
         ".card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px 20px; }"
@@ -1001,12 +1102,6 @@ def _dashboard_html(songs, long_story, long_story_zh,
         "var l=w?(w.getAttribute('data-lang')||'en'):'en';"
         "var t=l==='en'?btn.getAttribute('data-en'):btn.getAttribute('data-zh');"
         "_cp(t,_fb(btn),_ff(btn));}"
-        "function sendHeight(){"
-        "var h=document.documentElement.scrollHeight||document.body.scrollHeight;"
-        "window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:setFrameHeight',height:h},'*');}"
-        "window.addEventListener('load',function(){setTimeout(sendHeight,50);});"
-        "if(window.ResizeObserver){"
-        "new ResizeObserver(sendHeight).observe(document.body);}"
     )
     # Songs section
     song_rows = ""
@@ -1115,50 +1210,140 @@ def reset_pipeline():
 
 
 # ─────────────────────────────────────────
+#  Gemini AI 輔助函式
+# ─────────────────────────────────────────
+def _get_model():
+    """取得設定好 API Key 的 Gemini 模型，若無 Key 回傳 None。"""
+    key = st.session_state.get("_api_key", "")
+    if not key:
+        return None
+    genai.configure(api_key=key)
+    return genai.GenerativeModel("gemini-2.0-flash")
+
+
+def _call_gemini_json(prompt: str) -> dict | list | None:
+    """呼叫 Gemini 並解析 JSON 回應；失敗時回傳 None。"""
+    model = _get_model()
+    if model is None:
+        return None
+    try:
+        resp = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.9,
+                response_mime_type="application/json",
+            ),
+        )
+        return json.loads(resp.text)
+    except Exception as e:
+        st.warning(f"⚠️ Gemini 呼叫失敗：{e}")
+        return None
+
+
+def ai_generate_songs(n: int) -> list[dict]:
+    """用 Gemini 生成 n 首 lofi 歌曲資料，失敗時回傳空列表。"""
+    prompt = f"""You are a creative lofi music curator. Generate {n} unique lofi music track concepts.
+Return a JSON array with exactly {n} objects. Each object must have these keys:
+- "en_title": evocative English title (2-5 words, poetic, lowercase-style)
+- "zh_title": poetic Traditional Chinese translation (3-6 characters)
+- "en_theme": one vivid, sensory English sentence (max 15 words) describing the mood or scene
+- "zh_theme": Traditional Chinese translation of en_theme (avoid literal translation, keep poetry)
+
+Aesthetics: cozy, introspective, lofi/chillhop — everyday quiet moments.
+Return ONLY a valid JSON array. No markdown, no explanation."""
+    data = _call_gemini_json(prompt)
+    if isinstance(data, list) and len(data) >= n:
+        # 補上 id 欄位
+        return [{"id": i + 1, **{k: str(item.get(k, "")) for k in ("en_title", "zh_title", "en_theme", "zh_theme")}}
+                for i, item in enumerate(data[:n])]
+    return []
+
+
+def ai_generate_concepts(sel_songs: list[dict], vibe: str) -> list[tuple[str, str]]:
+    """用 Gemini 生成 3 個概念方向，失敗時回傳預設選項。"""
+    song_names = "、".join(s["zh_title"] for s in sel_songs[:6])
+    prompt = f"""You are a creative director for a lofi music YouTube channel.
+Songs in this video: {song_names}
+Vibe/atmosphere keywords from the creator: "{vibe or '無特定氛圍'}"
+
+Generate exactly 3 distinct visual/story concept directions for the video thumbnail & description.
+Return a JSON array of 3 objects, each with:
+- "title": short concept title in Traditional Chinese with ONE leading emoji (max 10 characters total)
+- "desc": one atmospheric sentence in Traditional Chinese describing the scene (max 30 characters)
+
+Make each concept feel different: vary the time of day, setting, or emotional angle.
+Return ONLY a valid JSON array. No markdown, no explanation."""
+    data = _call_gemini_json(prompt)
+    if isinstance(data, list) and len(data) >= 3:
+        return [(str(item.get("title", f"概念 {i+1}")), str(item.get("desc", "")))
+                for i, item in enumerate(data[:3])]
+    return []
+
+
+def ai_generate_assets(sel_songs: list[dict], concept: str) -> dict:
+    """用 Gemini 生成完整 SEO 素材，失敗時回傳空字典。"""
+    song_list = "\n".join(
+        f"- {s['en_title']} / {s['zh_title']}: {s['en_theme']}" for s in sel_songs
+    )
+    prompt = f"""You are a YouTube SEO copywriter for a lofi music channel called "sLoth rAdio".
+
+Songs included in this video:
+{song_list}
+
+Creative direction / concept: {concept}
+
+Generate the following assets and return as a single JSON object with these exact keys:
+- "long_story": atmospheric English prose (4–6 paragraphs, 280–380 words), written in second-person ("you"), immersive slice-of-life style
+- "long_story_zh": Traditional Chinese translation of long_story, equally poetic
+- "short_story": Instagram-caption style English version with relevant emojis (3–4 short paragraphs, ~130 words)
+- "short_story_zh": Traditional Chinese translation of short_story
+- "titles": JSON array of 5 YouTube title strings in English; SEO-optimized; include lofi genre keyword; end with relevant emojis
+- "titles_zh": JSON array of 5 matching Traditional Chinese YouTube titles
+- "tags": comma-separated string of 35–45 YouTube SEO tags, mix of broad and niche lofi keywords
+
+Return ONLY a valid JSON object. No markdown, no explanation."""
+    data = _call_gemini_json(prompt)
+    if isinstance(data, dict) and data.get("long_story"):
+        # 確保 titles 欄位是 list
+        for k in ("titles", "titles_zh"):
+            if not isinstance(data.get(k), list):
+                data[k] = []
+        return data
+    return {}
+
+
+# ─────────────────────────────────────────
 #  Mock 歌單資料
 # ─────────────────────────────────────────
-MOCK_SONGS = [
-    {"id": 1,  "en_title": "Soft Landing",          "zh_title": "柔軟的著陸",
-        "en_theme": "Sinking into a chair, feeling your body remember how to let go.",                   "zh_theme": "沉入椅子，感受身體重新記起如何放手。"},
-    {"id": 2,  "en_title": "Golden Honey Light",    "zh_title": "金色蜜光",
-        "en_theme": "The warmth of afternoon sun touching the skin through a sheer curtain.",            "zh_theme": "午後陽光透過薄紗簾灑在皮膚上的和煦溫暖。"},
-    {"id": 3,  "en_title": "Paper Moon Lullaby",    "zh_title": "紙月亮搖籃曲",
-        "en_theme": "A bedside lamp glowing softly, pages turning themselves.",                         "zh_theme": "床頭燈柔柔地亮著，書頁自己在翻動。"},
-    {"id": 4,  "en_title": "Rainy Window Theatre",  "zh_title": "雨窗小劇場",
-        "en_theme": "Watching raindrops race down the glass, picking your champion.",                   "zh_theme": "看雨滴在玻璃上賽跑，默默為牠打氣。"},
-    {"id": 5,  "en_title": "Midnight Pour-Over",    "zh_title": "午夜手沖",
-        "en_theme": "The quiet ritual of coffee at 2 AM, steam curling upward.",                        "zh_theme": "凌晨兩點沖咖啡的安靜儀式，蒸氣向上捲曲。"},
-    {"id": 6,  "en_title": "Wool Socks Morning",    "zh_title": "毛襪的早晨",
-        "en_theme": "Sliding across wooden floors in thick socks, no plans today.",                     "zh_theme": "穿著厚毛襪在木地板上滑行，今天沒有計劃。"},
-    {"id": 7,  "en_title": "Fog & Honey",           "zh_title": "霧與蜂蜜",
-        "en_theme": "Morning fog dissolving as you stir honey into warm milk.",                         "zh_theme": "晨霧散去的時候，你正把蜂蜜攪進溫牛奶裡。"},
-    {"id": 8,  "en_title": "Last Train Home",       "zh_title": "末班車歸途",
-        "en_theme": "Leaning against the window, city lights blurring into streaks.",                   "zh_theme": "靠在車窗上，城市燈火糊成一道道光痕。"},
-    {"id": 9,  "en_title": "Rooftop Satellite",     "zh_title": "天台衛星",
-        "en_theme": "Sitting on the rooftop, pretending the stars are listening.",                      "zh_theme": "坐在天台上，假裝星星們都在聽。"},
-    {"id": 10, "en_title": "Bookshop Rain",         "zh_title": "書店裡的雨",
-        "en_theme": "Trapped in a bookshop by sudden rain, and not minding at all.",                    "zh_theme": "被突如其來的雨困在書店裡，卻一點也不介意。"},
-    {"id": 11, "en_title": "Velvet Afternoon",      "zh_title": "絲絨午後",
-        "en_theme": "Sunlight pooling on unmade sheets, dust dancing slowly.",                          "zh_theme": "陽光灑在沒摺的床單上，灰塵在慢慢跳舞。"},
-    {"id": 12, "en_title": "Laundry Day Blues",     "zh_title": "洗衣日藍調",
-        "en_theme": "The hypnotic tumble of clothes in a dryer, warmth on your face.",                  "zh_theme": "衣服在烘乾機裡催眠般翻滾，暖氣撲在臉上。"},
-    {"id": 13, "en_title": "Tangerine Dream",       "zh_title": "橘子味的夢",
-        "en_theme": "Peeling a tangerine in silence, the scent filling the room.",                      "zh_theme": "安靜地剝一顆橘子，香氣漫滿整個房間。"},
-    {"id": 14, "en_title": "3 AM Skyline",          "zh_title": "凌晨三點的天際線",
-        "en_theme": "The city is asleep but the lights are still on, humming softly.",                 "zh_theme": "城市睡著了但燈還亮著，發出輕柔的嗡嗡聲。"},
-    {"id": 15, "en_title": "Cat Nap Atlas",         "zh_title": "貓咪午睡地圖",
-        "en_theme": "Following a cat's logic: sleep where the sunbeam lands.",                          "zh_theme": "跟著貓的邏輯：陽光照到哪裏就睡哪裏。"},
-    {"id": 16, "en_title": "Cinnamon Static",       "zh_title": "肉桂色的雜訊",
-        "en_theme": "Old radio crackling in a kitchen that smells like baking.",                        "zh_theme": "老收音機在飄著烘焙香氣的廚房裡沙沙響。"},
-    {"id": 17, "en_title": "Slow Dissolve",         "zh_title": "緩慢溶解",
-        "en_theme": "Sugar cube sinking into tea, thoughts sinking into nothing.",                      "zh_theme": "方糖沉入茶裡，思緒沉入虛無。"},
-    {"id": 18, "en_title": "Window Seat Poet",      "zh_title": "靠窗詩人",
-        "en_theme": "Scribbling half-thoughts on a napkin, watching people pass by.",                   "zh_theme": "在餐巾紙上寫下半句想法，看行人路過。"},
-    {"id": 19, "en_title": "Cloud Pillow",          "zh_title": "雲朵枕頭",
-        "en_theme": "That perfect moment when the pillow is cool on both sides.",                       "zh_theme": "枕頭兩面都是涼的，那個完美瞬間。"},
-    {"id": 20, "en_title": "Vinyl Sunset",          "zh_title": "黑膠唱片的日落",
-        "en_theme": "Needle on the record, sun going down, nowhere else to be.",                        "zh_theme": "唱針落在唱片上，太陽正在下山，哪裡都不用去。"},
-]
+# ─────────────────────────────────────────
+#  API Key Gate — 未驗證時顯示封鎖畫面
+# ─────────────────────────────────────────
+if not st.session_state._api_key_verified:
+    st.markdown(
+        """
+        <div style='display:flex;flex-direction:column;align-items:center;
+             justify-content:center;padding:80px 20px;text-align:center;'>
+          <div style='font-size:56px;margin-bottom:24px;'>🔑</div>
+          <div style='font-family:Righteous,sans-serif;font-size:28px;
+               background:linear-gradient(90deg,#00ffcc,#b026ff);
+               -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+               margin-bottom:12px;'>Title Studio</div>
+          <div style='font-size:14px;color:rgba(255,255,255,0.45);
+               letter-spacing:1px;margin-bottom:32px;'>sLoth rAdio · Gemini AI</div>
+          <div style='font-size:15px;color:rgba(255,255,255,0.6);
+               background:rgba(255,255,255,0.04);
+               border:1px solid rgba(255,255,255,0.08);
+               border-radius:14px;padding:24px 32px;max-width:380px;line-height:1.8;'>
+            請在左側側欄輸入<br>
+            <span style='color:#00ffcc;font-weight:600;'>Gemini API Key</span>
+            並按下「驗證金鑰」<br>
+            驗證通過後即可使用 Title Studio。
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+    st.stop()
 
 
 # ─────────────────────────────────────────
@@ -1166,7 +1351,7 @@ MOCK_SONGS = [
 # ─────────────────────────────────────────
 hcol1, hcol2 = st.columns([1, 3])
 with hcol1:
-    st.markdown("<div class='app-title'>Title Studio</div><div class='app-subtitle'>sLoth rAdio · Demo Mode</div>", unsafe_allow_html=True)
+    st.markdown("<div class='app-title'>Title Studio</div><div class='app-subtitle'>sLoth rAdio · Gemini AI</div>", unsafe_allow_html=True)
 with hcol2:
     if st.session_state.step > 1 or st.session_state.song_data:
         _hdr_info, _hdr_btn = st.columns([3, 1])
@@ -1224,9 +1409,10 @@ if step == 1:
                           value=st.session_state.n_songs, step=1, label_visibility="collapsed")
             st.session_state.n_songs = n
             if st.button(f"✨  生成 {n} 首歌曲", type="primary", use_container_width=True):
-                with st.spinner("✨ 生成中..."):
-                    time.sleep(1.2)
-                    st.session_state.song_data = MOCK_SONGS[:n]
+                with st.spinner("✨ AI 生成中..."):
+                    _songs = ai_generate_songs(n)
+                if _songs:
+                    st.session_state.song_data = _songs
                     st.rerun()
 
         st.write("")
@@ -1340,25 +1526,10 @@ elif step == 2:
     with b2:
         if st.button("🎲 生成方向", type="primary", use_container_width=True):
             with st.spinner("🎨 構思中..."):
-                time.sleep(1.2)
-                if vibe and "雨" in vibe:
-                    opts = [
-                        ("☔ 微雨窗邊", "雨滴沿玻璃蜿蜒，你蜷縮在毛毯裡放空"),
-                        ("🌧️ 雨後霓虹", "積水映照整個城市的燈火色彩"),
-                        ("🌿 雨中陽台", "植物們在雨裡安靜地呼吸"),
-                    ]
-                elif vibe and ("咖啡" in vibe or "coffee" in vibe.lower()):
-                    opts = [
-                        ("☕ 暖光手沖", "熱水緩緩注入濾杯，香氣漫延整個空間"),
-                        ("🫖 深巷老館", "木質吧台上的咖啡漬是歲月的印記"),
-                        ("🌅 冷掉的拿鐵", "拉花已融化，但窗外更好看"),
-                    ]
-                else:
-                    opts = [
-                        ("☔ 微雨放空", "世界安靜了，只剩雨聲和呼吸"),
-                        ("☕ 暖光手沖", "蒸氣緩緩上升，時間彷彿凝固"),
-                        ("🌙 深夜書檯", "檯燈圈出一個只屬於你的小宇宙"),
-                    ]
+                sel_songs = [s for s in st.session_state.song_data if s["id"]
+                             in st.session_state.selected_song_ids]
+                opts = ai_generate_concepts(sel_songs, vibe)
+            if opts:
                 st.session_state.concept_options = opts
                 if st.session_state.selected_concept not in [o[0] for o in opts]:
                     st.session_state.selected_concept = None
@@ -1424,135 +1595,17 @@ elif step == 3:
 
     if not st.session_state.final_results:
         if st.button("🚀 生成所有素材", type="primary", use_container_width=True):
-            with st.status("⚙️ 生成中...", expanded=True) as s:
-                st.write("📖 撰寫長文故事...")
-                time.sleep(0.8)
-                st.write("💬 撰寫短篇故事...")
-                time.sleep(0.6)
-                st.write("🏆 生成 5 個高點擊標題...")
-                time.sleep(0.6)
-                st.write("🏷️ 生成 SEO Tags...")
-                time.sleep(0.5)
-                first = sel_songs[0] if sel_songs else {
-                    "en_title": "Soft Landing", "en_theme": "Sinking into a chair, feeling your body remember how to let go."}
-                st.session_state.final_results = {
-                    "long_story": (
-                        "The afternoon has gone soft and still. "
-                        "You pick up the old watering can from the corner by the door \u2014 "
-                        "the green one with the slight dent near the spout \u2014 "
-                        "and fill it slowly at the kitchen sink.\n\n"
-                        "You start with the fern on the windowsill. "
-                        "It has been leaning toward the light all week, "
-                        "its pale new fronds uncurling like small fists letting go. "
-                        "You tip the can gently, watching the water disappear into the dark soil, "
-                        "and wait a moment before moving on.\n\n"
-                        "The spider plant hangs from the hook above the bookshelf. "
-                        "You step up on the wooden stool you've had since childhood \u2014 "
-                        "the paint worn smooth on the edges \u2014 and reach up carefully. "
-                        "A few drops fall from the trailing leaves and land on the floor. "
-                        "You wipe them with your sock and don't mind at all.\n\n"
-                        "One pot at a time, you move around the room. "
-                        "The big monstera by the sofa. "
-                        "The small cactus that barely needs anything. "
-                        "The trailing pothos spilling down from the top shelf, "
-                        "bright and unhurried in the afternoon light.\n\n"
-                        "There's no rush. The window is open a little, "
-                        "and the air coming through carries the smell of cut grass from somewhere outside. "
-                        "A bird calls once, then again, then goes quiet.\n\n"
-                        "When you finish, you set the empty can back in its corner "
-                        "and stand with your hands at your sides, just looking at the room. "
-                        "The plants all look the same as before, but something feels settled \u2014 "
-                        "the way a space can breathe differently once it's been given a little attention.\n\n"
-                        "You sit down on the sofa. "
-                        "The light has shifted while you weren't watching. "
-                        "Outside, the afternoon is still slow and easy, "
-                        "and there's nowhere else you need to be."
-                    ),
-                    "long_story_zh": (
-                        "下午變得柔和而靜止。你從門邊的角落拿起那個舊澆水壺——"
-                        "那個近出水口有點凹陷的綠色壺——在廚房水槽慢慢裝滿水。\n\n"
-                        "從窗台的蕨類植物開始。它整個星期都在向著光傾斜，"
-                        "新長的淡色葉片像是緊握的小拳頭慢慢鬆開。"
-                        "你輕輕傾倒水壺，看著水滲入深色土壤，靜待片刻才移到下一盆。\n\n"
-                        "吊蘭掛在書架上方的掛鈎上。"
-                        "你踩上那個從小就有的木凳——邊緣的漆已磨得光滑——小心翼翼地伸手去夠。"
-                        "幾滴水從垂墜的葉子落到地板上，你用襪子擦掉，一點都不介意。\n\n"
-                        "一盆接著一盆，你在房間裡繞了一圈。"
-                        "沙發旁的大龜背芋、那株幾乎不需要喝水的小仙人掌，"
-                        "還有從頂層書架垂掛而下的黃金葛，在午後光線中明亮而從容。\n\n"
-                        "不急。窗戶開著一條縫，外面透進來的空氣帶著割過的草香。"
-                        "一隻鳥叫了一聲，又一聲，然後靜了下來。\n\n"
-                        "澆完後，你把空了的壺放回角落，雙手垂在身側，只是站著看著這個房間。"
-                        "植物們看起來和剛才一樣，但某些東西安頓下來了——"
-                        "就像一個空間在得到一點照料之後，可以以不同的方式呼吸。\n\n"
-                        "你在沙發上坐下來。趁你不注意的時候，光線已經移動了。"
-                        "窗外，午後依然悠長而輕鬆，你不需要去任何地方。"
-                    ),
-                    "short_story": (
-                        "Watering the Plants 🌿\n\n"
-                        "The afternoon has gone quiet and still 🌤️. "
-                        "You pick up the old watering can from the corner \u2014 "
-                        "the green one with the slight dent \u2014 and fill it slowly at the sink.\n\n"
-                        "You start with the fern on the windowsill, tipping the can gently, "
-                        "watching the water disappear into the dark soil. "
-                        "One pot at a time, you move around the room. "
-                        "The big monstera. The small cactus. "
-                        "The trailing pothos spilling from the top shelf in the afternoon light 🌱.\n\n"
-                        "There's no rush. The window is open a little, "
-                        "and the air carries the smell of cut grass from somewhere outside. "
-                        "A bird calls once, then goes quiet 🐦.\n\n"
-                        "When you finish, you set the empty can back and stand looking at the room. "
-                        "Something feels settled \u2014 the way a space breathes differently "
-                        "once it's been given a little attention \u2728.\n\n"
-                        "You sink into the sofa. The light has shifted. "
-                        "Outside, the afternoon is still slow and easy, "
-                        "and there's nowhere else you need to be 🛋️."
-                    ),
-                    "short_story_zh": (
-                        "澆花 🌿\n\n"
-                        "午後變得安靜而靜止 🌤️。"
-                        "你從角落拿起那個舊澆水壺——那個有點凹陷的綠色壺——在水槽慢慢裝滿水。\n\n"
-                        "從窗台的蕨類開始，輕輕傾倒，看著水滲入深色土壤。"
-                        "一盆接著一盆，你在房間裡繞了一圈。"
-                        "大龜背芋、小仙人掌，還有從頂層書架垂掛而下的黃金葛，"
-                        "在午後光線中綠意盎然 🌱。\n\n"
-                        "不急。窗戶開著一條縫，空氣帶著割草後的青草香從外面透進來。"
-                        "一隻鳥叫了一聲，然後靜了下來 🐦。\n\n"
-                        "澆完後，你把壺放回原處，站著看著這個房間。"
-                        "某些東西安頓下來了——就像一個空間在被好好照料後，"
-                        "可以以不同的方式呼吸 ✨。\n\n"
-                        "你沉入沙發。光線已悄悄移動。"
-                        "窗外，午後依然悠長而輕鬆，你不需要去任何地方 🛋️。"
-                    ),
-                    "titles": [
-                        "Watering the Plants… Chill Lofi for Relaxation, Study & Calm 🌿 🌙",
-                        "Slow Afternoon Rituals… Soft Lofi for Unwinding & Gentle Focus 🪴 ☀️",
-                        "Find Peace in the Small Things… Chill Lofi for Rest, Study & Healing 🌱 🌸",
-                        "One Plant at a Time… Cozy Lofi for Work, Rest & Quiet Living 🏡 ☁️",
-                        "Just You and the Afternoon… Soothing Lofi for Focus, Rest & Slow Days 🛋️ 🌿",
-                    ],
-                    "titles_zh": [
-                        "澆花的午後… Chill Lofi for Relaxation, Study & Calm 🌿 🌙",
-                        "慢慢來的日常… Soft Lofi for Unwinding & Gentle Focus 🪴 ☀️",
-                        "在細小的事裡找到平靜… Chill Lofi for Rest, Study & Healing 🌱 🌸",
-                        "一盆接著一盆… Cozy Lofi for Work, Rest & Quiet Living 🏡 ☁️",
-                        "只有你和這個午後… Soothing Lofi for Focus, Rest & Slow Days 🛋️ 🌿",
-                    ],
-                    "tags": (
-                        f"lofi,lofi hip hop,chill beats,study music,late night lofi,"
-                        f"{first['en_title'].lower().replace(' ', ' ')},lofi mix,lofi radio,"
-                        f"chill lofi,beats to relax,beats to study,lofi 2026,aesthetic lofi,"
-                        f"cozy lofi,rainy lofi,midnight lofi,lofi playlist,soft lofi,warm lofi,"
-                        f"lofi cafe,coffee lofi,sloth radio,chill hop,lo-fi,lofi chill,"
-                        f"japanese lofi,korean lofi,bedroom lofi,night owl music,3am music,"
-                        f"healing music,rain and lofi,cozy bedroom,late night vibes,"
-                        f"alone time music,gentle music,sleepless nights,midnight radio,"
-                        f"deep focus music,calm music,ambient lofi,lo fi beats"
-                    ),
-                }
-                s.update(label="✅ 完成！",
-                         state="complete", expanded=False)
-            st.rerun()
+            with st.status("⚙️ AI 生成中...", expanded=True) as s:
+                st.write("🤖 呼叫 Gemini，撰寫故事與 SEO 素材...")
+                results = ai_generate_assets(sel_songs, concept)
+                if results:
+                    st.session_state.final_results = results
+                    s.update(label="✅ 完成！", state="complete", expanded=False)
+                else:
+                    s.update(label="❌ 生成失敗，請稍後再試。",
+                             state="error", expanded=False)
+            if st.session_state.final_results:
+                st.rerun()
     else:
         st.success("✅ 所有素材已就緒！")
         c1, c2 = st.columns(2)
@@ -1585,20 +1638,12 @@ elif step == 4:
     tags_str = r.get("tags", "")
 
     n_tags = sum(1 for t in tags_str.split(',') if t.strip())
-    total_h = int((
-        ((80 + len(sel_songs) * 155) if sel_songs else 0)
-        + max(_est_height(long_story), _est_height(long_story_zh))
-        + max(_est_height(short_story), _est_height(short_story_zh))
-        + (70 + len(titles) * 68)
-        + max(160, 80 + ((n_tags + 4) // 5) * 36)
-        + 120
-    ) * 1.02)
-    components.html(
+    # 依照 CSS 實際渲染高度精算：
+    st.iframe(
         _dashboard_html(sel_songs, long_story, long_story_zh,
                         short_story, short_story_zh,
                         titles, titles_zh, tags_str),
-        height=total_h,
-        scrolling=False,
+        height="content",
     )
     st.divider()
     _s4c1, _s4c2 = st.columns(2)
@@ -1616,4 +1661,4 @@ elif step == 4:
 #  Footer
 # ─────────────────────────────────────────
 st.write("")
-st.markdown("<div style='text-align:center; color:rgba(255,255,255,0.35); font-size:11px; letter-spacing:1px; margin-top:48px;'>sLoth rAdio · YouTube Title Studio · Demo Mode</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:rgba(255,255,255,0.35); font-size:11px; letter-spacing:1px; margin-top:48px;'>sLoth rAdio · YouTube Title Studio · Powered by Gemini</div>", unsafe_allow_html=True)
