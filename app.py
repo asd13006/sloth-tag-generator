@@ -1,7 +1,8 @@
 import streamlit as st
 import time
 import json
-import google.generativeai as genai
+from google import genai as genai_new
+from google.genai import types as genai_types
 from PIL import Image
 import io
 
@@ -695,7 +696,8 @@ a:hover {
 for key, default in [
     ("step", 1), ("song_data", []), ("selected_song_ids", []),
     ("concept_options", []), ("selected_concept", None), ("final_results", {}),
-    ("n_songs", 10), ("_api_key", ""), ("_api_key_verified", False),
+    ("n_songs", 10), ("_api_key", ""), ("_api_key_verified",
+                                        False), ("_gemini_model", ""),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -707,20 +709,61 @@ def go_to(n):      st.session_state.step = n
 
 # ─────────────────────────────────────────
 #  Sidebar — API Key 設定與驗證
-# ─────────────────────────────────────────
-def _verify_api_key(key: str) -> bool:
-    """對 Gemini 發送最小測試請求，回傳金鑰是否有效。"""
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+def _verify_api_key(key: str) -> tuple[bool, str]:
+    """對 Gemini 發送最小測試請求，回傳 (是否有效, 錯誤訊息)。"""
     try:
-        genai.configure(api_key=key)
-        m = genai.GenerativeModel("gemini-2.0-flash")
-        m.generate_content(
-            "hi",
-            generation_config=genai.types.GenerationConfig(
-                max_output_tokens=1),
+        client = genai_new.Client(api_key=key)
+
+        # 先取得帳號實際模型列表
+        try:
+            all_models = list(client.models.list())
+            model_names = [m.name for m in all_models]
+        except Exception as list_err:
+            return False, f"無法取得模型列表：{list_err}"
+
+        if not model_names:
+            return False, "models.list() 回傳空列表，請確認 API Key 是否有效。"
+
+        # 從列表中挑選支援 generateContent 的 gemini 模型
+        def _score(name: str) -> int:
+            n = name.lower()
+            if "embed" in n or "vision" in n or "aqa" in n:
+                return -1
+            score = 0
+            if "flash" in n:
+                score += 10
+            if "2.5" in n:
+                score += 5
+            if "2.0" in n:
+                score += 3
+            if "lite" not in n:
+                score += 1
+            return score
+
+        candidates = [
+            n for n in model_names
+            if "gemini" in n.lower()
+            and _score(n) >= 0
+        ]
+        if not candidates:
+            sample = ", ".join(model_names[:8])
+            return False, f"帳號無可用 Gemini 模型。可見模型（前8）：{sample}"
+
+        best = max(candidates, key=_score)
+
+        # 實際發送一次 request 確認
+        client.models.generate_content(
+            model=best,
+            contents="hi",
+            config=genai_types.GenerateContentConfig(max_output_tokens=1),
         )
-        return True
-    except Exception:
-        return False
+        st.session_state._gemini_model = best
+        return True, ""
+    except Exception as e:
+        return False, str(e)
 
 
 with st.sidebar:
@@ -740,10 +783,12 @@ with st.sidebar:
         if not st.session_state._api_key_verified:
             st.session_state._api_key = _secret_key
             with st.spinner("🔍 驗證 Secrets 金鑰中..."):
-                if _verify_api_key(_secret_key):
-                    st.session_state._api_key_verified = True
-                else:
-                    st.error("❌ Secrets 金鑰無效，請重新設定。")
+                _ok, _err = _verify_api_key(_secret_key)
+            if _ok:
+                st.session_state._api_key_verified = True
+                st.rerun()
+            else:
+                st.error(f"❌ Secrets 金鑰無效：{_err}")
         else:
             st.markdown(
                 "<div style='font-size:12px;color:rgba(0,255,204,0.7);"
@@ -767,11 +812,15 @@ with st.sidebar:
             st.session_state._api_key_verified = False
 
         if st.session_state._api_key_verified:
+            _used_model = st.session_state.get("_gemini_model", "")
+            _model_short = _used_model.replace(
+                "models/", "") if _used_model else "Gemini"
             st.markdown(
-                "<div style='font-size:12px;color:rgba(0,255,204,0.7);"
-                "padding:8px 10px;background:rgba(0,255,204,0.07);"
-                "border:1px solid rgba(0,255,204,0.2);border-radius:8px;"
-                "margin-top:4px;'>✅ 金鑰驗證通過</div>",
+                f"<div style='font-size:12px;color:rgba(0,255,204,0.7);"
+                f"padding:8px 10px;background:rgba(0,255,204,0.07);"
+                f"border:1px solid rgba(0,255,204,0.2);border-radius:8px;"
+                f"margin-top:4px;'>✅ 金鑰驗證通過<br>"
+                f"<span style='color:rgba(255,255,255,0.4);font-size:11px;'>{_model_short}</span></div>",
                 unsafe_allow_html=True,
             )
             if st.button("🔄 更換金鑰", use_container_width=True):
@@ -781,11 +830,12 @@ with st.sidebar:
         elif st.session_state._api_key:
             if st.button("🔍 驗證金鑰", type="primary", use_container_width=True):
                 with st.spinner("驗證中..."):
-                    if _verify_api_key(st.session_state._api_key):
-                        st.session_state._api_key_verified = True
-                        st.rerun()
-                    else:
-                        st.error("❌ 金鑰無效，請確認後重試。")
+                    _ok, _err = _verify_api_key(st.session_state._api_key)
+                if _ok:
+                    st.session_state._api_key_verified = True
+                    st.rerun()
+                else:
+                    st.error(f"❌ 驗證失敗：{_err}")
         else:
             st.markdown(
                 "<div style='font-size:12px;color:rgba(255,180,0,0.8);"
@@ -1213,23 +1263,26 @@ def reset_pipeline():
 #  Gemini AI 輔助函式
 # ─────────────────────────────────────────
 def _get_model():
-    """取得設定好 API Key 的 Gemini 模型，若無 Key 回傳 None。"""
+    """回傳設定好 API Key 的 Gemini Client，若無 Key 回傳 None。"""
     key = st.session_state.get("_api_key", "")
     if not key:
-        return None
-    genai.configure(api_key=key)
-    return genai.GenerativeModel("gemini-2.0-flash")
+        return None, None
+    model = st.session_state.get("_gemini_model", "")
+    if not model:
+        return None, None
+    return genai_new.Client(api_key=key), model
 
 
 def _call_gemini_json(prompt: str) -> dict | list | None:
     """呼叫 Gemini 並解析 JSON 回應；失敗時回傳 None。"""
-    model = _get_model()
-    if model is None:
+    client, model = _get_model()
+    if client is None:
         return None
     try:
-        resp = model.generate_content(
-            prompt,
-            generation_config=genai.types.GenerationConfig(
+        resp = client.models.generate_content(
+            model=model,
+            contents=prompt,
+            config=genai_types.GenerateContentConfig(
                 temperature=0.9,
                 response_mime_type="application/json",
             ),
