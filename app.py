@@ -9,8 +9,19 @@ Design: OLED Dark + Neon Teal (#00ffcc / #b026ff)
 import json
 import streamlit as st
 from PIL import Image
-from google import genai
-from google.genai import types as genai_types
+
+try:
+    from google import genai
+    from google.genai import types as genai_types
+except ImportError:
+    st.error(
+        "❌ **缺少 `google-genai` 套件**\n\n"
+        "請在 Streamlit Cloud 管理頁面：\n"
+        "1. 點擊右下角 **Manage app**\n"
+        "2. 點擊 **Reboot** 或三點選單中的 **Clear cache and deploy**\n\n"
+        "如問題持續，請確認 `requirements.txt` 中包含 `google-genai>=1.0.0`"
+    )
+    st.stop()
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  PAGE CONFIG
