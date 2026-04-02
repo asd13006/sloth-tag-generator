@@ -1,7 +1,6 @@
 import streamlit as st
+import streamlit.components.v1 as components
 import time
-import html as _html
-from urllib.parse import quote
 from PIL import Image
 import io
 
@@ -23,7 +22,7 @@ st.set_page_config(
 # ─────────────────────────────────────────
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap&font-display=swap');
 
 /* ── Reset & Base ── */
 html, body, [class*="css"] {
@@ -60,8 +59,13 @@ html, body, [class*="css"] {
     margin: 0;
     line-height: 1.2;
 }
+/* 尊重用戶設定：停止裝飾性動畫 */
+@media (prefers-reduced-motion: reduce) {
+    .app-title { animation: none !important; }
+    * { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+}
 .app-subtitle {
-    color: rgba(255,255,255,0.35);
+    color: rgba(255,255,255,0.52);
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 3px;
@@ -86,19 +90,19 @@ html, body, [class*="css"] {
 .step-dot {
     width: 32px; height: 32px;
     border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.15);
+    border: 2px solid rgba(255,255,255,0.25);
     background: transparent;
     display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700;
-    color: rgba(255,255,255,0.3);
+    font-size: 13px; font-weight: 700;
+    color: rgba(255,255,255,0.45);
     flex-shrink: 0;
     transition: all 0.3s ease;
 }
 .step-dot.active {
     border-color: #00ffcc;
-    background: rgba(0,255,204,0.12);
+    background: rgba(0,255,204,0.16);
     color: #00ffcc;
-    box-shadow: 0 0 12px rgba(0,255,204,0.25);
+    box-shadow: 0 0 18px rgba(0,255,204,0.55), 0 0 6px rgba(0,255,204,0.75);
 }
 .step-dot.done {
     border-color: rgba(0,255,204,0.5);
@@ -106,12 +110,12 @@ html, body, [class*="css"] {
     color: rgba(0,255,204,0.7);
 }
 .step-label {
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
-    color: rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.48);
     white-space: nowrap;
 }
-.step-label.active { color: #00ffcc; }
+.step-label.active { color: #00ffcc; font-weight: 700; }
 .step-label.done   { color: rgba(0,255,204,0.5); }
 .step-connector {
     height: 1px;
@@ -130,7 +134,7 @@ html, body, [class*="css"] {
     letter-spacing: 0.5px;
 }
 .section-sub {
-    font-size: 13px;
+    font-size: 14px;
     color: rgba(255,255,255,0.4);
     margin: 0 0 24px;
 }
@@ -144,7 +148,7 @@ html, body, [class*="css"] {
     margin-bottom: 20px;
 }
 .result-label {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: 600;
     color: #00ffcc;
     letter-spacing: 2px;
@@ -247,7 +251,7 @@ button:has(p:nth-of-type(5)) p {
 
 /* P1：編號 badge */
 button:has(p:nth-of-type(5)) p:nth-of-type(1) {
-    font-size: 10px !important;
+    font-size: 11px !important;
     font-weight: 700 !important;
     letter-spacing: 1.5px !important;
     color: rgba(255,255,255,0.25) !important;
@@ -272,7 +276,7 @@ button:has(p:nth-of-type(5)) p:nth-of-type(2) strong {
 
 /* P3：中文副標題 */
 button:has(p:nth-of-type(5)) p:nth-of-type(3) {
-    font-size: 11.5px !important;
+    font-size: 13px !important;
     font-weight: 400 !important;
     color: rgba(255,255,255,0.56) !important;
     letter-spacing: 0.5px !important;
@@ -288,7 +292,7 @@ button[data-testid="baseButton-primary"]:has(p:nth-of-type(5)) p:nth-of-type(3) 
 
 /* P4：英文描述 */
 button:has(p:nth-of-type(5)) p:nth-of-type(4) {
-    font-size: 11.5px !important;
+    font-size: 13px !important;
     font-weight: 400 !important;
     color: rgba(255,255,255,0.75) !important;
     line-height: 1.58 !important;
@@ -310,7 +314,7 @@ button:has(p:nth-of-type(5)) p:nth-of-type(5) {
     overflow: hidden !important;
 }
 button:has(p:nth-of-type(5)) p:nth-of-type(5) em {
-    font-size: 11px !important;
+    font-size: 12px !important;
     font-style: normal !important;
     color: rgba(255,255,255,0.58) !important;
     line-height: 1.58 !important;
@@ -344,7 +348,7 @@ button:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))) p:nth-of-type(1) {
     line-height: 1.2 !important;
 }
 button:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))) p:nth-of-type(2) {
-    font-size: 12px !important;
+    font-size: 13px !important;
     font-weight: 400 !important;
     color: rgba(255,255,255,0.58) !important;
     line-height: 1.5 !important;
@@ -383,7 +387,7 @@ button[data-testid$="-primary"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))
     padding: 3px 11px;
     margin: 3px 3px;
     color: #00ffcc;
-    font-size: 12px;
+    font-size: 13px;
     font-weight: 500;
 }
 
@@ -400,14 +404,14 @@ button[data-testid$="-primary"]:has(p:nth-of-type(2)):not(:has(p:nth-of-type(3))
 }
 .title-num {
     font-family: 'Righteous', sans-serif;
-    font-size: 13px;
+    font-size: 14px;
     color: #00ffcc;
     flex-shrink: 0;
     padding-top: 1px;
     min-width: 28px;
 }
 .title-text {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 500;
     color: rgba(255,255,255,0.88);
     line-height: 1.5;
@@ -674,40 +678,13 @@ a:hover {
     text-decoration: none !important;
 }
 
-/* ── 複製按鈕 ── */
-.copy-btn {
-    background: rgba(0,255,204,0.08);
-    border: 1px solid rgba(0,255,204,0.25);
-    border-radius: 6px;
-    color: #00ffcc;
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    padding: 4px 10px;
-    cursor: pointer;
-    transition: background 0.2s, border-color 0.2s;
-    white-space: nowrap;
-    font-family: 'Poppins', sans-serif;
+/* ── 圖片上傳預覽 */
+[data-testid="stImage"] img {
+    border-radius: 12px !important;
+    border: 1px solid rgba(255,255,255,0.10) !important;
 }
-.copy-btn:hover {
-    background: rgba(0,255,204,0.18);
-    border-color: rgba(0,255,204,0.5);
-}
-.title-card .copy-btn {
-    margin-left: auto;
-    padding: 3px 8px;
-    font-size: 10px;
-    align-self: center;
-    flex-shrink: 0;
-}
+
 </style>
-<script>
-function copyText(enc, btn) {
-    navigator.clipboard.writeText(decodeURIComponent(enc))
-        .then(function(){ btn.textContent='已複製 ✓'; setTimeout(function(){ btn.textContent='複製'; }, 1500); })
-        .catch(function(){ btn.textContent='失敗'; setTimeout(function(){ btn.textContent='複製'; }, 1500); });
-}
-</script>
 """, unsafe_allow_html=True)
 
 
@@ -725,6 +702,409 @@ for key, default in [
 
 def next_step():   st.session_state.step += 1
 def go_to(n):      st.session_state.step = n
+
+
+# ─────────────────────────────────────────
+#  複製卡片 helpers（Stage 4 用）
+# ─────────────────────────────────────────
+_CARD_CSS = (
+    "* { box-sizing: border-box; margin: 0; padding: 0; }"
+    "html, body { background: transparent; font-family: -apple-system, 'Segoe UI', sans-serif; overflow: hidden; }"
+    ".lbl { font-size: 12px; font-weight: 600; color: #00ffcc; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }"
+    ".card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px 20px; }"
+    ".copy-btn { background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.25); border-radius: 6px;"
+    " color: #00ffcc; font-size: 12px; font-weight: 600; padding: 4px 12px; cursor: pointer; font-family: inherit; transition: background 0.2s; }"
+    ".copy-btn:hover,.copy-btn.ok { background: rgba(0,255,204,0.2); border-color: rgba(0,255,204,0.5); }"
+    ".trans-btn{background:rgba(176,38,255,0.1);border:1px solid rgba(176,38,255,0.3);border-radius:6px;"
+    "color:#b026ff;font-size:12px;font-weight:600;padding:4px 10px;cursor:pointer;font-family:inherit;"
+    "transition:background 0.2s;margin-right:6px;}"
+    ".trans-btn:hover{background:rgba(176,38,255,0.22);border-color:rgba(176,38,255,0.55);}"
+)
+
+_COPY_JS = (
+    "function doCopy(btn){"
+    "var t=btn.getAttribute('data-text');"
+    "function ok(){btn.textContent='已複製 ✓';btn.classList.add('ok');setTimeout(function(){btn.textContent='複製';btn.classList.remove('ok');},1500);}"
+    "function fail(){btn.textContent='失敗';setTimeout(function(){btn.textContent='複製';},1500);}"
+    "if(navigator.clipboard&&navigator.clipboard.writeText){"
+    "navigator.clipboard.writeText(t).then(ok).catch(function(){"
+    "var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();"
+    "try{document.execCommand('copy');ok();}catch(e){fail();}document.body.removeChild(ta);});}"
+    "else{"
+    "var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();"
+    "try{document.execCommand('copy');ok();}catch(e){fail();}document.body.removeChild(ta);}}"
+)
+
+_TRANS_JS = (
+    "function toggleLang(){"
+    "var w=document.getElementById('bl-wrapper');"
+    "var l=w.getAttribute('data-lang')==='en'?'zh':'en';"
+    "w.setAttribute('data-lang',l);"
+    "var en=document.querySelectorAll('.en-block');"
+    "var zh=document.querySelectorAll('.zh-block');"
+    "for(var i=0;i<en.length;i++)en[i].style.display=l==='en'?'':'none';"
+    "for(var i=0;i<zh.length;i++)zh[i].style.display=l==='zh'?'':'none';"
+    "var tb=document.getElementById('trans-btn');"
+    "if(tb)tb.textContent=l==='en'?'\U0001f310 \u4e2d\u6587':'\U0001f310 EN';}"
+    "function doCopyBi(btn){"
+    "var w=document.getElementById('bl-wrapper');"
+    "var l=w.getAttribute('data-lang')||'en';"
+    "var t=l==='en'?btn.getAttribute('data-en'):btn.getAttribute('data-zh');"
+    "function ok(){btn.textContent='\u5df2\u8907\u88fd \u2713';btn.classList.add('ok');setTimeout(function(){btn.textContent='\u8907\u88fd';btn.classList.remove('ok');},1500);}"
+    "function fail(){btn.textContent='\u5931\u6557';setTimeout(function(){btn.textContent='\u8907\u88fd';},1500);}"
+    "if(navigator.clipboard&&navigator.clipboard.writeText){"
+    "navigator.clipboard.writeText(t).then(ok).catch(function(){"
+    "var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();"
+    "try{document.execCommand('copy');ok();}catch(e){fail();}document.body.removeChild(ta);});}"
+    "else{"
+    "var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();"
+    "try{document.execCommand('copy');ok();}catch(e){fail();}document.body.removeChild(ta);}}"
+)
+
+
+def _ae(text: str) -> str:
+    return (text.replace('&', '&amp;').replace('"', '&quot;')
+                .replace("'", '&#39;').replace('<', '&lt;').replace('>', '&gt;'))
+
+
+def _he(text: str) -> str:
+    return (text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+                .replace('\n', '<br>'))
+
+
+def _est_height(text: str, chars_per_line: int = 55, line_px: int = 28, overhead: int = 124) -> int:
+    lines = sum(max(1, (len(p) + chars_per_line - 1) // chars_per_line)
+                for p in text.split('\n'))
+    return max(145, overhead + lines * line_px)
+
+
+def _copy_card_html(label: str, content_html: str, raw_text: str, card_extra_style: str = "") -> str:
+    ae_raw = _ae(raw_text)
+    return (
+        '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+        + _CARD_CSS
+        + '.content{color:rgba(255,255,255,0.75);font-size:15px;line-height:1.85;}'
+        + '</style></head><body>'
+        + f'<div class="lbl">{label}</div>'
+        + f'<div class="card" style="{card_extra_style}">'
+        + '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">'
+        + f'<button class="copy-btn" data-text="{ae_raw}" onclick="doCopy(this)">複製</button>'
+        + '</div>'
+        + f'<div class="content">{content_html}</div>'
+        + '</div>'
+        + f'<script>{_COPY_JS}</script>'
+        + '</body></html>'
+    )
+
+
+def _bilingual_story_html(label: str, en_text: str, zh_text: str, card_extra_style: str = "") -> str:
+    ae_en = _ae(en_text)
+    ae_zh = _ae(zh_text)
+    return (
+        '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+        + _CARD_CSS
+        + '.content{color:rgba(255,255,255,0.75);font-size:15px;line-height:1.85;}'
+        + '</style></head><body><div id="bl-wrapper" data-lang="en">'
+        + f'<div class="lbl">{label}</div>'
+        + f'<div class="card" style="{card_extra_style}">'
+        + '<div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;margin-bottom:12px;">'
+        + '<button class="trans-btn" id="trans-btn" onclick="toggleLang()">🌐 中文</button>'
+        + f'<button class="copy-btn" data-en="{ae_en}" data-zh="{ae_zh}" onclick="doCopyBi(this)">複製</button>'
+        + '</div>'
+        + f'<div class="en-block content">{_he(en_text)}</div>'
+        + f'<div class="zh-block content" style="display:none">{_he(zh_text)}</div>'
+        + '</div>'
+        + f'</div><script>{_TRANS_JS}</script>'
+        + '</body></html>'
+    )
+
+
+def _bilingual_titles_html(titles_en: list, titles_zh: list) -> str:
+    pairs = list(zip(titles_en, (titles_zh or titles_en)))
+    rows = "".join(
+        f'<div class="title-row">'
+        f'<span class="tnum">#{i}</span>'
+        f'<div class="ttxt-wrap">'
+        f'<span class="en-block ttxt">{_he(en)}</span>'
+        f'<span class="zh-block ttxt" style="display:none">{_he(zh)}</span>'
+        f'</div>'
+        f'<button class="copy-btn" style="flex-shrink:0;align-self:center;padding:3px 8px;font-size:11px;"'
+        f' data-en="{_ae(en)}" data-zh="{_ae(zh)}" onclick="doCopyBi(this)">複製</button>'
+        f'</div>'
+        for i, (en, zh) in enumerate(pairs, 1)
+    )
+    return (
+        '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+        + _CARD_CSS
+        + '.title-row{display:flex;align-items:flex-start;gap:14px;background:rgba(255,255,255,0.04);'
+        + 'border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 18px;margin-bottom:8px;}'
+        + '.tnum{font-size:14px;color:#00ffcc;flex-shrink:0;padding-top:2px;min-width:28px;font-weight:700;}'
+        + '.ttxt-wrap{flex:1;}'
+        + '.ttxt{font-size:15px;font-weight:500;color:rgba(255,255,255,0.88);line-height:1.5;}'
+        + '</style></head><body>'
+        + '<div id="bl-wrapper" data-lang="en">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+        + '<div class="lbl" style="margin:0;">🏆 High-Click Titles</div>'
+        + '<button class="trans-btn" id="trans-btn" onclick="toggleLang()">🌐 中文</button>'
+        + '</div>'
+        + rows
+        + f'</div><script>{_TRANS_JS}</script>'
+        + '</body></html>'
+    )
+
+
+def _title_cards_html(titles: list) -> str:
+    rows = "".join(
+        f'<div class="title-row">'
+        f'<span class="tnum">#{i}</span>'
+        f'<span class="ttxt">{_he(t)}</span>'
+        f'<button class="copy-btn" data-text="{_ae(t)}" onclick="doCopy(this)">複製</button>'
+        f'</div>'
+        for i, t in enumerate(titles, 1)
+    )
+    return (
+        '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+        + _CARD_CSS
+        + '.title-row{display:flex;align-items:flex-start;gap:14px;background:rgba(255,255,255,0.04);'
+        + 'border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:14px 18px;margin-bottom:8px;}'
+        + '.tnum{font-size:14px;color:#00ffcc;flex-shrink:0;padding-top:1px;min-width:28px;font-weight:700;}'
+        + '.ttxt{font-size:15px;font-weight:500;color:rgba(255,255,255,0.88);line-height:1.5;flex:1;}'
+        + '.title-row .copy-btn{margin-left:auto;padding:3px 8px;font-size:11px;align-self:center;flex-shrink:0;}'
+        + '</style></head><body>'
+        + '<div class="lbl">🏆 高點擊標題</div>'
+        + rows
+        + f'<script>{_COPY_JS}</script>'
+        + '</body></html>'
+    )
+
+
+def _tags_card_html(tags_str: str) -> str:
+    count = len(tags_str)
+    pills = "".join(
+        f'<span class="tag-pill">{_he(t.strip())}</span>'
+        for t in tags_str.split(',') if t.strip()
+    )
+    return (
+        '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+        + _CARD_CSS
+        + '.count{color:rgba(255,255,255,0.3);font-size:12px;font-weight:400;letter-spacing:0;}'
+        + '.tag-pill{display:inline-block;background:rgba(0,255,204,0.08);border:1px solid rgba(0,255,204,0.2);'
+        + 'border-radius:20px;padding:3px 11px;margin:3px 3px;color:#00ffcc;font-size:13px;font-weight:500;}'
+        + '</style></head><body>'
+        + f'<div class="lbl">🏷️ SEO Tags &nbsp;<span class="count">{count} / 500</span></div>'
+        + '<div class="card">'
+        + '<div style="display:flex;justify-content:flex-end;margin-bottom:12px;">'
+        + f'<button class="copy-btn" data-text="{_ae(tags_str)}" onclick="doCopy(this)">複製</button>'
+        + '</div>'
+        + pills
+        + '</div>'
+        + f'<script>{_COPY_JS}</script>'
+        + '</body></html>'
+    )
+
+
+def _songs_card_html(songs: list) -> str:
+    rows = ""
+    for i, s in enumerate(songs, 1):
+        en = s.get("en_title", "")
+        zh = s.get("zh_title", "")
+        en_theme = s.get("en_theme", "")
+        zh_theme = s.get("zh_theme", "")
+        copy_text = f"{i}. \u300a{en}\u300b {zh}\nLyric Theme: {en_theme}\n{zh_theme}"
+        rows += (
+            f'<div class="song-row">'
+            f'<div class="sinfo">'
+            f'<div class="stitle">{i}. \u300a{_he(en)}\u300b\u3000{_he(zh)}</div>'
+            f'<div class="stheme-lbl">Lyric Theme</div>'
+            f'<div class="stheme-en">{_he(en_theme)}</div>'
+            f'<div class="stheme-zh">{_he(zh_theme)}</div>'
+            f'</div>'
+            f'<button class="copy-btn" style="flex-shrink:0;align-self:flex-start;margin-top:2px;"'
+            f' data-text="{_ae(copy_text)}" onclick="doCopy(this)">\u8907\u88fd</button>'
+            f'</div>'
+        )
+    count = len(songs)
+    label = f'{count} track{"s" if count != 1 else ""}'
+    return (
+        '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>'
+        + _CARD_CSS
+        + '.song-row{display:flex;align-items:flex-start;gap:12px;padding:14px 0;'
+        + 'border-bottom:1px solid rgba(255,255,255,0.06);}'
+        + '.song-row:last-child{border-bottom:none;}'
+        + '.sinfo{flex:1;}'
+        + '.stitle{font-size:15px;font-weight:700;color:rgba(255,255,255,0.92);margin-bottom:6px;line-height:1.4;}'
+        + '.stheme-lbl{font-size:11px;color:#00ffcc;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:4px;}'
+        + '.stheme-en{font-size:13px;color:rgba(255,255,255,0.62);line-height:1.55;margin-bottom:3px;}'
+        + '.stheme-zh{font-size:13px;color:rgba(255,255,255,0.38);line-height:1.55;font-style:italic;}'
+        + '</style></head><body>'
+        + f'<div class="lbl">\U0001f3b5 Selected Songs &nbsp;<span style="color:rgba(255,255,255,0.3);font-size:12px;font-weight:400;letter-spacing:0;">{label}</span></div>'
+        + '<div class="card">'
+        + rows
+        + '</div>'
+        + f'<script>{_COPY_JS}</script>'
+        + '</body></html>'
+    )
+
+
+def _dashboard_html(songs, long_story, long_story_zh,
+                    short_story, short_story_zh,
+                    titles, titles_zh, tags_str):
+    css = (
+        "* { box-sizing: border-box; margin: 0; padding: 0; }"
+        "html { overflow-y: hidden; } body { background: transparent; font-family: -apple-system, 'Segoe UI', sans-serif; }"
+        ".sec:last-child { margin-bottom: 0; }"
+        ".lbl { font-size: 12px; font-weight: 600; color: #00ffcc; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }"
+        ".card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px 20px; }"
+        ".copy-btn { background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.25); border-radius: 6px; color: #00ffcc; font-size: 12px; font-weight: 600; padding: 4px 12px; cursor: pointer; font-family: inherit; transition: background 0.2s; }"
+        ".copy-btn:hover,.copy-btn.ok { background: rgba(0,255,204,0.2); border-color: rgba(0,255,204,0.5); }"
+        ".trans-btn { background: rgba(176,38,255,0.1); border: 1px solid rgba(176,38,255,0.3); border-radius: 6px; color: #b026ff; font-size: 12px; font-weight: 600; padding: 4px 10px; cursor: pointer; font-family: inherit; transition: background 0.2s; margin-right: 6px; }"
+        ".trans-btn:hover { background: rgba(176,38,255,0.22); border-color: rgba(176,38,255,0.55); }"
+        ".sec { margin-bottom: 20px; }"
+        ".content { color: rgba(255,255,255,0.75); font-size: 15px; line-height: 1.85; }"
+        ".btn-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-bottom: 12px; }"
+        ".song-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }"
+        ".song-row:last-child { border-bottom: none; }"
+        ".sinfo { flex: 1; }"
+        ".stitle { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.92); margin-bottom: 6px; line-height: 1.4; }"
+        ".stheme-lbl { font-size: 11px; color: #00ffcc; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }"
+        ".stheme-en { font-size: 13px; color: rgba(255,255,255,0.62); line-height: 1.55; margin-bottom: 3px; }"
+        ".stheme-zh { font-size: 13px; color: rgba(255,255,255,0.38); line-height: 1.55; font-style: italic; }"
+        ".title-row { display: flex; align-items: flex-start; gap: 14px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 14px 18px; margin-bottom: 8px; }"
+        ".tnum { font-size: 14px; color: #00ffcc; flex-shrink: 0; padding-top: 2px; min-width: 28px; font-weight: 700; }"
+        ".ttxt-wrap { flex: 1; }"
+        ".ttxt { font-size: 15px; font-weight: 500; color: rgba(255,255,255,0.88); line-height: 1.5; }"
+        ".count { color: rgba(255,255,255,0.3); font-size: 12px; font-weight: 400; letter-spacing: 0; }"
+        ".tag-pill { display: inline-block; background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.2); border-radius: 20px; padding: 3px 11px; margin: 3px 3px; color: #00ffcc; font-size: 13px; font-weight: 500; }"
+    )
+    js = (
+        "function toggleLang(btn){"
+        "var w=btn.closest('[data-lang]');"
+        "var l=w.getAttribute('data-lang')==='en'?'zh':'en';"
+        "w.setAttribute('data-lang',l);"
+        "var en=w.querySelectorAll('.en-block');"
+        "var zh=w.querySelectorAll('.zh-block');"
+        "for(var i=0;i<en.length;i++)en[i].style.display=l==='en'?'':'none';"
+        "for(var i=0;i<zh.length;i++)zh[i].style.display=l==='zh'?'':'none';"
+        "btn.textContent=l==='en'?'\U0001f310 \u4e2d\u6587':'\U0001f310 EN';}"
+        "function _cp(t,ok,fail){"
+        "if(navigator.clipboard&&navigator.clipboard.writeText){"
+        "navigator.clipboard.writeText(t).then(ok).catch(function(){"
+        "var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();"
+        "try{document.execCommand('copy');ok();}catch(e){fail();}document.body.removeChild(ta);});}"
+        "else{var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0;';document.body.appendChild(ta);ta.select();"
+        "try{document.execCommand('copy');ok();}catch(e){fail();}document.body.removeChild(ta);}}"
+        "function _fb(btn){return function ok(){btn.textContent='\u5df2\u8907\u88fd \u2713';btn.classList.add('ok');setTimeout(function(){btn.textContent='\u8907\u88fd';btn.classList.remove('ok');},1500);}}"
+        "function _ff(btn){return function fail(){btn.textContent='\u5931\u6557';setTimeout(function(){btn.textContent='\u8907\u88fd';},1500);}}"
+        "function doCopy(btn){_cp(btn.getAttribute('data-text'),_fb(btn),_ff(btn));}"
+        "function doCopyBi(btn){"
+        "var w=btn.closest('[data-lang]');"
+        "var l=w?(w.getAttribute('data-lang')||'en'):'en';"
+        "var t=l==='en'?btn.getAttribute('data-en'):btn.getAttribute('data-zh');"
+        "_cp(t,_fb(btn),_ff(btn));}"
+        "function sendHeight(){"
+        "var h=document.documentElement.scrollHeight||document.body.scrollHeight;"
+        "window.parent.postMessage({isStreamlitMessage:true,type:'streamlit:setFrameHeight',height:h},'*');}"
+        "window.addEventListener('load',function(){setTimeout(sendHeight,50);});"
+        "if(window.ResizeObserver){"
+        "new ResizeObserver(sendHeight).observe(document.body);}"
+    )
+    # Songs section
+    song_rows = ""
+    for i, s in enumerate(songs, 1):
+        en, zh = s.get("en_title", ""), s.get("zh_title", "")
+        et, zt = s.get("en_theme", ""), s.get("zh_theme", "")
+        ct = f"{i}. \u300a{en}\u300b {zh}\nLyric Theme: {et}\n{zt}"
+        song_rows += (
+            f'<div class="song-row">'
+            f'<div class="sinfo">'
+            f'<div class="stitle">{i}. \u300a{_he(en)}\u300b\u3000{_he(zh)}</div>'
+            f'<div class="stheme-lbl">Lyric Theme</div>'
+            f'<div class="stheme-en">{_he(et)}</div>'
+            f'<div class="stheme-zh">{_he(zt)}</div>'
+            f'</div>'
+            f'<button class="copy-btn" style="flex-shrink:0;align-self:flex-start;margin-top:2px;"'
+            f' data-text="{_ae(ct)}" onclick="doCopy(this)">\u8907\u88fd</button>'
+            f'</div>'
+        )
+    n = len(songs)
+    songs_sec = (
+        f'<div class="sec">'
+        f'<div class="lbl">\U0001f3b5 Selected Songs'
+        f'&nbsp;<span style="color:rgba(255,255,255,0.3);font-size:11px;font-weight:400;letter-spacing:0;">'
+        f'{n} track{"s" if n != 1 else ""}</span></div>'
+        f'<div class="card">{song_rows}</div>'
+        f'</div>'
+    ) if songs else ""
+
+    # Story helper
+    def _story_sec(lbl, en_t, zh_t, extra=""):
+        return (
+            f'<div class="sec" data-lang="en">'
+            f'<div class="lbl">{lbl}</div>'
+            f'<div class="card" style="{extra}">'
+            f'<div class="btn-row">'
+            f'<button class="trans-btn" onclick="toggleLang(this)">\U0001f310 \u4e2d\u6587</button>'
+            f'<button class="copy-btn" data-en="{_ae(en_t)}" data-zh="{_ae(zh_t)}" onclick="doCopyBi(this)">\u8907\u88fd</button>'
+            f'</div>'
+            f'<div class="en-block content">{_he(en_t)}</div>'
+            f'<div class="zh-block content" style="display:none">{_he(zh_t)}</div>'
+            f'</div></div>'
+        )
+
+    # Titles section
+    title_rows = "".join(
+        f'<div class="title-row">'
+        f'<span class="tnum">#{i}</span>'
+        f'<div class="ttxt-wrap">'
+        f'<span class="en-block ttxt">{_he(en)}</span>'
+        f'<span class="zh-block ttxt" style="display:none">{_he(zh)}</span>'
+        f'</div>'
+        f'<button class="copy-btn" style="flex-shrink:0;align-self:center;padding:3px 8px;font-size:11px;"'
+        f' data-en="{_ae(en)}" data-zh="{_ae(zh)}" onclick="doCopyBi(this)">\u8907\u88fd</button>'
+        f'</div>'
+        for i, (en, zh) in enumerate(zip(titles, titles_zh or titles), 1)
+    )
+    titles_sec = (
+        f'<div class="sec" data-lang="en">'
+        f'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">'
+        f'<div class="lbl" style="margin:0;">\U0001f3c6 High-Click Titles</div>'
+        f'<button class="trans-btn" onclick="toggleLang(this)">\U0001f310 \u4e2d\u6587</button>'
+        f'</div>'
+        f'{title_rows}'
+        f'</div>'
+    )
+
+    # Tags section
+    n_tags = sum(1 for t in tags_str.split(',') if t.strip())
+    pills = "".join(
+        f'<span class="tag-pill">{_he(t.strip())}</span>'
+        for t in tags_str.split(',') if t.strip()
+    )
+    tags_sec = (
+        f'<div class="sec">'
+        f'<div class="lbl">\U0001f3f7\ufe0f SEO Tags'
+        f'&nbsp;<span class="count">{len(tags_str)} / 500</span></div>'
+        f'<div class="card">'
+        f'<div class="btn-row">'
+        f'<button class="copy-btn" data-text="{_ae(tags_str)}" onclick="doCopy(this)">\u8907\u88fd</button>'
+        f'</div>'
+        f'{pills}'
+        f'</div></div>'
+    )
+
+    body = (songs_sec
+            + _story_sec("\U0001f4d6 Long Story", long_story, long_story_zh)
+            + _story_sec("\U0001f4ac Short Story", short_story, short_story_zh,
+                         extra="white-space:pre-wrap;")
+            + titles_sec
+            + tags_sec)
+    return (
+        '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+        css + '</style></head><body>'
+        + body
+        + f'<script>{js}</script>'
+        + '</body></html>'
+    )
 
 
 def reset_pipeline():
@@ -787,6 +1167,27 @@ MOCK_SONGS = [
 hcol1, hcol2 = st.columns([1, 3])
 with hcol1:
     st.markdown("<div class='app-title'>Title Studio</div><div class='app-subtitle'>sLoth rAdio · Demo Mode</div>", unsafe_allow_html=True)
+with hcol2:
+    if st.session_state.step > 1 or st.session_state.song_data:
+        _hdr_info, _hdr_btn = st.columns([3, 1])
+        with _hdr_info:
+            st.markdown(
+                "<div style='display:flex;align-items:center;height:100%;justify-content:flex-end;'>"
+                "<span style='color:rgba(255,255,255,0.50);font-size:12px;letter-spacing:2px;text-transform:uppercase;'>AI · YouTube SEO Pipeline</span>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+        with _hdr_btn:
+            if st.button("🔄 重置", key="header_reset", use_container_width=True):
+                reset_pipeline()
+                st.rerun()
+    else:
+        st.markdown(
+            "<div style='display:flex;align-items:center;justify-content:flex-end;height:100%;'>"
+            "<span style='color:rgba(255,255,255,0.50);font-size:12px;letter-spacing:2px;text-transform:uppercase;'>AI · YouTube SEO Pipeline</span>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
 # Pipeline Stepper
 step = st.session_state.step
@@ -818,7 +1219,7 @@ if step == 1:
             "<div class='section-heading'>🎵 Music Ideation</div><div class='section-sub'>選擇數量 · 一鍵生成詩意歌名與意境</div>", unsafe_allow_html=True)
         _, ctr, _ = st.columns([1, 2, 1])
         with ctr:
-            st.markdown("<div style='color:rgba(255,255,255,0.40); font-size:11px; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;'>🎚️ 生成數量</div>", unsafe_allow_html=True)
+            st.markdown("<div style='color:rgba(255,255,255,0.40); font-size:12px; letter-spacing:2px; text-transform:uppercase; margin-bottom:6px;'>🎚️ 生成數量</div>", unsafe_allow_html=True)
             n = st.slider("n_songs_slider", min_value=1, max_value=20,
                           value=st.session_state.n_songs, step=1, label_visibility="collapsed")
             st.session_state.n_songs = n
@@ -827,6 +1228,27 @@ if step == 1:
                     time.sleep(1.2)
                     st.session_state.song_data = MOCK_SONGS[:n]
                     st.rerun()
+
+        st.write("")
+        _fc1, _fc2, _fc3 = st.columns(3)
+        for _fc, (_ficon, _ftitle, _fdesc) in zip(
+            [_fc1, _fc2, _fc3],
+            [
+                ("🎵", "AI 歌單生成", "一鍵產生詩意歌名與意境描述，快速建立創作素材庫"),
+                ("🎨", "視覺概念提煉", "輸入氛圍關鍵字，AI 生成 3 個差異化故事方向"),
+                ("📋", "完整 SEO 套件", "長文故事 · 短文貼文 · 高點擊標題 · Tags 全套輸出"),
+            ],
+        ):
+            with _fc:
+                st.markdown(
+                    f"<div style='background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);"
+                    f"border-radius:14px;padding:22px 20px;text-align:center;'>"
+                    f"<div style='font-size:28px;margin-bottom:10px;'>{_ficon}</div>"
+                    f"<div style='font-size:14px;font-weight:600;color:rgba(255,255,255,0.80);margin-bottom:6px;'>{_ftitle}</div>"
+                    f"<div style='font-size:13px;color:rgba(255,255,255,0.36);line-height:1.6;'>{_fdesc}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True,
+                )
 
     else:
         n_selected = len(st.session_state.selected_song_ids)
@@ -864,21 +1286,25 @@ if step == 1:
 
         # Action bar
         st.markdown(
-            f"<div class='action-bar'>"
-            f"<span class='selected-count'><span>{n_selected}</span> / {len(songs)} ✓</span>"
-            f"</div>",
-            unsafe_allow_html=True,
-        )
-        ac1, ac2, ac3 = st.columns([1, 1, 3])
-        with ac1:
+            "<div style='border-top:1px solid rgba(255,255,255,0.07);margin-top:16px;margin-bottom:0;'></div>", unsafe_allow_html=True)
+        _ac0, _ac1, _ac2, _ac3 = st.columns([2, 1, 1, 3])
+        with _ac0:
+            st.markdown(
+                f"<div style='display:flex;align-items:center;padding-top:6px;'>"
+                f"<span style='font-size:13px;color:rgba(255,255,255,0.5);'>"
+                f"<span style='font-size:20px;font-weight:800;color:#00ffcc;font-family:Righteous,sans-serif;'>{n_selected}</span>"
+                f" / {len(songs)} ✓</span></div>",
+                unsafe_allow_html=True,
+            )
+        with _ac1:
             if st.button("✓ 全選", use_container_width=True):
                 st.session_state.selected_song_ids = [s["id"] for s in songs]
                 st.rerun()
-        with ac2:
+        with _ac2:
             if st.button("✕ 清除", use_container_width=True):
                 st.session_state.selected_song_ids = []
                 st.rerun()
-        with ac3:
+        with _ac3:
             if st.button("🎨 概念方向 →", type="primary", use_container_width=True):
                 if not st.session_state.selected_song_ids:
                     st.warning("⚠️ 請至少選一首歌。")
@@ -900,7 +1326,7 @@ elif step == 2:
     if len(sel_songs) > 5:
         names += f" ⋯ +{len(sel_songs) - 5}"
     st.markdown(
-        f"<div class='result-card'><div class='result-label'>🎵 已選歌曲</div><span style='color:rgba(255,255,255,0.7); font-size:14px;'>{names}</span></div>", unsafe_allow_html=True)
+        f"<div class='result-card'><div class='result-label'>🎵 已選歌曲</div><span style='color:rgba(255,255,255,0.7); font-size:15px;'>{names}</span></div>", unsafe_allow_html=True)
 
     vibe = st.text_input(
         "🌙 氛圍關鍵字（選填）", placeholder="凌晨的微雨 · 暖燈 · 黑膠唱片...", label_visibility="visible")
@@ -956,6 +1382,14 @@ elif step == 2:
             if st.button("✍️ 生成 SEO 素材 →", type="primary", use_container_width=True):
                 next_step()
                 st.rerun()
+    else:
+        st.markdown(
+            "<div style='text-align:center;padding:40px 0 20px;'>"
+            "<div style='font-size:36px;margin-bottom:12px;'>🎲</div>"
+            "<div style='font-size:14px;letter-spacing:1px;color:rgba(255,255,255,0.22);'>按下「生成方向」讓 AI 構思故事視角</div>"
+            "</div>",
+            unsafe_allow_html=True,
+        )
 
 
 # ═══════════════════════════════════════════════════════
@@ -968,11 +1402,15 @@ elif step == 3:
     sel_songs = [s for s in st.session_state.song_data if s["id"]
                  in st.session_state.selected_song_ids]
     concept = st.session_state.selected_concept or "—"
+    _song_preview = " · ".join(s["zh_title"] for s in sel_songs[:4])
+    if len(sel_songs) > 4:
+        _song_preview += f" +{len(sel_songs) - 4}"
     st.markdown(
         f"<div class='result-card'>"
         f"<div class='result-label'>🎯 Creative Brief</div>"
-        f"<p style='color:rgba(255,255,255,0.6); font-size:13px; margin:0 0 6px;'>🎵 <span style='color:#fff;'>{len(sel_songs)} 首</span></p>"
-        f"<p style='color:rgba(255,255,255,0.6); font-size:13px; margin:0;'>🎨 <span style='color:#00ffcc;'>{concept}</span></p>"
+        f"<p style='color:rgba(255,255,255,0.6); font-size:14px; margin:0 0 4px;'>🎵 <span style='color:#fff;'>{len(sel_songs)} 首</span>"
+        f"<span style='color:rgba(255,255,255,0.35); font-size:13px; margin-left:8px;'>{_song_preview}</span></p>"
+        f"<p style='color:rgba(255,255,255,0.6); font-size:14px; margin:0;'>🎨 <span style='color:#00ffcc;'>{concept}</span></p>"
         f"</div>",
         unsafe_allow_html=True,
     )
@@ -989,51 +1427,127 @@ elif step == 3:
             with st.status("⚙️ 生成中...", expanded=True) as s:
                 st.write("📖 撰寫長文故事...")
                 time.sleep(0.8)
-                st.write("💬 撰寫對話短篇...")
+                st.write("💬 撰寫短篇故事...")
                 time.sleep(0.6)
                 st.write("🏆 生成 5 個高點擊標題...")
                 time.sleep(0.6)
                 st.write("🏷️ 生成 SEO Tags...")
                 time.sleep(0.5)
                 first = sel_songs[0] if sel_songs else {
-                    "en_title": "Soft Landing", "zh_title": "柔軟的著陸"}
+                    "en_title": "Soft Landing", "en_theme": "Sinking into a chair, feeling your body remember how to let go."}
                 st.session_state.final_results = {
                     "long_story": (
-                        f"凌晨兩點半，窗外的雨終於慢了下來。你把毛毯拉到下巴，聽見遠處有人在彈鋼琴。"
-                        f"那旋律像是從記憶深處飄來的，帶著肉桂和舊書的味道。桌上的咖啡已經涼了，"
-                        f"但你不想動——因為此刻的溫度剛剛好。你想起那天下午，陽光把整個房間染成蜂蜜色。"
-                        f"那時候你也在聽這首歌——{first['zh_title']}。"
-                        f"空氣裡有洗好的床單味，有遠處電車聲，有貓咪踩在紙箱上的沙沙聲。"
-                        f"你閉上眼睛，感覺自己正在慢慢融化成這個房間的一部分。沒有要去的地方，只有呼吸，只有此刻。"
-                        f"窗簾被風輕輕吹起，像在說：留下來吧，這裡很安全。"
+                        "The afternoon has gone soft and still. "
+                        "You pick up the old watering can from the corner by the door \u2014 "
+                        "the green one with the slight dent near the spout \u2014 "
+                        "and fill it slowly at the kitchen sink.\n\n"
+                        "You start with the fern on the windowsill. "
+                        "It has been leaning toward the light all week, "
+                        "its pale new fronds uncurling like small fists letting go. "
+                        "You tip the can gently, watching the water disappear into the dark soil, "
+                        "and wait a moment before moving on.\n\n"
+                        "The spider plant hangs from the hook above the bookshelf. "
+                        "You step up on the wooden stool you've had since childhood \u2014 "
+                        "the paint worn smooth on the edges \u2014 and reach up carefully. "
+                        "A few drops fall from the trailing leaves and land on the floor. "
+                        "You wipe them with your sock and don't mind at all.\n\n"
+                        "One pot at a time, you move around the room. "
+                        "The big monstera by the sofa. "
+                        "The small cactus that barely needs anything. "
+                        "The trailing pothos spilling down from the top shelf, "
+                        "bright and unhurried in the afternoon light.\n\n"
+                        "There's no rush. The window is open a little, "
+                        "and the air coming through carries the smell of cut grass from somewhere outside. "
+                        "A bird calls once, then again, then goes quiet.\n\n"
+                        "When you finish, you set the empty can back in its corner "
+                        "and stand with your hands at your sides, just looking at the room. "
+                        "The plants all look the same as before, but something feels settled \u2014 "
+                        "the way a space can breathe differently once it's been given a little attention.\n\n"
+                        "You sit down on the sofa. "
+                        "The light has shifted while you weren't watching. "
+                        "Outside, the afternoon is still slow and easy, "
+                        "and there's nowhere else you need to be."
+                    ),
+                    "long_story_zh": (
+                        "下午變得柔和而靜止。你從門邊的角落拿起那個舊澆水壺——"
+                        "那個近出水口有點凹陷的綠色壺——在廚房水槽慢慢裝滿水。\n\n"
+                        "從窗台的蕨類植物開始。它整個星期都在向著光傾斜，"
+                        "新長的淡色葉片像是緊握的小拳頭慢慢鬆開。"
+                        "你輕輕傾倒水壺，看著水滲入深色土壤，靜待片刻才移到下一盆。\n\n"
+                        "吊蘭掛在書架上方的掛鈎上。"
+                        "你踩上那個從小就有的木凳——邊緣的漆已磨得光滑——小心翼翼地伸手去夠。"
+                        "幾滴水從垂墜的葉子落到地板上，你用襪子擦掉，一點都不介意。\n\n"
+                        "一盆接著一盆，你在房間裡繞了一圈。"
+                        "沙發旁的大龜背芋、那株幾乎不需要喝水的小仙人掌，"
+                        "還有從頂層書架垂掛而下的黃金葛，在午後光線中明亮而從容。\n\n"
+                        "不急。窗戶開著一條縫，外面透進來的空氣帶著割過的草香。"
+                        "一隻鳥叫了一聲，又一聲，然後靜了下來。\n\n"
+                        "澆完後，你把空了的壺放回角落，雙手垂在身側，只是站著看著這個房間。"
+                        "植物們看起來和剛才一樣，但某些東西安頓下來了——"
+                        "就像一個空間在得到一點照料之後，可以以不同的方式呼吸。\n\n"
+                        "你在沙發上坐下來。趁你不注意的時候，光線已經移動了。"
+                        "窗外，午後依然悠長而輕鬆，你不需要去任何地方。"
                     ),
                     "short_story": (
-                        f"🌙 「欸，你有冇試過凌晨兩點突然好想飲嘢？」\n\n"
-                        f"☕ 「有啊，我上次半夜爬起身沖咖啡，坐喺窗邊聽歌聽到天光。」\n\n"
-                        f"🎵 「聽咩歌？」\n\n"
-                        f"🎧 「{first['en_title']}。嗰種感覺⋯成個世界靜晒，淨係得你同音樂。」\n\n"
-                        f"🐱 「然後隻貓跳上你大腿？」\n\n"
-                        f"😂 「你點知㗎！佢仲踩咗我杯咖啡，不過嗰一刻真係好治癒。」\n\n"
-                        f"✨ 「呢啲就係生活俾你嘅小禮物啦。」"
+                        "Watering the Plants 🌿\n\n"
+                        "The afternoon has gone quiet and still 🌤️. "
+                        "You pick up the old watering can from the corner \u2014 "
+                        "the green one with the slight dent \u2014 and fill it slowly at the sink.\n\n"
+                        "You start with the fern on the windowsill, tipping the can gently, "
+                        "watching the water disappear into the dark soil. "
+                        "One pot at a time, you move around the room. "
+                        "The big monstera. The small cactus. "
+                        "The trailing pothos spilling from the top shelf in the afternoon light 🌱.\n\n"
+                        "There's no rush. The window is open a little, "
+                        "and the air carries the smell of cut grass from somewhere outside. "
+                        "A bird calls once, then goes quiet 🐦.\n\n"
+                        "When you finish, you set the empty can back and stand looking at the room. "
+                        "Something feels settled \u2014 the way a space breathes differently "
+                        "once it's been given a little attention \u2728.\n\n"
+                        "You sink into the sofa. The light has shifted. "
+                        "Outside, the afternoon is still slow and easy, "
+                        "and there's nowhere else you need to be 🛋️."
+                    ),
+                    "short_story_zh": (
+                        "澆花 🌿\n\n"
+                        "午後變得安靜而靜止 🌤️。"
+                        "你從角落拿起那個舊澆水壺——那個有點凹陷的綠色壺——在水槽慢慢裝滿水。\n\n"
+                        "從窗台的蕨類開始，輕輕傾倒，看著水滲入深色土壤。"
+                        "一盆接著一盆，你在房間裡繞了一圈。"
+                        "大龜背芋、小仙人掌，還有從頂層書架垂掛而下的黃金葛，"
+                        "在午後光線中綠意盎然 🌱。\n\n"
+                        "不急。窗戶開著一條縫，空氣帶著割草後的青草香從外面透進來。"
+                        "一隻鳥叫了一聲，然後靜了下來 🐦。\n\n"
+                        "澆完後，你把壺放回原處，站著看著這個房間。"
+                        "某些東西安頓下來了——就像一個空間在被好好照料後，"
+                        "可以以不同的方式呼吸 ✨。\n\n"
+                        "你沉入沙發。光線已悄悄移動。"
+                        "窗外，午後依然悠長而輕鬆，你不需要去任何地方 🛋️。"
                     ),
                     "titles": [
-                        f"🌙 凌晨兩點的溫柔 | {first['en_title']} — 3 Hour Lofi Mix for Late Night Healing",
-                        f"☕ 把失眠變成禮物 | Midnight {first['en_title']} — Calm Lofi Beats to Breathe & Relax",
-                        f"🐱 貓咪都睡了只剩我和音樂 | {first['en_title']} — Soft Lofi for Quiet Souls",
-                        f"🌧️ 雨聲 × Lofi × 一杯涼掉的咖啡 | {first['en_title']} — Aesthetic Chill Mix",
-                        f"✨ 致每一個還醒著的溫柔靈魂 | {first['en_title']} — 3Hr Lofi Radio for Night Owls",
+                        "Watering the Plants… Chill Lofi for Relaxation, Study & Calm 🌿 🌙",
+                        "Slow Afternoon Rituals… Soft Lofi for Unwinding & Gentle Focus 🪴 ☀️",
+                        "Find Peace in the Small Things… Chill Lofi for Rest, Study & Healing 🌱 🌸",
+                        "One Plant at a Time… Cozy Lofi for Work, Rest & Quiet Living 🏡 ☁️",
+                        "Just You and the Afternoon… Soothing Lofi for Focus, Rest & Slow Days 🛋️ 🌿",
+                    ],
+                    "titles_zh": [
+                        "澆花的午後… Chill Lofi for Relaxation, Study & Calm 🌿 🌙",
+                        "慢慢來的日常… Soft Lofi for Unwinding & Gentle Focus 🪴 ☀️",
+                        "在細小的事裡找到平靜… Chill Lofi for Rest, Study & Healing 🌱 🌸",
+                        "一盆接著一盆… Cozy Lofi for Work, Rest & Quiet Living 🏡 ☁️",
+                        "只有你和這個午後… Soothing Lofi for Focus, Rest & Slow Days 🛋️ 🌿",
                     ],
                     "tags": (
                         f"lofi,lofi hip hop,chill beats,study music,late night lofi,"
-                        f"{first['en_title'].lower().replace(' ','')},治癒音樂,深夜音樂,"
-                        f"lofi mix,lofi radio,chill lofi,beats to relax,beats to study,"
-                        f"lofi 2026,aesthetic lofi,cozy lofi,rainy lofi,midnight lofi,"
-                        f"lofi playlist,soft lofi,warm lofi,lofi cafe,coffee lofi,"
-                        f"sloth radio,樹懶電台,讀書音樂,放鬆音樂,助眠音樂,"
-                        f"chill hop,lo-fi,lofi chill,japanese lofi,korean lofi,"
-                        f"bedroom lofi,night owl music,3am music,healing music,"
-                        f"rain and lofi,cozy bedroom,late night vibes,alone time music,"
-                        f"溫柔音樂,失眠音樂,凌晨歌單,深夜電台,慵懶音樂,貓咪音樂"
+                        f"{first['en_title'].lower().replace(' ', ' ')},lofi mix,lofi radio,"
+                        f"chill lofi,beats to relax,beats to study,lofi 2026,aesthetic lofi,"
+                        f"cozy lofi,rainy lofi,midnight lofi,lofi playlist,soft lofi,warm lofi,"
+                        f"lofi cafe,coffee lofi,sloth radio,chill hop,lo-fi,lofi chill,"
+                        f"japanese lofi,korean lofi,bedroom lofi,night owl music,3am music,"
+                        f"healing music,rain and lofi,cozy bedroom,late night vibes,"
+                        f"alone time music,gentle music,sleepless nights,midnight radio,"
+                        f"deep focus music,calm music,ambient lofi,lo fi beats"
                     ),
                 }
                 s.update(label="✅ 完成！",
@@ -1059,71 +1573,47 @@ elif step == 4:
                 unsafe_allow_html=True)
 
     r = st.session_state.final_results
+    sel_songs = [s for s in st.session_state.song_data
+                 if s["id"] in st.session_state.selected_song_ids]
 
-    # 長故事
     long_story = r.get("long_story", "")
-    st.markdown(
-        f"<div class='result-label' style='margin-bottom:8px;'>📖 長文故事</div>"
-        f"<div class='result-card'>"
-        f"<div style='display:flex; justify-content:flex-end; margin-bottom:10px;'>"
-        f"<button class='copy-btn' onclick='copyText(\"{quote(long_story)}\",this)'>複製</button>"
-        f"</div>"
-        f"<p style='color:rgba(255,255,255,0.75); line-height:1.85; font-size:14px; margin:0;'>"
-        f"{_html.escape(long_story)}</p></div>",
-        unsafe_allow_html=True)
-    st.write("")
-
-    # 短故事
+    long_story_zh = r.get("long_story_zh", long_story)
     short_story = r.get("short_story", "")
-    st.markdown(
-        f"<div class='result-label' style='margin-bottom:8px;'>💬 對話短篇</div>"
-        f"<div class='result-card' style='white-space:pre-wrap;'>"
-        f"<div style='display:flex; justify-content:flex-end; margin-bottom:10px;'>"
-        f"<button class='copy-btn' onclick='copyText(\"{quote(short_story)}\",this)'>複製</button>"
-        f"</div>"
-        f"<p style='color:rgba(255,255,255,0.75); line-height:1.9; font-size:14px; margin:0;'>"
-        f"{_html.escape(short_story)}</p></div>",
-        unsafe_allow_html=True)
-    st.write("")
-
-    # 5 標題（每條單獨複製）
-    st.markdown("<div class='result-label' style='margin-bottom:8px;'>🏆 高點擊標題</div>",
-                unsafe_allow_html=True)
-    for i, t in enumerate(r.get("titles", []), 1):
-        st.markdown(
-            f"<div class='title-card'>"
-            f"<span class='title-num'>#{i}</span>"
-            f"<span class='title-text'>{_html.escape(t)}</span>"
-            f"<button class='copy-btn' onclick='copyText(\"{quote(t)}\",this)'>複製</button>"
-            f"</div>",
-            unsafe_allow_html=True)
-    st.write("")
-
-    # Tags
+    short_story_zh = r.get("short_story_zh", short_story)
+    titles = r.get("titles", [])
+    titles_zh = r.get("titles_zh", titles)
     tags_str = r.get("tags", "")
-    pills = "".join(
-        f"<span class='tag-pill'>{_html.escape(tag.strip())}</span>"
-        for tag in tags_str.split(",") if tag.strip())
-    st.markdown(
-        f"<div class='result-label' style='margin-bottom:8px;'>🏷️ SEO Tags"
-        f"&nbsp;<span style='color:rgba(255,255,255,0.3); font-size:11px; font-weight:400; letter-spacing:0;'>"
-        f"{len(tags_str)} / 500</span></div>"
-        f"<div class='result-card'>"
-        f"<div style='display:flex; justify-content:flex-end; margin-bottom:10px;'>"
-        f"<button class='copy-btn' onclick='copyText(\"{quote(tags_str)}\",this)'>複製</button>"
-        f"</div>"
-        f"{pills}</div>",
-        unsafe_allow_html=True)
 
-    st.write("")
+    n_tags = sum(1 for t in tags_str.split(',') if t.strip())
+    total_h = int((
+        ((80 + len(sel_songs) * 155) if sel_songs else 0)
+        + max(_est_height(long_story), _est_height(long_story_zh))
+        + max(_est_height(short_story), _est_height(short_story_zh))
+        + (70 + len(titles) * 68)
+        + max(160, 80 + ((n_tags + 4) // 5) * 36)
+        + 120
+    ) * 1.02)
+    components.html(
+        _dashboard_html(sel_songs, long_story, long_story_zh,
+                        short_story, short_story_zh,
+                        titles, titles_zh, tags_str),
+        height=total_h,
+        scrolling=False,
+    )
     st.divider()
-    if st.button("🔄 重新開始", use_container_width=True):
-        reset_pipeline()
-        st.rerun()
+    _s4c1, _s4c2 = st.columns(2)
+    with _s4c1:
+        if st.button("← 返回素材", use_container_width=True):
+            go_to(3)
+            st.rerun()
+    with _s4c2:
+        if st.button("🔄 重新開始", use_container_width=True):
+            reset_pipeline()
+            st.rerun()
 
 
 # ─────────────────────────────────────────
 #  Footer
 # ─────────────────────────────────────────
 st.write("")
-st.markdown("<div style='text-align:center; color:rgba(255,255,255,0.15); font-size:11px; letter-spacing:1px; margin-top:48px;'>sLoth rAdio · YouTube Title Studio · Demo Mode</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:rgba(255,255,255,0.35); font-size:11px; letter-spacing:1px; margin-top:48px;'>sLoth rAdio · YouTube Title Studio · Demo Mode</div>", unsafe_allow_html=True)
