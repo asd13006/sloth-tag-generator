@@ -9,18 +9,8 @@ Design: OLED Dark + Neon Teal (#00ffcc / #b026ff)
 import json
 import streamlit as st
 from PIL import Image
-
-# ── google-genai (new SDK, replaces deprecated google-generativeai) ──────────
-try:
-    from google import genai
-    from google.genai import types as genai_types
-except ImportError:
-    import subprocess
-    import sys
-    subprocess.check_call([sys.executable, "-m", "pip",
-                          "install", "-q", "google-genai>=1.0.0"])
-    from google import genai
-    from google.genai import types as genai_types
+from google import genai
+from google.genai import types as genai_types
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  PAGE CONFIG
