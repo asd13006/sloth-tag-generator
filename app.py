@@ -42,7 +42,7 @@ st.markdown("""
 html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; color-scheme: dark; }
 .stApp {
     background-color: #0A0A14 !important;
-    background-image: radial-gradient(rgba(0,255,204,0.055) 1px, transparent 1px) !important;
+    background-image: radial-gradient(rgba(0,255,204,0.03) 1px, transparent 1px) !important;
     background-size: 30px 30px !important;
 }
 .block-container { padding: 2rem 2.5rem 4rem !important; max-width: 1280px !important; }
@@ -72,10 +72,10 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .stepper { display: flex; align-items: center; gap: 0; margin: 28px 0 32px; }
 .step-item { display: flex; align-items: center; gap: 10px; flex: 1; }
 .step-item:last-child { flex: 0; }
-.step-dot { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25); background: transparent; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.45); flex-shrink: 0; transition: all 0.3s ease; }
+.step-dot { width: 32px; height: 32px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.45); background: transparent; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; color: rgba(255,255,255,0.45); flex-shrink: 0; transition: all 0.3s ease; }
 .step-dot.active { border-color: #00ffcc; background: rgba(0,255,204,0.16); color: #00ffcc; box-shadow: 0 0 18px rgba(0,255,204,0.55), 0 0 6px rgba(0,255,204,0.75); }
 .step-dot.done { border-color: rgba(0,255,204,0.5); background: rgba(0,255,204,0.08); color: rgba(0,255,204,0.7); }
-.step-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.48); white-space: nowrap; }
+.step-label { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.55); white-space: nowrap; }
 .step-label.active { color: #00ffcc; font-weight: 700; }
 .step-label.done { color: rgba(0,255,204,0.5); }
 .step-connector { height: 1px; background: rgba(255,255,255,0.08); flex: 1; margin: 0 12px; }
@@ -83,10 +83,10 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 
 /* Section headings */
 .section-heading { font-family: 'Righteous', sans-serif; font-size: 20px; color: #FFFFFF; margin: 0 0 6px; letter-spacing: 0.5px; }
-.section-sub { font-size: 14px; color: rgba(255,255,255,0.4); margin: 0 0 24px; }
+.section-sub { font-size: 14px; color: rgba(255,255,255,0.55); margin: 0 0 24px; }
 
 /* Result cards */
-.result-card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
+.result-card { background: rgba(10,10,20,0.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 24px; margin-bottom: 20px; }
 .result-label { font-size: 12px; font-weight: 600; color: #00ffcc; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }
 
 /* Song Cards */
@@ -113,15 +113,15 @@ button[data-testid^="stBaseButton"]:has(p:nth-of-type(5)) {
     transition: border-color 0.2s, background 0.2s, transform 0.18s, box-shadow 0.2s !important;
 }
 button[data-testid="baseButton-secondary"]:has(p:nth-of-type(5)) { background: rgba(255,255,255,0.04) !important; border: 1px solid rgba(255,255,255,0.1) !important; box-shadow: none !important; }
-button[data-testid="baseButton-secondary"]:has(p:nth-of-type(5)):hover { background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.22) !important; transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important; }
+button[data-testid="baseButton-secondary"]:has(p:nth-of-type(5)):hover { background: rgba(255,255,255,0.07) !important; border-color: rgba(255,255,255,0.45) !important; transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important; }
 button[data-testid="baseButton-primary"]:has(p:nth-of-type(5)),
 button[data-testid="stBaseButton-primary"]:has(p:nth-of-type(5)) { background: rgba(255,255,255,0.04) !important; border: 1.5px solid #00ffcc !important; box-shadow: 0 0 12px rgba(0,255,204,0.18) !important; }
 button[data-testid="baseButton-primary"]:has(p:nth-of-type(5)):hover,
-button[data-testid="stBaseButton-primary"]:has(p:nth-of-type(5)):hover { transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(0,0,0,0.3), 0 0 16px rgba(0,255,204,0.25) !important; }
+button[data-testid="stBaseButton-primary"]:has(p:nth-of-type(5)):hover { transform: translateY(-2px) !important; box-shadow: 0 4px 12px rgba(0,0,0,0.5), 0 0 12px rgba(0,255,204,0.4) !important; }
 
 /* Song card typography */
 button:has(p:nth-of-type(5)) p { margin: 0 !important; padding: 0 !important; width: 100% !important; }
-button:has(p:nth-of-type(5)) p:nth-of-type(1) { font-size: 11px !important; font-weight: 700 !important; letter-spacing: 1.5px !important; color: rgba(255,255,255,0.25) !important; margin-bottom: 10px !important; line-height: 1 !important; }
+button:has(p:nth-of-type(5)) p:nth-of-type(1) { font-size: 11px !important; font-weight: 700 !important; letter-spacing: 1.5px !important; color: rgba(255,255,255,0.45) !important; margin-bottom: 10px !important; line-height: 1 !important; }
 button[data-testid="baseButton-primary"]:has(p:nth-of-type(5)) p:nth-of-type(1) { color: #00ffcc !important; }
 button:has(p:nth-of-type(5)) p:nth-of-type(2) { font-size: 16px !important; font-weight: 700 !important; line-height: 1.3 !important; margin-bottom: 4px !important; }
 button:has(p:nth-of-type(5)) p:nth-of-type(2) strong { color: #FFFFFF !important; }
@@ -322,7 +322,7 @@ with st.sidebar:
                 f"<div style='font-size:12px;color:rgba(0,255,204,0.8);padding:10px 12px;"
                 f"background:rgba(0,255,204,0.07);border:1px solid rgba(0,255,204,0.2);"
                 f"border-radius:8px;'>✅ Secrets 金鑰已驗證<br>"
-                f"<span style='color:rgba(255,255,255,0.35);font-size:11px;'>{_short}</span></div>",
+                f"<span style='color:rgba(255,255,255,0.50);font-size:11px;'>{_short}</span></div>",
                 unsafe_allow_html=True,
             )
     else:
@@ -346,7 +346,7 @@ with st.sidebar:
                 f"<div style='font-size:12px;color:rgba(0,255,204,0.8);padding:10px 12px;"
                 f"background:rgba(0,255,204,0.07);border:1px solid rgba(0,255,204,0.2);"
                 f"border-radius:8px;margin-top:6px;'>✅ 金鑰驗證通過<br>"
-                f"<span style='color:rgba(255,255,255,0.35);font-size:11px;'>{_short}</span></div>",
+                f"<span style='color:rgba(255,255,255,0.50);font-size:11px;'>{_short}</span></div>",
                 unsafe_allow_html=True,
             )
             if st.button("🔄 更換金鑰", use_container_width=True):
@@ -375,7 +375,7 @@ with st.sidebar:
 
     st.divider()
     st.markdown(
-        "<div style='font-size:11px;color:rgba(255,255,255,0.25);line-height:1.7;'>"
+        "<div style='font-size:11px;color:rgba(255,255,255,0.45);line-height:1.7;'>"
         "使用 Google Gemini API。<br>"
         "Key 僅存於本次 session，<br>不會傳送至任何第三方。"
         "</div>",
@@ -390,7 +390,13 @@ if not st.session_state._api_key_verified:
     st.markdown("""
     <div style='display:flex;flex-direction:column;align-items:center;
          justify-content:center;padding:80px 20px;text-align:center;'>
-      <div style='font-size:56px;margin-bottom:24px;'>🔑</div>
+      <div style='margin-bottom:24px;color:#00ffcc;'>
+      <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15.5 7.5 2.3 2.3a1 1 0 0 0 1.4 0l2.1-2.1a1 1 0 0 0 0-1.4L19 4"></path>
+        <path d="m21 2-9.6 9.6"></path>
+        <circle cx="7.5" cy="15.5" r="5.5"></circle>
+      </svg>
+    </div>
       <div style='font-family:Righteous,sans-serif;font-size:28px;
            background:linear-gradient(90deg,#00ffcc,#b026ff);
            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
@@ -529,7 +535,7 @@ _BASE_CSS = (
     "* { box-sizing: border-box; margin: 0; padding: 0; }"
     "html, body { background: transparent; font-family: -apple-system, 'Segoe UI', sans-serif; overflow: hidden; }"
     ".lbl { font-size: 12px; font-weight: 600; color: #00ffcc; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 10px; }"
-    ".card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px 20px; }"
+    ".card { background: rgba(10,10,20,0.7); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 18px 20px; }"
     ".copy-btn { background: rgba(0,255,204,0.08); border: 1px solid rgba(0,255,204,0.25); border-radius: 6px; color: #00ffcc; font-size: 12px; font-weight: 600; padding: 4px 12px; cursor: pointer; font-family: inherit; transition: background 0.2s; }"
     ".copy-btn:hover, .copy-btn.ok { background: rgba(0,255,204,0.2); border-color: rgba(0,255,204,0.5); }"
     ".trans-btn { background: rgba(176,38,255,0.1); border: 1px solid rgba(176,38,255,0.3); border-radius: 6px; color: #b026ff; font-size: 12px; font-weight: 600; padding: 4px 10px; cursor: pointer; font-family: inherit; transition: background 0.2s; margin-right: 6px; }"
@@ -546,7 +552,7 @@ _BASE_CSS = (
     ".sinfo { flex: 1; } .stitle { font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.92); margin-bottom: 6px; line-height: 1.4; }"
     ".stheme-lbl { font-size: 11px; color: #00ffcc; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }"
     ".stheme-en { font-size: 13px; color: rgba(255,255,255,0.62); line-height: 1.55; margin-bottom: 3px; }"
-    ".stheme-zh { font-size: 13px; color: rgba(255,255,255,0.38); line-height: 1.55; font-style: italic; }"
+    ".stheme-zh { font-size: 13px; color: rgba(255,255,255,0.50); line-height: 1.55; font-style: italic; }"
 )
 
 _JS = (
@@ -634,7 +640,7 @@ def _tags_sec(tags_str: str) -> str:
     )
     return (
         f'<div class="sec"><div class="lbl">🏷️ SEO Tags'
-        f'&nbsp;<span style="color:rgba(255,255,255,0.3);font-size:12px;font-weight:400;letter-spacing:0;">'
+        f'&nbsp;<span style="color:rgba(255,255,255,0.50);font-size:12px;font-weight:400;letter-spacing:0;">'
         f'{count} / 500</span></div>'
         f'<div class="card">'
         f'<div class="btn-row"><button class="copy-btn" data-text="{_ae(tags_str)}" onclick="doCopy(this)">複製</button></div>'
@@ -663,7 +669,7 @@ def _songs_sec(songs: list) -> str:
     n = len(songs)
     return (
         f'<div class="sec"><div class="lbl">🎵 Selected Songs'
-        f'&nbsp;<span style="color:rgba(255,255,255,0.3);font-size:11px;font-weight:400;letter-spacing:0;">'
+        f'&nbsp;<span style="color:rgba(255,255,255,0.50);font-size:11px;font-weight:400;letter-spacing:0;">'
         f'{n} track{"s" if n != 1 else ""}</span></div>'
         f'<div class="card">{rows}</div></div>'
     )
@@ -683,7 +689,7 @@ def build_dashboard(songs, long_en, long_zh, short_en, short_zh, titles_en, titl
 # ─────────────────────────────────────────────────────────────────────────────
 #  APP HEADER
 # ─────────────────────────────────────────────────────────────────────────────
-hcol1, hcol2 = st.columns([1, 3])
+hcol1, hcol2 = st.columns([2, 1])
 with hcol1:
     st.markdown(
         "<div class='app-title'>Title Studio</div>"
@@ -739,7 +745,7 @@ if step == 1:
         _, ctr, _ = st.columns([1, 2, 1])
         with ctr:
             st.markdown(
-                "<div style='color:rgba(255,255,255,0.40);font-size:12px;letter-spacing:2px;"
+                "<div style='color:rgba(255,255,255,0.55);font-size:12px;letter-spacing:2px;"
                 "text-transform:uppercase;margin-bottom:6px;'>🎚️ 生成數量</div>",
                 unsafe_allow_html=True,
             )
@@ -770,7 +776,7 @@ if step == 1:
                     f"border-radius:14px;padding:22px 20px;text-align:center;'>"
                     f"<div style='font-size:28px;margin-bottom:10px;'>{_icon}</div>"
                     f"<div style='font-size:14px;font-weight:600;color:rgba(255,255,255,0.80);margin-bottom:6px;'>{_title}</div>"
-                    f"<div style='font-size:13px;color:rgba(255,255,255,0.36);line-height:1.6;'>{_desc}</div>"
+                    f"<div style='font-size:13px;color:rgba(255,255,255,0.50);line-height:1.6;'>{_desc}</div>"
                     f"</div>",
                     unsafe_allow_html=True,
                 )
@@ -859,7 +865,7 @@ elif step == 2:
 
     vibe = st.text_input("🌙 氛圍關鍵字（選填）", placeholder="凌晨的微雨 · 暖燈 · 黑膠唱片...")
 
-    b1, b2 = st.columns([1, 3])
+    b1, b_space, b2 = st.columns([1, 4, 1])
     with b1:
         if st.button("← 返回", use_container_width=True):
             st.session_state.concept_options = []
@@ -891,14 +897,16 @@ elif step == 2:
 
         if st.session_state.selected_concept:
             st.write("")
-            if st.button("✍️ 生成 SEO 素材 →", type="primary", use_container_width=True):
-                next_step()
-                st.rerun()
+            _, _, n2 = st.columns([1, 4, 1])
+            with n2:
+                if st.button("✍️ 生成 SEO 素材 →", type="primary", use_container_width=True):
+                    next_step()
+                    st.rerun()
     else:
         st.markdown(
             "<div style='text-align:center;padding:40px 0 20px;'>"
             "<div style='font-size:36px;margin-bottom:12px;'>🎲</div>"
-            "<div style='font-size:14px;letter-spacing:1px;color:rgba(255,255,255,0.22);'>"
+            "<div style='font-size:14px;letter-spacing:1px;color:rgba(255,255,255,0.45);'>"
             "按下「生成方向」讓 AI 構思故事視角</div></div>",
             unsafe_allow_html=True,
         )
@@ -925,7 +933,7 @@ elif step == 3:
         f"<div class='result-card'><div class='result-label'>🎯 Creative Brief</div>"
         f"<p style='color:rgba(255,255,255,0.6);font-size:14px;margin:0 0 4px;'>"
         f"🎵 <span style='color:#fff;'>{len(sel_songs)} 首</span>"
-        f"<span style='color:rgba(255,255,255,0.35);font-size:13px;margin-left:8px;'>{preview}</span></p>"
+        f"<span style='color:rgba(255,255,255,0.50);font-size:13px;margin-left:8px;'>{preview}</span></p>"
         f"<p style='color:rgba(255,255,255,0.6);font-size:14px;margin:0;'>"
         f"🎨 <span style='color:#00ffcc;'>{concept}</span></p></div>",
         unsafe_allow_html=True,
@@ -954,14 +962,16 @@ elif step == 3:
                 st.rerun()
     else:
         st.success("✅ 所有素材已就緒！")
-        c1, c2 = st.columns(2)
-        if c1.button("← 返回", use_container_width=True):
-            st.session_state.final_results = {}
-            go_to(2)
-            st.rerun()
-        if c2.button("📊 查看成果 →", type="primary", use_container_width=True):
-            next_step()
-            st.rerun()
+        c1, c_space, c2 = st.columns([1, 4, 1])
+        with c1:
+            if st.button("← 返回", use_container_width=True):
+                st.session_state.final_results = {}
+                go_to(2)
+                st.rerun()
+        with c2:
+            if st.button("📊 查看成果 →", type="primary", use_container_width=True):
+                next_step()
+                st.rerun()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -993,9 +1003,9 @@ elif step == 4:
     )
 
     st.divider()
-    s4c1, s4c2 = st.columns(2)
+    s4c1, s4space, s4c2 = st.columns([1, 4, 1])
     with s4c1:
-        if st.button("← 返回素材", use_container_width=True):
+        if st.button("← 返回", use_container_width=True):
             go_to(3)
             st.rerun()
     with s4c2:
@@ -1009,7 +1019,7 @@ elif step == 4:
 # ─────────────────────────────────────────────────────────────────────────────
 st.write("")
 st.markdown(
-    "<div style='text-align:center;color:rgba(255,255,255,0.35);font-size:11px;"
+    "<div style='text-align:center;color:rgba(255,255,255,0.50);font-size:11px;"
     "letter-spacing:1px;margin-top:48px;'>sLoth rAdio · YouTube Title Studio · Powered by Gemini</div>",
     unsafe_allow_html=True,
 )
