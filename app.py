@@ -512,7 +512,7 @@ Return a single JSON object with these exact keys:
 - "long_story_zh": Traditional Chinese translation of long_story, equally poetic
 - "short_story": Instagram-caption English with emojis (3-4 short paragraphs, ~130 words)
 - "short_story_zh": Traditional Chinese translation of short_story
-- "titles": JSON array of 12 SEO-optimized YouTube titles in English, RANKED from highest to lowest predicted click-through rate. STRICT FORMAT for each: "{Catchy Short Name}… {Genre e.g. Chill Lofi/Cozy R&B/Soothing Jazz} for {Use-Case Keywords} {emoji} {emoji}". Example: "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm ☕ 🌙". The short name must be 2-5 evocative words, the subtitle must include a genre keyword (Lofi/R&B/Jazz) plus 2-3 use-case words joined by commas or '&'. End with exactly 2 emojis. Put the title you predict will get the MOST clicks first.
+- "titles": JSON array of 12 SEO-optimized YouTube titles in English, RANKED from highest to lowest predicted click-through rate. STRICT FORMAT for each: "{{Catchy Short Name}}… {{Genre e.g. Chill Lofi/Cozy R&B/Soothing Jazz}} for {{Use-Case Keywords}} {{emoji}} {{emoji}}". Example: "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm ☕ 🌙". The short name must be 2-5 evocative words, the subtitle must include a genre keyword (Lofi/R&B/Jazz) plus 2-3 use-case words joined by commas or '&'. End with exactly 2 emojis. Put the title you predict will get the MOST clicks first.
 - "titles_zh": JSON array of 12 matching Traditional Chinese YouTube titles in SAME format and SAME ranking order
 - "tags": comma-separated string of 35-45 YouTube SEO tags, mix broad and niche lofi keywords
 
