@@ -1,8 +1,20 @@
 import streamlit as st
 import time
 import json
-from google import genai as genai_new
-from google.genai import types as genai_types
+import importlib
+import subprocess
+import sys
+
+# 確保 google-genai 已安裝（Streamlit Cloud 有時需要在 runtime 安裝）
+try:
+    from google import genai as genai_new
+    from google.genai import types as genai_types
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip",
+                          "install", "-q", "google-genai"])
+    from google import genai as genai_new
+    from google.genai import types as genai_types
+
 from PIL import Image
 import io
 
