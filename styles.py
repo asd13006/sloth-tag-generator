@@ -79,8 +79,9 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .api-lbl { color: #a0a0a0; }
 /* 統一按鈕樣式（button + popover trigger） */
 .st-key-navbar button,
-.st-key-navbar [data-testid="stPopover"] > button {
-    min-height: 38px !important; padding: 4px 10px !important; font-size: 18px !important;
+.st-key-navbar [data-testid="stPopover"] button {
+    height: 38px !important; min-height: 38px !important; max-height: 38px !important;
+    padding: 0 10px !important; font-size: 18px !important;
     background: rgba(255,255,255,0.12) !important;
     border: 1px solid rgba(255,255,255,0.25) !important;
     border-radius: 12px !important;
@@ -90,9 +91,14 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
     position: relative;
     filter: brightness(1.1);
+    box-sizing: border-box !important;
+    line-height: 1 !important;
+}
+.st-key-navbar button p {
+    margin: 0 !important; padding: 0 !important; line-height: 1 !important; display: flex; align-items: center; justify-content: center; height: 100%;
 }
 .st-key-navbar button:hover,
-.st-key-navbar [data-testid="stPopover"] > button:hover {
+.st-key-navbar [data-testid="stPopover"] button:hover {
     background: rgba(0,255,204,0.15) !important;
     border-color: rgba(0,255,204,0.4) !important;
     color: #fff !important;
@@ -101,11 +107,13 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     filter: brightness(1.2);
 }
 .st-key-navbar button:focus-visible,
-.st-key-navbar [data-testid="stPopover"] > button:focus-visible {
+.st-key-navbar [data-testid="stPopover"] button:focus-visible {
     outline: 2px solid rgba(0,255,204,0.45) !important; outline-offset: 2px;
 }
-/* 隱藏 popover 的下拉箭頭 */
-.st-key-navbar [data-testid="stPopover"] > button svg { display: none !important; }
+/* 隱藏 popover 的下拉箭頭與內部無用元素 */
+.st-key-navbar [data-testid="stPopover"] button svg { display: none !important; }
+.st-key-navbar [data-testid="stPopover"] button div:nth-child(2) { display: none !important; }
+
 /* 確保中間圖示顏色透白（避免系統繪製黑 emoji） */
 .st-key-navbar [data-testid="column"]:nth-child(4) button p,
 .st-key-navbar [data-testid="column"]:nth-child(5) button p {
