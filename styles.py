@@ -196,23 +196,27 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .hist-time { font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 500; }
 .hist-summary { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 6px; line-height: 1.5; }
 
-/* ── Profile center tabs ── */
-.stTabs [data-baseweb="tab-list"] {
-    background: rgba(255,255,255,0.02); border-radius: 14px; padding: 4px;
-    border: 1px solid rgba(255,255,255,0.06); gap: 0 !important;
+/* ── Profile header ── */
+.profile-header {
+    display: flex; align-items: center; gap: 20px; padding: 8px 0;
 }
-.stTabs [data-baseweb="tab"] {
-    font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600;
-    color: rgba(255,255,255,0.50); border-radius: 10px; padding: 8px 20px;
-    transition: background 0.2s ease, color 0.2s ease;
+.profile-avatar {
+    width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid rgba(0,255,204,0.3); object-fit: cover;
 }
-.stTabs [data-baseweb="tab"]:hover { color: rgba(255,255,255,0.80); background: rgba(255,255,255,0.04); }
-.stTabs [aria-selected="true"] {
-    color: #00ffcc !important; background: rgba(0,255,204,0.08) !important;
-    border-bottom: none !important;
+.profile-avatar-placeholder {
+    width: 64px; height: 64px; border-radius: 50%; flex-shrink: 0;
+    border: 2px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; background: rgba(255,255,255,0.04);
 }
-.stTabs [data-baseweb="tab-highlight"] { background-color: #00ffcc !important; height: 2px !important; }
-.stTabs [data-baseweb="tab-border"] { display: none !important; }
+.profile-info { flex: 1; min-width: 0; }
+.profile-name {
+    font-family: 'Righteous', sans-serif; font-size: 20px; color: #fff;
+    margin-bottom: 2px; letter-spacing: 0.5px;
+}
+.profile-email { font-size: 13px; color: rgba(255,255,255,0.5); margin-bottom: 4px; }
+.profile-stat { font-size: 12px; color: rgba(255,255,255,0.4); }
 
 /* ── Export bar ── */
 .export-bar {
