@@ -113,18 +113,7 @@ class _SlothAuth:
         if st.session_state["connected"]:
             return
         auth_url = self._build_auth_url()
-        bg = "#fff" if color == "white" else "#4285f4"
-        fg = "#000" if color == "white" else "#fff"
-        st.markdown(
-            f'<div style="display:flex;justify-content:{justify_content};">'
-            f'<a href="{auth_url}" target="_top" style="background:{bg};color:{fg};'
-            f'text-decoration:none;text-align:center;font-size:16px;margin:4px 2px;'
-            f'cursor:pointer;padding:8px 12px;border-radius:4px;display:flex;align-items:center;">'
-            f'<img src="https://lh3.googleusercontent.com/COxitqgJr1sJnIDe8-jiKhxDx1FrYbtRHKJ9z_hELisAlapwE9LUPh6fcXIfb5vwpbMl4xl9H9TRFPc5NOO8Sb3VSgIBrfRYvW6cUA" '
-            f'alt="Google" style="margin-right:8px;width:26px;height:26px;background:#fff;border:2px solid #fff;border-radius:4px;">'
-            f'Sign in with Google</a></div>',
-            unsafe_allow_html=True,
-        )
+        st.link_button("🔐 Sign in with Google", auth_url, use_container_width=True)
 
 
 def _init_auth():
