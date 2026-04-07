@@ -170,6 +170,10 @@ class SlothAuth:
         auth_url = self._build_auth_url()
         st.link_button("🔐 Sign in with Google", auth_url, use_container_width=True)
 
+    def get_login_url(self) -> str:
+        """回傳 Google OAuth 授權 URL。"""
+        return self._build_auth_url()
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  公開 API
@@ -214,6 +218,11 @@ def init_auth():
 def get_auth_object():
     """取得 SlothAuth 物件（用於渲染 login 按鈕），未初始化時回傳 None。"""
     return _auth_obj
+
+
+def get_login_url():
+    """取得 Google OAuth 授權 URL，未初始化時回傳 None。"""
+    return _auth_obj.get_login_url() if _auth_obj else None
 
 
 def inject_auth_cookies():

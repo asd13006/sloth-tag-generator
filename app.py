@@ -17,7 +17,7 @@ from PIL import Image
 import io
 
 from history import load_history, save_generation, delete_history_item
-from auth import init_auth, get_auth_object, inject_auth_cookies, clear_session
+from auth import init_auth, get_auth_object, get_login_url, inject_auth_cookies, clear_session
 from styles import inject_css
 from gemini_api import MODEL_CANDIDATES, validate_api_key, ai_generate, mock_generate
 from dashboard import build_dashboard, _he
@@ -96,21 +96,14 @@ _MATERIAL_LABELS = {
 }
 
 
-_api_st = st.session_state.api_status
-_api_dot = "on" if _api_st == "connected" else (
-    "wait" if _api_st == "validating" else "off")
-_api_txt = (
-    f"Gemini · {st.session_state.api_model}" if _api_st == "connected"
-    else ("驗證中..." if _api_st == "validating" else "未連接")
-)
 _hist_count = len(load_history(_USER_EMAIL)) if _USER_EMAIL else 0
 
 # ═════════════════════════════════════════════════════════════════════════
-#  NAVBAR ─ [brand] ··· [api | reset | profile | status]
+#  NAVBAR ─ [brand] ··· [api | reset | auth]
 # ═════════════════════════════════════════════════════════════════════════
 with st.container(key="navbar"):
-    _c_brand, _c_space, _c_key, _c_reset, _c_user, _c_status = st.columns(
-        [3.0, 3.8, 0.5, 0.5, 0.6, 1.4], vertical_alignment="center"
+    _c_brand, _c_space, _c_key, _c_reset, _c_auth = st.columns(
+        [3.0, 4.4, 0.5, 0.5, 1.6], vertical_alignment="center"
     )
     # ── 品牌標題 ──
     with _c_brand:
@@ -152,24 +145,49 @@ with st.container(key="navbar"):
                 st.caption("❌ API Key 無效或無可用模型")
             else:
                 st.caption("💡 輸入 API Key 啟用 Gemini AI。未連接時使用模擬資料。")
-    # ── 🔄 重置 ──
+    # ── ⟲ 重置 ──
     with _c_reset:
         if st.button("⟲", key="nb_reset_btn", use_container_width=True, help="重置所有步驟"):
             reset_pipeline()
             st.rerun()
-    # ── 👤 個人中心入口 ──
-    with _c_user:
-        _profile_icon = "⚙" if _LOGGED_IN else "🔒"
-        _profile_help = (_USER_NAME or _USER_EMAIL or "個人中心") if _LOGGED_IN else "登入 / 個人中心"
-        if st.button(_profile_icon, key="nb_profile_btn", use_container_width=True, help=_profile_help):
-            st.session_state.view_mode = "profile" if st.session_state.view_mode != "profile" else "wizard"
-            st.rerun()
-    # ── 狀態指示器（右側） ──
-    with _c_status:
-        st.markdown(
-            f"<div class='api-status-wrap'><div class='api-status'><span class='api-dot {_api_dot}'></span><span class='api-lbl'>{_api_txt}</span></div></div>",
-            unsafe_allow_html=True,
-        )
+    # ── 🔐 登入 / 用戶狀態 ──
+    with _c_auth:
+        if _LOGGED_IN:
+            _display = _USER_NAME or _USER_EMAIL or "用戶"
+            _auth_pop = st.popover(f"🟢 {_display}", use_container_width=True, help="帳號選單")
+            with _auth_pop:
+                if _USER_PHOTO:
+                    st.markdown(
+                        f"<div style='text-align:center;padding:8px 0 4px;'>"
+                        f"<img src='{_he(_USER_PHOTO)}' style='width:56px;height:56px;border-radius:50%;border:2px solid rgba(0,255,204,0.3);'>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+                st.markdown(
+                    f"<div style='text-align:center;font-weight:600;color:#fff;font-size:15px;'>{_he(_display)}</div>",
+                    unsafe_allow_html=True,
+                )
+                if _USER_EMAIL:
+                    st.markdown(
+                        f"<div style='text-align:center;color:rgba(255,255,255,0.5);font-size:12px;margin-bottom:12px;'>{_he(_USER_EMAIL)}</div>",
+                        unsafe_allow_html=True,
+                    )
+                st.divider()
+                if st.button("👤 個人中心", key="auth_pop_profile", use_container_width=True):
+                    st.session_state.view_mode = "profile" if st.session_state.view_mode != "profile" else "wizard"
+                    st.rerun()
+                if st.button("🚪 登出", key="auth_pop_logout", use_container_width=True):
+                    clear_session()
+                    st.rerun()
+        else:
+            _login_url = get_login_url()
+            if _login_url:
+                st.link_button("🔐 登入", _login_url, use_container_width=True)
+            else:
+                st.markdown(
+                    "<div class='auth-badge guest'>👤 訪客</div>",
+                    unsafe_allow_html=True,
+                )
 
 # ── Stepper ──
 step = st.session_state.step

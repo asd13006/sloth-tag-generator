@@ -68,23 +68,18 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 }
 .nb-sub { color: rgba(255,255,255,0.9); font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; white-space: nowrap; }
 
-/* 狀態指示器 */
-.api-status {
-    display: inline-flex; align-items: center; gap: 10px; padding: 0 18px 0 22px;
-    border-radius: 12px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
+/* 登入狀態標籤 */
+.auth-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 38px; padding: 0 16px; border-radius: 12px;
+    font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
     border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06);
-    white-space: nowrap; color: #ffffff;
-    height: 38px; box-sizing: border-box;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    white-space: nowrap; color: #e0e0e0;
+    box-sizing: border-box; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
-.api-status-wrap { display: flex; justify-content: flex-end; align-items: center; height: 38px; margin: 0; padding: 0; }
+.auth-badge.guest { color: rgba(255,255,255,0.5); }
 /* 品牌/按鈕分隔線 */
 .nav-sep { display: none; }
-.api-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.api-dot.off { background: #ff4757; box-shadow: 0 0 6px rgba(255,71,87,0.5); }
-.api-dot.on { background: #00ffcc; box-shadow: 0 0 6px rgba(0,255,204,0.5); }
-.api-dot.wait { background: #ffa502; box-shadow: 0 0 6px rgba(255,165,2,0.5); animation: neon-breathe 2s ease-in-out infinite; }
-.api-lbl { color: #a0a0a0; }
 /* 統一按鈕樣式（button + popover trigger） */
 .st-key-navbar button,
 .st-key-navbar [data-testid="stPopover"] button {
@@ -123,11 +118,38 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .st-key-navbar [data-testid="stPopover"] button div:nth-child(2) { display: none !important; }
 
 /* 確保中間圖示顏色透白（避免系統繪製黑 emoji） */
-.st-key-navbar [data-testid="column"]:nth-child(4) button p,
-.st-key-navbar [data-testid="column"]:nth-child(5) button p {
+.st-key-navbar [data-testid="column"]:nth-child(3) button p,
+.st-key-navbar [data-testid="column"]:nth-child(4) button p {
     color: rgba(255,255,255,0.8) !important;
     text-shadow: 0 0 1px rgba(255,255,255,0.1);
     font-size: 22px !important;
+}
+/* 最右側 auth popover / link_button — 文字左對齊、較小字體 */
+.st-key-navbar [data-testid="column"]:nth-child(5) button {
+    font-size: 13px !important; font-weight: 600 !important; letter-spacing: 0.5px !important;
+    justify-content: center !important; padding: 0 14px !important;
+}
+.st-key-navbar [data-testid="column"]:nth-child(5) button p {
+    font-size: 13px !important; font-weight: 600 !important;
+}
+/* link_button（登入按鈕）也套用統一高度 */
+.st-key-navbar [data-testid="column"]:nth-child(5) a[data-testid="stBaseLinkButton-secondary"] {
+    height: 38px !important; min-height: 38px !important; max-height: 38px !important;
+    border-radius: 12px !important;
+    background: rgba(255,255,255,0.12) !important;
+    border: 1px solid rgba(255,255,255,0.25) !important;
+    color: #ffffff !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
+    font-size: 13px !important; font-weight: 600 !important;
+    text-decoration: none !important;
+    box-sizing: border-box !important;
+}
+.st-key-navbar [data-testid="column"]:nth-child(5) a[data-testid="stBaseLinkButton-secondary"]:hover {
+    background: rgba(0,255,204,0.15) !important;
+    border-color: rgba(0,255,204,0.4) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,255,204,0.25) !important;
 }
 /* 移除 navbar 內 Streamlit 預設間距，並強制垂直置中 */
 .st-key-navbar [data-testid="column"] { display: flex; flex-direction: column; justify-content: center; height: 100%; margin: 0; padding: 0; }
