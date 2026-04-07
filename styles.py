@@ -39,15 +39,18 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .st-key-navbar {
     position: sticky; top: 16px; z-index: 999;
     background: rgba(14, 14, 24, 0.85); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
-    margin: 0 auto 24px; padding: 12px 24px;
+    margin: 0 auto 24px; padding: 16px 24px;
     max-width: 1100px;
     border-radius: 20px;
     border: 1px solid rgba(255,255,255,0.08);
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 .st-key-navbar::after { display: none !important; }
+/* 修復 Streamlit 預設 p 標籤造成的垂直偏移 */
+.st-key-navbar [data-testid="stMarkdownContainer"] p { margin-bottom: 0 !important; }
+
 /* 品牌標題 */
-.brand-wrap { display: flex; align-items: center; gap: 12px; height: 100%; margin: 0; padding: 0; }
+.brand-wrap { display: inline-flex; align-items: center; gap: 12px; height: 100%; margin: 0; padding: 0; }
 .nb-brand {
     font-family: 'Righteous', sans-serif; font-size: 24px; font-weight: 400; letter-spacing: 1px;
     background: linear-gradient(270deg, #00ffcc, #b026ff, #00E676, #00ffcc); background-size: 300% 300%;
@@ -55,7 +58,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     line-height: 1; white-space: nowrap;
 }
-.nb-sub { color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; }
+.nb-sub { color: rgba(255,255,255,0.9); font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; white-space: nowrap; }
 
 /* 狀態指示器 */
 .api-status {
@@ -103,6 +106,13 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 }
 /* 隱藏 popover 的下拉箭頭 */
 .st-key-navbar [data-testid="stPopover"] > button svg { display: none !important; }
+/* 確保中間圖示顏色透白（避免系統繪製黑 emoji） */
+.st-key-navbar [data-testid="column"]:nth-child(4) button p,
+.st-key-navbar [data-testid="column"]:nth-child(5) button p {
+    color: rgba(255,255,255,0.8) !important;
+    text-shadow: 0 0 1px rgba(255,255,255,0.1);
+    font-size: 22px !important;
+}
 /* 移除 navbar 內 Streamlit 預設間距，並強制垂直置中 */
 .st-key-navbar [data-testid="column"] { display: flex; flex-direction: column; justify-content: center; }
 .st-key-navbar [data-testid="stVerticalBlock"] { gap: 0 !important; justify-content: center; }

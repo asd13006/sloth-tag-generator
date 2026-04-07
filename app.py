@@ -115,10 +115,10 @@ with st.container(key="navbar"):
     # ── 品牌標題 ──
     with _c_brand:
         st.markdown(
-            "<div class='brand-wrap'>"
+            "<span class='brand-wrap'>"
             "<span class='nb-brand'>Title Studio</span>"
-            "<span class='nb-sub'>sLoth rAdio</span>"
-            "</div>",
+            "<span class='nb-sub'>SLOTH RADIO</span>"
+            "</span>",
             unsafe_allow_html=True,
         )
     # ── 🔑 API Key ──
@@ -154,12 +154,12 @@ with st.container(key="navbar"):
                 st.caption("💡 輸入 API Key 啟用 Gemini AI。未連接時使用模擬資料。")
     # ── 🔄 重置 ──
     with _c_reset:
-        if st.button("🔄", key="nb_reset_btn", use_container_width=True, help="重置所有步驟"):
+        if st.button("⟲", key="nb_reset_btn", use_container_width=True, help="重置所有步驟"):
             reset_pipeline()
             st.rerun()
     # ── 👤 個人中心入口 ──
     with _c_user:
-        _profile_icon = "👤" if _LOGGED_IN else "🔒"
+        _profile_icon = "⚙" if _LOGGED_IN else "🔒"
         _profile_help = (_USER_NAME or _USER_EMAIL or "個人中心") if _LOGGED_IN else "登入 / 個人中心"
         if st.button(_profile_icon, key="nb_profile_btn", use_container_width=True, help=_profile_help):
             st.session_state.view_mode = "profile" if st.session_state.view_mode != "profile" else "wizard"
