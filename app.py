@@ -1097,6 +1097,15 @@ with st.container(key="navbar"):
                 st.caption("使用 Google 帳號登入以儲存歷史記錄，跨裝置同步。")
                 if _AUTH_OBJ is not None:
                     _AUTH_OBJ.login(color="blue", justify_content="center")
+                    # === 臨時除錯（確認後移除） ===
+                    with st.expander("🔧 Debug Info", expanded=False):
+                        st.code(f"redirect_uri: {_AUTH_OBJ._redirect_uri}", language="text")
+                        try:
+                            _dbg_flow = _AUTH_OBJ._make_flow()
+                            _dbg_url, _ = _dbg_flow.authorization_url(access_type="offline")
+                            st.code(f"auth_url: {_dbg_url[:200]}...", language="text")
+                        except Exception as _e:
+                            st.code(f"error: {_e}", language="text")
                 else:
                     st.caption("未設定 OAuth → 功能暫不可用。")
     # ── 狀態指示器（右側） ──
