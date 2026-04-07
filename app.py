@@ -177,9 +177,9 @@ class _SlothAuth:
         if st.session_state["connected"]:
             return
         auth_url = self._build_auth_url()
-        # 使用 <a> tag 在同一視窗導航，避免開新分頁
+        # 使用 <a> tag 在同一視窗導航（target="_top" 跳出 iframe）
         st.markdown(
-            f'<a href="{auth_url}" target="_self" style="'
+            f'<a href="{auth_url}" target="_top" style="'
             f'display:inline-flex;align-items:center;justify-content:center;width:100%;'
             f'padding:0.5rem 1rem;border-radius:8px;font-size:14px;font-weight:600;'
             f'background:linear-gradient(135deg,#4285f4,#34a853);color:#fff;'
