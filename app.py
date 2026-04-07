@@ -54,6 +54,7 @@ _DEFAULTS = {
     "n_songs": 15,               # 歌單數量
     "results": {},               # AI 結果
     "uploaded_images": [],       # Step 3 上傳嘅圖片 (UploadedFile objects)
+    "material_inputs": {},        # 各材料獨立輸入 {"titles": "...", "tags": "...", ...}
     "view_mode": "wizard",       # "wizard" | "profile"
     "api_key": "",               # API key
     "api_status": "disconnected",  # "disconnected" | "validating" | "connected"
@@ -396,18 +397,19 @@ if step == 1:
                 f"<div class='card-desc'>{desc}</div>", unsafe_allow_html=True)
 
     n_sel = len(st.session_state.selected_outputs)
-    st.markdown(
-        f"<div class='counter'>已選 <b class='teal'>{n_sel}</b> 項</div>", unsafe_allow_html=True)
 
     # Navigation
     st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
-    nav_l, _, nav_r = st.columns([1, 3, 1])
+    nav_l, _, nav_count, nav_r = st.columns([1, 1.5, 1.5, 1], vertical_alignment="center")
     with nav_l:
         if st.button("✓ 全選直入", use_container_width=True):
             st.session_state.selected_outputs = [k for k, *_ in _OPTIONS]
             st.session_state.existing_materials = []
             st.session_state.step = 3
             st.rerun()
+    with nav_count:
+        st.markdown(
+            f"<div class='counter'>已選 <b class='teal'>{n_sel}</b> 項</div>", unsafe_allow_html=True)
     with nav_r:
         if st.button("下一步 →", type="primary", use_container_width=True, disabled=(n_sel == 0)):
             st.session_state.step = 2
@@ -456,12 +458,10 @@ elif step == 2:
                 st.rerun()
 
     n_mat = len(st.session_state.existing_materials)
-    st.markdown(
-        f"<div class='counter'>已選 <b class='purple'>{n_mat}</b> 項材料</div>", unsafe_allow_html=True)
 
     # Navigation
     st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
-    nav_l, nav_skip, _, nav_r = st.columns([1, 1.5, 1.5, 1])
+    nav_l, nav_skip, nav_count, nav_r = st.columns([1, 1.5, 1.5, 1], vertical_alignment="center")
     with nav_l:
         if st.button("← 返回", key="s2_back", use_container_width=True):
             st.session_state.existing_materials = []
@@ -472,6 +472,9 @@ elif step == 2:
             st.session_state.existing_materials = []
             st.session_state.step = 3
             st.rerun()
+    with nav_count:
+        st.markdown(
+            f"<div class='counter'>已選 <b class='purple'>{n_mat}</b> 項材料</div>", unsafe_allow_html=True)
     with nav_r:
         if st.button("下一步 →", key="s2_next", type="primary", use_container_width=True):
             st.session_state.step = 3
@@ -506,20 +509,66 @@ elif step == 3:
     mat_names = "、".join(_MATERIAL_LABELS[k]
                          for k in st.session_state.existing_materials)
 
-    if st.session_state.existing_materials:
-        hint = f"請將已有嘅 {mat_names} 同任何靈感貼喺下面，我會用嚟生成 {gen_names}："
-    elif st.session_state.selected_outputs == ["tracklist"]:
-        hint = "請描述你想要嘅風格或氛圍："
-    else:
-        hint = f"請將你現有嘅靈感、故事或歌單貼喺下面，我會幫你生成 {gen_names}："
+    # ── 已有材料：分欄輸入 ──
+    _text_materials = [k for k in st.session_state.existing_materials if k != "images"]
+    if _text_materials:
+        st.markdown(
+            "<div class='sec-desc' style='margin-bottom:12px;'>"
+            f"請分別填入你已有嘅 {mat_names}，AI 會參照呢啲素材嚟生成 {gen_names}："
+            "</div>",
+            unsafe_allow_html=True,
+        )
+        _mat_placeholders = {
+            "titles":      "例如：Midnight Rain… Lofi for Study 🌧️ 📚",
+            "tags":        "例如：lofi, chill music, study beats, rainy night",
+            "long_story":  "例如：You sit by the window on a rainy evening...",
+            "short_story": "例如：Making Tea 🍵\nEvening settles outside the window...",
+            "tracklist":   "例如：1. 雨夜書房 2. 窗邊咖啡 3. 晨光微醒",
+        }
+        _mat_heights = {
+            "titles": 100, "tags": 80, "long_story": 180,
+            "short_story": 120, "tracklist": 140,
+        }
+        # 確保 material_inputs dict 存在
+        if not isinstance(st.session_state.material_inputs, dict):
+            st.session_state.material_inputs = {}
+        for _mk in _text_materials:
+            _mlabel = _MATERIAL_LABELS.get(_mk, _mk)
+            _micon = dict(_OPTIONS).get(_mk, ("📄",))[0] if any(k == _mk for k, *_ in _OPTIONS) else "📄"
+            # 找到對應 icon
+            for _ok, _oi, _on, _od in _OPTIONS:
+                if _ok == _mk:
+                    _micon = _oi
+                    break
+            st.markdown(
+                f"<div style='color:rgba(255,255,255,0.55);font-size:11px;letter-spacing:2px;"
+                f"text-transform:uppercase;margin:14px 0 4px;'>{_micon} 已有{_mlabel}</div>",
+                unsafe_allow_html=True,
+            )
+            _mat_val = st.session_state.material_inputs.get(_mk, "")
+            _new_val = st.text_area(
+                f"mat_input_{_mk}",
+                value=_mat_val,
+                height=_mat_heights.get(_mk, 120),
+                placeholder=_mat_placeholders.get(_mk, f"貼上你已有嘅{_mlabel}..."),
+                label_visibility="collapsed",
+            )
+            st.session_state.material_inputs[_mk] = _new_val
 
+    # ── 通用補充輸入 ──
+    if _text_materials:
+        _ctx_hint = f"有冇其他靈感或補充想法？（選填）"
+    elif st.session_state.selected_outputs == ["tracklist"]:
+        _ctx_hint = "請描述你想要嘅風格或氛圍："
+    else:
+        _ctx_hint = f"請將你現有嘅靈感、故事或歌單貼喺下面，我會幫你生成 {gen_names}："
     st.markdown(
-        f"<div class='sec-desc' style='margin-bottom:12px;'>{hint}</div>", unsafe_allow_html=True)
+        f"<div class='sec-desc' style='margin-bottom:12px;'>{_ctx_hint}</div>", unsafe_allow_html=True)
 
     user_input = st.text_area(
         "content_input",
         value=st.session_state.user_context,
-        height=220,
+        height=120 if _text_materials else 220,
         placeholder="例如：深夜獨自在咖啡廳讀書，窗外下著小雨，播放著溫暖的 lofi 音樂...",
         label_visibility="collapsed",
     )
@@ -626,13 +675,23 @@ elif step == 3:
     st.markdown("</div>", unsafe_allow_html=True)  # close .glass
 
     if gen_btn:
+        # 合併各材料欄位 + 通用輸入為完整 context
+        _ctx_parts = []
+        for _mk, _mv in st.session_state.material_inputs.items():
+            _mv_strip = _mv.strip()
+            if _mv_strip:
+                _ctx_parts.append(f"[已有{_MATERIAL_LABELS.get(_mk, _mk)}]\n{_mv_strip}")
+        if st.session_state.user_context.strip():
+            _ctx_parts.append(st.session_state.user_context.strip())
+        _combined_context = "\n\n".join(_ctx_parts)
+
         with st.status(f"⚙️ Gemini AI 生成中...", expanded=True) as status:
             try:
                 st.write(f"🤖 使用 {st.session_state.api_model} 生成中...")
                 results = ai_generate(
                     st.session_state.selected_outputs,
                     st.session_state.n_songs,
-                    st.session_state.user_context,
+                    _combined_context,
                     user_email=_USER_EMAIL,
                 )
                 if results:
@@ -646,7 +705,7 @@ elif step == 3:
                                 st.session_state.selected_outputs),
                             existing_materials=list(
                                 st.session_state.existing_materials),
-                            context=st.session_state.user_context,
+                            context=_combined_context,
                             n_songs=st.session_state.n_songs,
                             mode="ai",
                         )

@@ -83,6 +83,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     animation: gradient-text 5s ease 1 forwards !important;
     -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;
     white-space: nowrap !important; line-height: 38px !important;
+    transform: translateY(-1px) !important;
 }
 .st-key-nb_brand_home button:hover p { opacity: 0.85; }
 
@@ -222,7 +223,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 /* 移除 navbar 內 Streamlit 預設間距，並強制垂直置中 */
 .st-key-navbar [data-testid="column"] { display: flex; flex-direction: column; justify-content: center; height: 100%; margin: 0; padding: 0; }
 .st-key-navbar [data-testid="stVerticalBlock"] { gap: 0 !important; justify-content: center; height: 100%; margin: 0; padding: 0; }
-.st-key-navbar [data-testid="stHorizontalBlock"] { gap: 0.4rem !important; align-items: center !important; height: 100%; margin: 0; padding: 0; }
+.st-key-navbar [data-testid="stHorizontalBlock"] { gap: 0.25rem !important; align-items: center !important; height: 100%; margin: 0; padding: 0; }
 .st-key-navbar [data-testid="stElementContainer"] { margin: 0 !important; padding: 0 !important; display: flex; align-items: center; width: 100%; height: 100%; }
 
 /* ── Stepper ── */
@@ -368,10 +369,10 @@ button[data-testid="stBaseButton-primary"]:hover {
 .chip-purple { background: rgba(176,38,255,0.08); border: 1px solid rgba(176,38,255,0.25); color: #b026ff; }
 
 /* ── Card description (under buttons) ── */
-.card-desc { text-align: center; font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 6px; line-height: 1.4; }
+.card-desc { text-align: center; font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 6px; line-height: 1.4; }
 
 /* ── Counter ── */
-.counter { text-align: center; margin: 12px 0 4px; font-size: 13px; color: rgba(255,255,255,0.55); }
+.counter { text-align: right; margin: 0; font-size: 13px; color: rgba(255,255,255,0.55); display: flex; align-items: center; justify-content: flex-end; height: 100%; }
 .counter b { font-size: 20px; font-family: 'Righteous', sans-serif; }
 .counter b.teal { color: #00ffcc; }
 .counter b.purple { color: #b026ff; }
@@ -396,7 +397,7 @@ html { scrollbar-color: rgba(0,255,204,0.25) rgba(255,255,255,0.02); scrollbar-w
 .stSlider > div { padding-left: 0 !important; }
 
 /* ── Footer ── */
-.footer { text-align: center; color: rgba(255,255,255,0.40); font-size: 10px; letter-spacing: 2px; margin-top: 40px; text-transform: uppercase; }
+.footer { text-align: center; color: rgba(255,255,255,0.55); font-size: 10px; letter-spacing: 2px; margin-top: 40px; text-transform: uppercase; }
 </style>
 """
 
