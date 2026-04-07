@@ -1,7 +1,7 @@
 """
 Google OAuth 登入模組 — 手動 HTTP 實作
 完全不依賴 google_auth_oauthlib，避免 PKCE 問題。
-Cookie 持久化登入狀態。
+Query-params + server cache 持久化登入狀態，cookie 作為備援。
 """
 
 import json
@@ -9,6 +9,7 @@ import hmac
 import hashlib
 import base64
 import logging
+import uuid
 import urllib.parse
 
 import requests as _requests
@@ -27,6 +28,35 @@ _OAUTH_SCOPES = "openid email profile"
 # ─────────────────────────────────────────────────────────────────────────────
 _auth_obj = None   # global ref for login button rendering
 _auth_secret = None  # cookie 簽名用密鑰
+
+
+@st.cache_resource
+def _session_store():
+    """Server-side session store — 跨 rerun 持久化（server 重啟後清空）。"""
+    return {}
+
+
+def _persist_session(user_info: dict) -> str:
+    """將 user info 存入 server 端並回傳 session ID。"""
+    sid = uuid.uuid4().hex
+    _session_store()[sid] = user_info
+    return sid
+
+
+def _restore_from_query_params() -> bool:
+    """從 URL query params 中的 sid 還原登入狀態。"""
+    sid = st.query_params.get("sid")
+    if not sid:
+        return False
+    data = _session_store().get(sid)
+    if not data or "email" not in data:
+        # stale / invalid session — 清除
+        st.query_params.pop("sid", None)
+        return False
+    st.session_state["connected"] = True
+    st.session_state["oauth_id"] = data.get("id", "")
+    st.session_state["user_info"] = data
+    return True
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -126,6 +156,9 @@ class SlothAuth:
                 st.session_state["connected"] = True
                 st.session_state["oauth_id"] = user_info.get("id")
                 st.session_state["user_info"] = user_info
+                # 持久化：query params (主要) + cookie (備援)
+                sid = _persist_session(user_info)
+                st.query_params["sid"] = sid
                 st.session_state["_set_auth_cookie"] = True
                 st.rerun()
             except Exception as e:
@@ -153,9 +186,10 @@ def init_auth():
         _current_uri = _redirect_uri.strip().rstrip("/")
         _auth_secret = _client_secret
 
-        # 優先從 cookie 還原登入狀態（解決刷新後登入遺失）
+        # 優先從 query params 還原，cookie 作為備援
         if not st.session_state.get("connected"):
-            _restore_from_cookie(_auth_secret)
+            if not _restore_from_query_params():
+                _restore_from_cookie(_auth_secret)
 
         auth = SlothAuth(
             client_id=_client_id,
@@ -189,14 +223,25 @@ def inject_auth_cookies():
         if _cookie_data:
             _cookie_val = _sign_cookie(_cookie_data, _auth_secret)
             st.components.v1.html(
-                f'<script>document.cookie="sloth_auth={_cookie_val}; path=/; max-age=2592000; SameSite=Lax";</script>',
-                height=0, width=0,
+                f'<script>document.cookie="sloth_auth={_cookie_val}; path=/; max-age=2592000; SameSite=Lax; Secure";</script>',
+                height=1, width=1,
             )
         st.session_state["_set_auth_cookie"] = False
 
     if st.session_state.get("_clear_auth_cookie"):
         st.components.v1.html(
-            '<script>document.cookie="sloth_auth=; path=/; max-age=0; SameSite=Lax";</script>',
-            height=0, width=0,
+            '<script>document.cookie="sloth_auth=; path=/; max-age=0; SameSite=Lax; Secure";</script>',
+            height=1, width=1,
         )
         st.session_state["_clear_auth_cookie"] = False
+
+
+def clear_session():
+    """登出時清除 query params session + cookie。"""
+    sid = st.query_params.get("sid")
+    if sid:
+        _session_store().pop(sid, None)
+        st.query_params.pop("sid", None)
+    st.session_state["connected"] = False
+    st.session_state["user_info"] = {}
+    st.session_state["_clear_auth_cookie"] = True

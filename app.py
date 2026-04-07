@@ -17,7 +17,7 @@ from PIL import Image
 import io
 
 from history import load_history, save_generation, delete_history_item
-from auth import init_auth, get_auth_object, inject_auth_cookies
+from auth import init_auth, get_auth_object, inject_auth_cookies, clear_session
 from styles import inject_css
 from gemini_api import MODEL_CANDIDATES, validate_api_key, ai_generate, mock_generate
 from dashboard import build_dashboard, _he
@@ -191,9 +191,7 @@ with st.container(key="navbar"):
                 st.caption(f"📧 {_USER_EMAIL}")
                 st.caption(f"📋 共 {_hist_count} 筆歷史記錄")
                 if st.button("🚪 登出", key="nb_logout", use_container_width=True):
-                    st.session_state["connected"] = False
-                    st.session_state["user_info"] = {}
-                    st.session_state["_clear_auth_cookie"] = True
+                    clear_session()
                     st.rerun()
         else:
             _login_pop = st.popover("🔒", use_container_width=True, help="登入")
