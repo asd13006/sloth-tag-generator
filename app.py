@@ -117,7 +117,7 @@ class _SlothAuth:
         fg = "#000" if color == "white" else "#fff"
         st.markdown(
             f'<div style="display:flex;justify-content:{justify_content};">'
-            f'<a href="{auth_url}" target="_self" style="background:{bg};color:{fg};'
+            f'<a href="{auth_url}" target="_top" style="background:{bg};color:{fg};'
             f'text-decoration:none;text-align:center;font-size:16px;margin:4px 2px;'
             f'cursor:pointer;padding:8px 12px;border-radius:4px;display:flex;align-items:center;">'
             f'<img src="https://lh3.googleusercontent.com/COxitqgJr1sJnIDe8-jiKhxDx1FrYbtRHKJ9z_hELisAlapwE9LUPh6fcXIfb5vwpbMl4xl9H9TRFPc5NOO8Sb3VSgIBrfRYvW6cUA" '
