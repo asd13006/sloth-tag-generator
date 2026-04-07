@@ -46,11 +46,19 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 .st-key-navbar::after { display: none !important; }
-/* 修復 Streamlit 預設 p 標籤造成的垂直偏移 */
-.st-key-navbar [data-testid="stMarkdownContainer"] p { margin-bottom: 0 !important; }
+/* 修復 Streamlit 預設標籤與容器造成的垂直偏移 */
+.st-key-navbar [data-testid="stMarkdownContainer"] p,
+.st-key-navbar [data-testid="stMarkdownContainer"] { 
+    margin: 0 !important; 
+    padding: 0 !important; 
+    line-height: normal !important; 
+    display: flex; 
+    align-items: center; 
+    height: 100%; 
+}
 
 /* 品牌標題 */
-.brand-wrap { display: inline-flex; align-items: center; gap: 12px; height: 100%; margin: 0; padding: 0; }
+.brand-wrap { display: inline-flex; align-items: center; gap: 12px; height: 38px; margin: 0; padding: 0; }
 .nb-brand {
     font-family: 'Righteous', sans-serif; font-size: 24px; font-weight: 400; letter-spacing: 1px;
     background: linear-gradient(270deg, #00ffcc, #b026ff, #00E676, #00ffcc); background-size: 300% 300%;
@@ -62,14 +70,14 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 
 /* 狀態指示器 */
 .api-status {
-    display: inline-flex; align-items: center; gap: 10px; padding: 4px 18px 4px 22px;
+    display: inline-flex; align-items: center; gap: 10px; padding: 0 18px 0 22px;
     border-radius: 12px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
     border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06);
     white-space: nowrap; color: #ffffff;
     height: 38px; box-sizing: border-box;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
-.api-status-wrap { display: flex; justify-content: flex-end; align-items: center; height: 100%; }
+.api-status-wrap { display: flex; justify-content: flex-end; align-items: center; height: 38px; margin: 0; padding: 0; }
 /* 品牌/按鈕分隔線 */
 .nav-sep { display: none; }
 .api-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
@@ -122,10 +130,10 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     font-size: 22px !important;
 }
 /* 移除 navbar 內 Streamlit 預設間距，並強制垂直置中 */
-.st-key-navbar [data-testid="column"] { display: flex; flex-direction: column; justify-content: center; align-items: center; }
-.st-key-navbar [data-testid="stVerticalBlock"] { gap: 0 !important; justify-content: center; }
-.st-key-navbar [data-testid="stHorizontalBlock"] { gap: 0.4rem !important; align-items: center !important; }
-.st-key-navbar [data-testid="stElementContainer"] { margin: 0 !important; display: flex; align-items: center; height: 100%; }
+.st-key-navbar [data-testid="column"] { display: flex; flex-direction: column; justify-content: center; height: 100%; margin: 0; padding: 0; }
+.st-key-navbar [data-testid="stVerticalBlock"] { gap: 0 !important; justify-content: center; height: 100%; margin: 0; padding: 0; }
+.st-key-navbar [data-testid="stHorizontalBlock"] { gap: 0.4rem !important; align-items: center !important; height: 100%; margin: 0; padding: 0; }
+.st-key-navbar [data-testid="stElementContainer"] { margin: 0 !important; padding: 0 !important; display: flex; align-items: center; width: 100%; height: 100%; }
 
 /* ── Stepper ── */
 .stepper { display: flex; align-items: center; margin: 16px 0 24px; }
