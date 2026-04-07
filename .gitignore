@@ -4,6 +4,9 @@
 # User data (persistent history files)
 user_data/
 
+# Streamlit secrets（含 OAuth 憑證，絕不可 commit）
+.streamlit/secrets.toml
+
 # Python cache
 __pycache__/
 *.pyc
