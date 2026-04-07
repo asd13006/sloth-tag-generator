@@ -47,22 +47,22 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 }
 .st-key-navbar::after { display: none !important; }
 /* 品牌標題 */
-.brand-wrap { display: flex; align-items: center; gap: 10px; height: 38px; margin: 0; padding: 0; }
+.brand-wrap { display: flex; align-items: center; gap: 12px; height: 100%; margin: 0; padding: 0; }
 .nb-brand {
     font-family: 'Righteous', sans-serif; font-size: 24px; font-weight: 400; letter-spacing: 1px;
     background: linear-gradient(270deg, #00ffcc, #b026ff, #00E676, #00ffcc); background-size: 300% 300%;
     animation: gradient-text 5s ease 1 forwards;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    line-height: 1; white-space: nowrap; margin-bottom: -2px;
+    line-height: 1; white-space: nowrap;
 }
-.nb-sub { color: rgba(255,255,255,0.7); font-size: 13px; font-weight: 600; letter-spacing: 1.5px; white-space: nowrap; }
+.nb-sub { color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; }
 
 /* 狀態指示器 */
 .api-status {
-    display: inline-flex; align-items: center; gap: 8px; padding: 4px 16px;
-    border-radius: 12px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+    display: inline-flex; align-items: center; gap: 10px; padding: 4px 18px 4px 22px;
+    border-radius: 12px; font-size: 13px; font-weight: 600; letter-spacing: 0.5px;
     border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.06);
-    white-space: nowrap; color: #e0e0e0;
+    white-space: nowrap; color: #ffffff;
     height: 38px; box-sizing: border-box;
     box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
@@ -78,22 +78,24 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .st-key-navbar button,
 .st-key-navbar [data-testid="stPopover"] > button {
     min-height: 38px !important; padding: 4px 10px !important; font-size: 18px !important;
-    background: rgba(255,255,255,0.06) !important;
-    border: 1px solid rgba(255,255,255,0.15) !important;
+    background: rgba(255,255,255,0.12) !important;
+    border: 1px solid rgba(255,255,255,0.25) !important;
     border-radius: 12px !important;
-    color: #e0e0e0 !important;
+    color: #ffffff !important;
     display: flex !important; justify-content: center !important; align-items: center !important;
     cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3) !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
     position: relative;
+    filter: brightness(1.1);
 }
 .st-key-navbar button:hover,
 .st-key-navbar [data-testid="stPopover"] > button:hover {
-    background: rgba(0,255,204,0.1) !important;
-    border-color: rgba(0,255,204,0.35) !important;
+    background: rgba(0,255,204,0.15) !important;
+    border-color: rgba(0,255,204,0.4) !important;
     color: #fff !important;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,255,204,0.2) !important;
+    box-shadow: 0 4px 12px rgba(0,255,204,0.25) !important;
+    filter: brightness(1.2);
 }
 .st-key-navbar button:focus-visible,
 .st-key-navbar [data-testid="stPopover"] > button:focus-visible {
@@ -101,10 +103,11 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 }
 /* 隱藏 popover 的下拉箭頭 */
 .st-key-navbar [data-testid="stPopover"] > button svg { display: none !important; }
-/* 移除 navbar 內 Streamlit 預設間距 */
-.st-key-navbar [data-testid="stVerticalBlock"] { gap: 0 !important; }
+/* 移除 navbar 內 Streamlit 預設間距，並強制垂直置中 */
+.st-key-navbar [data-testid="column"] { display: flex; flex-direction: column; justify-content: center; }
+.st-key-navbar [data-testid="stVerticalBlock"] { gap: 0 !important; justify-content: center; }
 .st-key-navbar [data-testid="stHorizontalBlock"] { gap: 0.4rem !important; align-items: center !important; }
-.st-key-navbar [data-testid="stElementContainer"] { margin: 0 !important; }
+.st-key-navbar [data-testid="stElementContainer"] { margin: 0 !important; display: flex; align-items: center; }
 
 /* ── Stepper ── */
 .stepper { display: flex; align-items: center; margin: 16px 0 24px; }
