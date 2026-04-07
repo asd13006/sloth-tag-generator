@@ -31,7 +31,98 @@ st.set_page_config(
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  GOOGLE OAUTH  ── login / guest mode
+#  自訂實作：修正 streamlit-google-auth PKCE code_verifier 遺失問題
 # ─────────────────────────────────────────────────────────────────────────────
+
+import json
+import os
+import tempfile
+import time
+
+
+class _SlothAuth:
+    """輕量 Google OAuth wrapper，將 code_verifier 保存在 temp 檔案以修正 PKCE。
+    session_state 在瀏覽器跳轉 Google 後會遺失，改用 state→file 映射。"""
+
+    _PKCE_PREFIX = "sloth_pkce_"
+
+    def __init__(self, cred_path: str, redirect_uri: str):
+        self._cred_path = cred_path
+        self._redirect_uri = redirect_uri
+        st.session_state.setdefault("connected", False)
+        st.session_state.setdefault("user_info", {})
+
+    def _make_flow(self):
+        import google_auth_oauthlib.flow
+        return google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+            self._cred_path,
+            scopes=[
+                "openid",
+                "https://www.googleapis.com/auth/userinfo.profile",
+                "https://www.googleapis.com/auth/userinfo.email",
+            ],
+            redirect_uri=self._redirect_uri,
+        )
+
+    def _verifier_path(self, state: str) -> str:
+        """回傳以 OAuth state 為 key 的 temp 檔案路徑。"""
+        import hashlib
+        safe = hashlib.sha256(state.encode()).hexdigest()[:32]
+        return os.path.join(tempfile.gettempdir(), f"{self._PKCE_PREFIX}{safe}")
+
+    def check_authentification(self):
+        if st.session_state["connected"]:
+            return
+        auth_code = st.query_params.get("code")
+        state = st.query_params.get("state")
+        if auth_code:
+            st.query_params.clear()
+            try:
+                flow = self._make_flow()
+                # 從 temp 檔案取回 PKCE code_verifier（以 state 為 key）
+                if state:
+                    vp = self._verifier_path(state)
+                    if os.path.exists(vp):
+                        with open(vp, "r") as f:
+                            flow.code_verifier = f.read().strip()
+                        os.remove(vp)
+                flow.fetch_token(code=auth_code)
+                from googleapiclient.discovery import build
+                svc = build("oauth2", "v2", credentials=flow.credentials)
+                user_info = svc.userinfo().get().execute()
+                st.session_state["connected"] = True
+                st.session_state["oauth_id"] = user_info.get("id")
+                st.session_state["user_info"] = user_info
+                st.rerun()
+            except Exception as e:
+                import logging
+                logging.warning(f"OAuth token 交換失敗（略過）: {e}")
+
+    def login(self, color="blue", justify_content="center"):
+        if st.session_state["connected"]:
+            return
+        flow = self._make_flow()
+        auth_url, state = flow.authorization_url(
+            access_type="offline",
+            include_granted_scopes="true",
+        )
+        # 將 PKCE code_verifier 寫入 temp 檔案（以 state 為 key）
+        if hasattr(flow, "code_verifier") and flow.code_verifier and state:
+            vp = self._verifier_path(state)
+            with open(vp, "w") as f:
+                f.write(flow.code_verifier)
+        bg = "#fff" if color == "white" else "#4285f4"
+        fg = "#000" if color == "white" else "#fff"
+        st.markdown(
+            f'<div style="display:flex;justify-content:{justify_content};">'
+            f'<a href="{auth_url}" target="_self" style="background:{bg};color:{fg};'
+            f'text-decoration:none;text-align:center;font-size:16px;margin:4px 2px;'
+            f'cursor:pointer;padding:8px 12px;border-radius:4px;display:flex;align-items:center;">'
+            f'<img src="https://lh3.googleusercontent.com/COxitqgJr1sJnIDe8-jiKhxDx1FrYbtRHKJ9z_hELisAlapwE9LUPh6fcXIfb5vwpbMl4xl9H9TRFPc5NOO8Sb3VSgIBrfRYvW6cUA" '
+            f'alt="Google" style="margin-right:8px;width:26px;height:26px;background:#fff;border:2px solid #fff;border-radius:4px;">'
+            f'Sign in with Google</a></div>',
+            unsafe_allow_html=True,
+        )
 
 
 _AUTH_OBJ = None  # global ref for login button rendering
@@ -47,10 +138,6 @@ def _init_auth():
         _redirect_uri = st.secrets["google_oauth"].get(
             "redirect_uri", "http://localhost:8501")
 
-        # streamlit-google-auth 需要 Google client secrets JSON 檔案
-        import json
-        import tempfile
-        import os
         _cred_path = os.path.join(tempfile.gettempdir(), "sloth_oauth_creds.json")
         _cred_data = {
             "web": {
@@ -64,14 +151,7 @@ def _init_auth():
         with open(_cred_path, "w") as f:
             json.dump(_cred_data, f)
 
-        from streamlit_google_auth import Authenticate
-        auth = Authenticate(
-            secret_credentials_path=_cred_path,
-            redirect_uri=_redirect_uri,
-            cookie_name="sloth_title_studio",
-            cookie_key="sloth_title_studio_auth_cookie_key_v1",
-            cookie_expiry_days=30,
-        )
+        auth = _SlothAuth(cred_path=_cred_path, redirect_uri=_redirect_uri)
         auth.check_authentification()
         _AUTH_OBJ = auth
         return (
