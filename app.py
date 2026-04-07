@@ -35,16 +35,55 @@ st.set_page_config(
 # ─────────────────────────────────────────────────────────────────────────────
 
 import os
+import hmac
+import hashlib
+import base64
 import urllib.parse
 import requests as _requests
 
 
 _AUTH_OBJ = None  # global ref for login button rendering
+_AUTH_SECRET = None  # cookie 簽名用密鑰
 
 _GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 _GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 _GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 _OAUTH_SCOPES = "openid email profile"
+
+
+# ── Cookie 持久化登入 ──
+def _sign_cookie(data: dict, secret: str) -> str:
+    """建立簽名 cookie 值: base64(json).hmac_signature"""
+    payload = base64.urlsafe_b64encode(json.dumps(data, ensure_ascii=False).encode()).decode()
+    sig = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}.{sig}"
+
+def _verify_cookie(cookie_val: str, secret: str):
+    """驗證並解碼簽名 cookie，失敗回傳 None。"""
+    try:
+        payload, sig = cookie_val.rsplit(".", 1)
+        expected = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            return None
+        return json.loads(base64.urlsafe_b64decode(payload).decode())
+    except Exception:
+        return None
+
+def _restore_from_cookie(secret: str) -> bool:
+    """從 cookie 還原登入狀態，成功回傳 True。"""
+    try:
+        cookie_val = st.context.cookies.get("sloth_auth")
+        if not cookie_val:
+            return False
+        data = _verify_cookie(cookie_val, secret)
+        if not data or "email" not in data:
+            return False
+        st.session_state["connected"] = True
+        st.session_state["oauth_id"] = data.get("id", "")
+        st.session_state["user_info"] = data
+        return True
+    except Exception:
+        return False
 
 
 class _SlothAuth:
@@ -104,6 +143,7 @@ class _SlothAuth:
                 st.session_state["connected"] = True
                 st.session_state["oauth_id"] = user_info.get("id")
                 st.session_state["user_info"] = user_info
+                st.session_state["_set_auth_cookie"] = True
                 st.rerun()
             except Exception as e:
                 import logging
@@ -119,13 +159,18 @@ class _SlothAuth:
 def _init_auth():
     """Initialise Google OAuth. Returns (logged_in, email, name, photo_url).
     Falls back to guest mode when secrets are missing or auth fails."""
-    global _AUTH_OBJ
+    global _AUTH_OBJ, _AUTH_SECRET
     try:
         _client_id = st.secrets["google_oauth"]["client_id"]
         _client_secret = st.secrets["google_oauth"]["client_secret"]
         _redirect_uri = st.secrets["google_oauth"].get(
             "redirect_uri", "http://localhost:8501")
         _current_uri = _redirect_uri.strip().rstrip("/")
+        _AUTH_SECRET = _client_secret
+
+        # 優先從 cookie 還原登入狀態（解決刷新後登入遺失）
+        if not st.session_state.get("connected"):
+            _restore_from_cookie(_AUTH_SECRET)
 
         auth = _SlothAuth(
             client_id=_client_id,
@@ -150,6 +195,24 @@ def _init_auth():
 
 _LOGGED_IN, _USER_EMAIL, _USER_NAME, _USER_PHOTO = _init_auth()
 _IS_GUEST = not _LOGGED_IN
+
+# ── 登入 cookie 注入（在頁面渲染時執行 JS）──
+if st.session_state.get("_set_auth_cookie") and _AUTH_SECRET:
+    _cookie_data = st.session_state.get("user_info", {})
+    if _cookie_data:
+        _cookie_val = _sign_cookie(_cookie_data, _AUTH_SECRET)
+        st.components.v1.html(
+            f'<script>document.cookie="sloth_auth={_cookie_val}; path=/; max-age=2592000; SameSite=Lax";</script>',
+            height=0, width=0,
+        )
+    st.session_state["_set_auth_cookie"] = False
+
+if st.session_state.get("_clear_auth_cookie"):
+    st.components.v1.html(
+        '<script>document.cookie="sloth_auth=; path=/; max-age=0; SameSite=Lax";</script>',
+        height=0, width=0,
+    )
+    st.session_state["_clear_auth_cookie"] = False
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  GLOBAL CSS  ── OLED Dark + Neon Cyberpunk design system
@@ -1066,6 +1129,7 @@ with st.container(key="navbar"):
                 if st.button("🚪 登出", key="nb_logout", use_container_width=True):
                     st.session_state["connected"] = False
                     st.session_state["user_info"] = {}
+                    st.session_state["_clear_auth_cookie"] = True
                     st.rerun()
         else:
             _login_pop = st.popover("🔒", use_container_width=True, help="登入")
