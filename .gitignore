@@ -1,0 +1,9 @@
+# Cloned skill references (large, not part of this project)
+.github/skills/
+
+# User data (persistent history files)
+user_data/
+
+# Python cache
+__pycache__/
+*.pyc

@@ -1,7 +1,6 @@
 """
-sLoth rAdio · Title Studio — Dynamic Wizard Mode
-Google Gemini AI-powered YouTube title, tag & SEO asset generator.
-Falls back to mock data when no API key is configured.
+sLoth rAdio · Title Studio — Dynamic Wizard Mode (DEMO)
+No API key required. Uses mock data to demonstrate the 4-step wizard flow.
 
 UI Language: Traditional Chinese
 Design: OLED Dark + Neon Teal (#00ffcc / #b026ff)
@@ -9,62 +8,17 @@ Design: OLED Dark + Neon Teal (#00ffcc / #b026ff)
 
 import json
 import time
-import traceback
 from datetime import datetime
-
 import streamlit as st
-from google import genai
-from google.genai import types
-from PIL import Image
-import io
-
-from history import load_history, save_generation, delete_history_item, build_dedup_prompt
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  PAGE CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="sLoth rAdio · Title Studio",
+    page_title="sLoth rAdio · Title Studio (Demo)",
     page_icon="🎵",
     layout="wide",
 )
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  GOOGLE OAUTH  ── login / guest mode
-# ─────────────────────────────────────────────────────────────────────────────
-
-
-def _init_auth():
-    """Initialise Google OAuth. Returns (logged_in, email, name, photo_url).
-    Falls back to guest mode when secrets are missing."""
-    try:
-        _client_id = st.secrets["google_oauth"]["client_id"]
-        _client_secret = st.secrets["google_oauth"]["client_secret"]
-        _redirect_uri = st.secrets["google_oauth"].get(
-            "redirect_uri", "http://localhost:8501")
-    except (KeyError, FileNotFoundError):
-        return False, None, None, None
-
-    from streamlit_google_auth import Authenticate
-    auth = Authenticate(
-        secret=_client_secret,
-        client_id=_client_id,
-        redirect_uri=_redirect_uri,
-        cookie_name="sloth_title_studio",
-        cookie_key="sloth_title_studio_auth_cookie_key_v1",
-        cookie_expiry_days=30,
-    )
-    auth.check_authentification()
-    return (
-        st.session_state.get("connected", False),
-        st.session_state.get("user_info", {}).get("email"),
-        st.session_state.get("user_info", {}).get("name"),
-        st.session_state.get("user_info", {}).get("picture"),
-    )
-
-
-_LOGGED_IN, _USER_EMAIL, _USER_NAME, _USER_PHOTO = _init_auth()
-_IS_GUEST = not _LOGGED_IN
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  GLOBAL CSS  ── OLED Dark + Neon Cyberpunk design system
@@ -317,33 +271,21 @@ html { scrollbar-color: rgba(0,255,204,0.25) rgba(255,255,255,0.02); scrollbar-w
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  MODEL CANDIDATES  ── preference order
-# ─────────────────────────────────────────────────────────────────────────────
-_MODEL_CANDIDATES = [
-    "gemini-2.5-flash",
-    "gemini-2.5-pro",
-    "gemini-2.0-flash",
-    "gemini-2.0-flash-lite",
-    "gemini-1.5-flash",
-]
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  MOCK DATA  ── realistic lofi-themed content for demo fallback
+#  MOCK DATA  ── realistic lofi-themed content for demo
 # ─────────────────────────────────────────────────────────────────────────────
 _MOCK_TITLES_EN = [
-    "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙",
-    "Find Your Calm… Soothing R&B for Work, Rest & Healing 🌸 ☕",
-    "Slow Morning Chores… Chill R&B for Study, Work & Gentle Focus 🧰 🧰",
-    "Peace in the Garden… Chill R&B for Study, Work & Soft Focus ⏳ 🫖",
-    "Rest in the Morning Light… Chill R&B for Yoga & Peaceful Moments 🧘 🌞",
+    "Midnight Pages… Chill Lofi for Late Night Study & Focus 📚 🌙",
+    "Rainy Café Daydream… Cozy Lofi for Relaxation & Calm ☕ 🌧️",
+    "Warm Silence… Soothing Jazz Lofi for Sleep & Comfort 🕯️ 💤",
+    "Paper & Ink… Gentle Lofi for Writing, Reading & Peace ✒️ 🍃",
+    "Golden Hour Drift… Soft Lofi for Afternoon Chill & Vibes 🌅 🎧",
 ]
 _MOCK_TITLES_ZH = [
-    "溫馨茶時光… 放鬆、讀書＆平靜的 Chill Lofi 🍵 🌙",
-    "找到你的安寧… 工作、休憩＆療癒的舒緩 R&B 🌸 ☕",
-    "慢活早晨家務… 讀書、工作＆溫柔專注的 Chill R&B 🧰 🧰",
-    "花園裡的寧靜… 讀書、工作＆柔和專注的 Chill R&B ⏳ 🫖",
-    "晨光中的休憩… 瑜伽＆平靜時刻的 Chill R&B 🧘 🌞",
+    "午夜書頁… 深夜讀書＆專注的 Chill Lofi 📚 🌙",
+    "雨天咖啡白日夢… 放鬆＆平靜的溫暖 Lofi ☕ 🌧️",
+    "溫暖的沉默… 助眠＆舒適的爵士 Lofi 🕯️ 💤",
+    "紙與墨… 書寫、閱讀＆寧靜的輕柔 Lofi ✒️ 🍃",
+    "金色時光漫遊… 午後放鬆＆氛圍的柔和 Lofi 🌅 🎧",
 ]
 _MOCK_TAGS = (
     "lofi, lofi music, chill lofi, lofi hip hop, lofi beats, study music, "
@@ -363,8 +305,9 @@ _MOCK_LONG_STORY_EN = (
     "Outside, the city feels far away. Streetlights blur into soft halos through the rain, "
     "and the occasional car passes like a whisper. You open your notebook, but there's no rush to write. "
     "Tonight, just being here is enough.\n\n"
-    "The barista glances at the clock but never hurries. "
-    "A stack of old paperbacks sits on the shelf by the door — they belong to no one and everyone.\n\n"
+    "The barista wipes down the espresso machine with practiced ease, glancing at the clock but never hurrying. "
+    "A stack of old paperbacks sits on the shelf by the door — someone left them here months ago, "
+    "and now they belong to no one and everyone.\n\n"
     "You pick up your pen. The first sentence comes slowly, then another, then a whole paragraph "
     "that feels like it was always waiting inside you. The rain keeps its gentle rhythm, "
     "and the lofi beats carry you forward, one soft note at a time.\n\n"
@@ -389,22 +332,20 @@ _MOCK_LONG_STORY_ZH = (
     "往往是在安靜的時刻、無人注視時寫下的。"
 )
 _MOCK_SHORT_STORY_EN = (
-    "Making Tea 🍵\n"
-    "Evening settles outside the window 🌙. You fill the kettle and set it on the stove, "
-    "then choose your favorite cup—the one with the crack in the glaze you never bothered to replace.\n\n"
-    "The kettle hums low. When it whistles, you pour. Steam rises, fogging the window above the sink 💨. "
-    "You watch the water darken, then wrap your hands around the warm cup, letting the heat seep through ☕.\n\n"
-    "When you finally take a slow sip, you carry the cup to the living room and sink into the couch 🛋️. "
-    "The last light has gone. Only the warmth in your hands and the slow, easy quiet of the evening 🌿."
+    "Late night. Warm lights. A half-finished cup of tea and nowhere to be. ☕🌙\n\n"
+    "The rain taps gently on the window while lofi melodies fill the quiet corners of the café. "
+    "You write. You dream. You breathe. 📝✨\n\n"
+    "Some nights don't need a plan — just a playlist, a pen, and the permission to simply exist. "
+    "This is one of those nights. 🌧️💫\n\n"
+    "Stay cozy. Stay curious. The best stories begin in silence. 🍃"
 )
 _MOCK_SHORT_STORY_ZH = (
-    "泡一杯茶 🍵\n"
-    "夜色在窗外慢慢沉澱 🌙。你把水壺裝滿放上爐子，"
-    "然後挑了你最愛的那只杯子——釉面上有道裂痕，你從沒想過要換掉它。\n\n"
-    "水壺發出低沉的嗡鳴。壺嘴一響，你傾倒熱水。蒸氣升起，在水槽上方的窗玻璃上凝成一層薄霧 💨。"
-    "你看著茶湯漸漸變深，然後雙手捧住溫熱的杯身，讓暖意慢慢滲透 ☕。\n\n"
-    "當你終於小啜一口，便端著杯子走進客廳，陷入沙發裡 🛋️。"
-    "最後的光已經散去。只剩手中的溫暖，和這個夜晚緩慢而安靜的呼吸 🌿。"
+    "深夜。暖光。一杯喝了一半的茶，哪裡也不用去。☕🌙\n\n"
+    "雨輕輕敲著窗戶，lofi 旋律填滿了咖啡廳安靜的角落。"
+    "你書寫。你做夢。你呼吸。📝✨\n\n"
+    "有些夜晚不需要計畫——只需要一張播放清單、一支筆，"
+    "和允許自己單純存在的勇氣。今夜就是這樣的夜晚。🌧️💫\n\n"
+    "保持溫暖。保持好奇。最好的故事，始於寂靜。🍃"
 )
 _MOCK_TRACKLIST = [
     {"id": 1, "en_title": "Midnight Pages", "zh_title": "午夜書頁",
@@ -441,8 +382,9 @@ _DEFAULTS = {
     "n_songs": 15,               # 歌單數量
     "results": {},               # AI / mock 結果
     "uploaded_images": [],       # Step 3 上傳嘅圖片 (UploadedFile objects)
+    "history": [],               # 歷史記錄
     "view_mode": "wizard",       # "wizard" | "history"
-    "api_key": "",               # API key
+    "api_key": "",               # API key（未來用）
     "api_status": "disconnected",  # "disconnected" | "validating" | "connected"
     "api_model": "",             # 模型名稱
     "prompt_tone": 50,           # 語氣 slider 0-100
@@ -456,208 +398,12 @@ for k, v in _DEFAULTS.items():
 
 
 def reset_pipeline():
-    _preserve = {"api_key", "api_status", "api_model"}
+    _preserve = {"history", "api_key", "api_status", "api_model"}
     for k, v in _DEFAULTS.items():
         if k in _preserve:
             continue
         st.session_state[k] = v if not isinstance(
             v, (list, dict)) else type(v)()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  GEMINI API  ── real AI generation
-# ─────────────────────────────────────────────────────────────────────────────
-def _get_client() -> genai.Client | None:
-    """Return a configured genai Client, or None if no key."""
-    key = st.session_state.api_key
-    if not key:
-        return None
-    return genai.Client(api_key=key)
-
-
-def _validate_api_key(key: str) -> tuple[bool, str]:
-    """Validate API key and find best available model. Returns (ok, model_name)."""
-    if not key:
-        return False, ""
-    try:
-        client = genai.Client(api_key=key)
-        available = set()
-        for m in client.models.list():
-            available.add(m.name.split("/")[-1] if "/" in m.name else m.name)
-        for candidate in _MODEL_CANDIDATES:
-            if candidate in available:
-                return True, candidate
-        # If none of the candidates match, use the first available generative model
-        for m_name in available:
-            if "gemini" in m_name:
-                return True, m_name
-        return False, ""
-    except Exception:
-        return False, ""
-
-
-def _call_json(prompt: str, image_parts: list | None = None) -> dict | list:
-    """Call Gemini with JSON response mode. Returns parsed JSON."""
-    client = _get_client()
-    if not client:
-        raise RuntimeError("API key 未設定")
-    model = st.session_state.api_model
-    contents = []
-    if image_parts:
-        for img_bytes, mime in image_parts:
-            contents.append(types.Part.from_bytes(
-                data=img_bytes, mime_type=mime))
-    contents.append(prompt)
-    response = client.models.generate_content(
-        model=model,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.9,
-        ),
-    )
-    return json.loads(response.text)
-
-
-def _build_tone_style_block() -> str:
-    """Build prompt fragment from tone/style/audience/extra settings."""
-    parts = []
-    tone_map = {0: "溫暖柔和", 25: "寧靜治癒", 50: "平衡自然", 75: "明亮活潑", 100: "活潑有力"}
-    tone = tone_map.get(st.session_state.prompt_tone, "平衡自然")
-    parts.append(f"語氣風格：{tone}")
-    if st.session_state.prompt_styles:
-        parts.append(f"創作風格：{', '.join(st.session_state.prompt_styles)}")
-    if st.session_state.prompt_audience and st.session_state.prompt_audience != "不指定":
-        parts.append(f"目標受眾：{st.session_state.prompt_audience}")
-    if st.session_state.prompt_extra:
-        parts.append(f"額外指示：{st.session_state.prompt_extra}")
-    return "\n".join(parts)
-
-
-def _prepare_images() -> list | None:
-    """Prepare uploaded images as (bytes, mime_type) tuples for API."""
-    imgs = st.session_state.get("uploaded_images", [])
-    if not imgs:
-        return None
-    parts = []
-    for f in imgs[:5]:  # 最多 5 張
-        data = f.getvalue()
-        mime = f.type or "image/jpeg"
-        parts.append((data, mime))
-    return parts
-
-
-def ai_generate_tracklist(n: int, context: str, user_email: str | None = None) -> list:
-    """Generate tracklist via Gemini."""
-    style_block = _build_tone_style_block()
-    dedup_block = build_dedup_prompt(user_email)
-    prompt = f"""You are a lofi music curator creating a tracklist for a YouTube lofi playlist.
-
-Generate {n} lofi track concepts. Style: cozy, introspective, lofi/chillhop, quiet everyday moments.
-
-{f"User's creative context: {context}" if context else ""}
-{style_block}
-{dedup_block}
-
-Return a JSON array of exactly {n} objects. Each object must have:
-- "en_title": English title, 2-5 words, poetic
-- "zh_title": Traditional Chinese title, 3-6 characters
-- "en_theme": English theme sentence, ≤15 words
-- "zh_theme": Traditional Chinese theme sentence
-
-Return ONLY the JSON array, no wrapping object."""
-
-    image_parts = _prepare_images()
-    data = _call_json(prompt, image_parts)
-    if isinstance(data, dict) and "tracklist" in data:
-        data = data["tracklist"]
-    for i, item in enumerate(data, 1):
-        item["id"] = i
-    return data[:n]
-
-
-def ai_generate_assets(selected_outputs: list, context: str, tracklist: list | None, user_email: str | None = None) -> dict:
-    """Generate titles, tags, stories via a single Gemini call."""
-    style_block = _build_tone_style_block()
-    dedup_block = build_dedup_prompt(user_email)
-
-    tracklist_text = ""
-    if tracklist:
-        lines = []
-        for s in tracklist:
-            lines.append(
-                f"  - 《{s.get('en_title', '')}》({s.get('zh_title', '')}): {s.get('en_theme', '')}")
-        tracklist_text = "Tracklist for reference:\n" + "\n".join(lines)
-
-    # 構建需要生成的項目描述
-    output_specs = []
-    if "titles" in selected_outputs:
-        output_specs.append("""- "titles": array of 5 English YouTube titles, ranked by predicted CTR (high→low).
-  Each title MUST follow this exact format: "{Catchy Name 2-5 words}… {Genre with Lofi/R&B/Jazz keyword} for {Use Case 2-3 words} {emoji} {emoji}"
-  IMPORTANT: Vary the genre keyword across titles (mix Lofi, R&B, Jazz — don't repeat the same one).
-  Vary the use cases (Study, Work, Relaxation, Yoga, Healing, Focus, etc.) and moods (Cozy, Peaceful, Slow, Warm, etc.).
-  Use diverse, evocative emoji pairs — avoid repeating the same pair.
-  Examples of good diversity:
-  - "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙"
-  - "Find Peace in Small Tasks… Chill Lofi for Relaxation & Unwinding 🧼 🌿"
-  - "Find Your Calm… Soothing R&B for Work, Rest & Healing 🌸 ☕"
-  - "Slow Morning Chores… Chill R&B for Study, Work & Gentle Focus 🧰 🧰"
-  - "Rest in the Morning Light… Chill R&B for Yoga & Peaceful Moments 🧘 🌞"
-- "titles_zh": array of 5 Traditional Chinese titles, 1:1 corresponding to the English titles.""")
-    if "tags" in selected_outputs:
-        output_specs.append("""- "tags": a single comma-separated string of 35-45 YouTube SEO tags.
-  Mix broad keywords (e.g. lofi, chill music) with niche keywords (e.g. cozy rainy night lofi).
-  Total character count should be 450-500.""")
-    if "long_story" in selected_outputs:
-        output_specs.append("""- "long_story": English prose, 3-5 paragraphs. Second person "you". Immersive slice-of-life style.
-  Total length MUST be around 1000 characters (not words). Paragraphs separated by \\n\\n.
-- "long_story_zh": Traditional Chinese translation with equal poetic quality. Also ~1000 characters total.""")
-    if "short_story" in selected_outputs:
-        output_specs.append("""- "short_story": English short prose, 200-600 characters total. Format:
-  Line 1: A short evocative title followed by one emoji (e.g. "Making Tea 🍵")
-  Then 2-3 paragraphs in second person "you", present tense, with sensory details.
-  Place emojis at the END of sentences (not inline). Paragraphs separated by \\n\\n.
-  Example:
-  "Making Tea 🍵\nEvening settles outside the window 🌙. You fill the kettle and set it on the stove...\n\nYou don't drink yet. You just stand there, holding it..."
-- "short_story_zh": Traditional Chinese translation in the same format. Also 200-600 characters total.""")
-
-    specs_text = "\n".join(output_specs)
-
-    prompt = f"""You are a YouTube SEO copywriter specializing in lofi/chill music channels.
-
-{f"User's creative context: {context}" if context else "No specific context provided — create a cozy lofi theme."}
-{tracklist_text}
-{style_block}
-{dedup_block}
-
-Generate the following as a single JSON object:
-{specs_text}
-
-Return ONLY the JSON object."""
-
-    image_parts = _prepare_images()
-    return _call_json(prompt, image_parts)
-
-
-def ai_generate(selected_outputs: list, n_songs: int, context: str, user_email: str | None = None) -> dict:
-    """Full AI generation pipeline."""
-    result = {}
-
-    # Step 1: 生成歌單（如果需要）
-    if "tracklist" in selected_outputs:
-        tracklist = ai_generate_tracklist(n_songs, context, user_email)
-        result["tracklist"] = tracklist
-    else:
-        tracklist = None
-
-    # Step 2: 生成其他素材（標題、標籤、故事）
-    asset_outputs = [k for k in selected_outputs if k != "tracklist"]
-    if asset_outputs:
-        assets = ai_generate_assets(
-            asset_outputs, context, tracklist or result.get("tracklist"), user_email)
-        result.update(assets)
-
-    return result
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -890,16 +636,16 @@ _api_dot = "on" if _api_st == "connected" else (
     "wait" if _api_st == "validating" else "off")
 _api_txt = (
     f"Gemini · {st.session_state.api_model}" if _api_st == "connected"
-    else ("驗證中..." if _api_st == "validating" else "未連接")
+    else ("驗證中..." if _api_st == "validating" else "Demo 模式")
 )
-_hist_count = len(load_history(_USER_EMAIL)) if _USER_EMAIL else 0
+_hist_count = len(st.session_state.history)
 
 # ═════════════════════════════════════════════════════════════════════════
-#  NAVBAR ─ single-row: brand | buttons | user/status
+#  NAVBAR ─ single-row: brand | buttons | status
 # ═════════════════════════════════════════════════════════════════════════
 with st.container(key="navbar"):
-    _c_brand, _c_sep, _c_key, _c_hist, _c_set, _c_reset, _c_space, _c_user, _c_status = st.columns(
-        [1.8, 0.12, 0.5, 0.5, 0.5, 0.5, 3, 1.2, 1.6], vertical_alignment="center"
+    _c_brand, _c_sep, _c_key, _c_hist, _c_set, _c_reset, _c_space, _c_status = st.columns(
+        [1.8, 0.12, 0.5, 0.5, 0.5, 0.5, 4, 1.6], vertical_alignment="center"
     )
     # ── 品牌標題 ──
     with _c_brand:
@@ -923,25 +669,9 @@ with st.container(key="navbar"):
             )
             if _new_key != st.session_state.api_key:
                 st.session_state.api_key = _new_key
-                if _new_key:
-                    st.session_state.api_status = "validating"
-                    ok, model = _validate_api_key(_new_key)
-                    if ok:
-                        st.session_state.api_status = "connected"
-                        st.session_state.api_model = model
-                    else:
-                        st.session_state.api_status = "disconnected"
-                        st.session_state.api_model = ""
-                else:
-                    st.session_state.api_status = "disconnected"
-                    st.session_state.api_model = ""
+                st.session_state.api_status = "validating" if _new_key else "disconnected"
                 st.rerun()
-            if st.session_state.api_status == "connected":
-                st.caption(f"✅ 已連接 · 模型：{st.session_state.api_model}")
-            elif st.session_state.api_status == "disconnected" and st.session_state.api_key:
-                st.caption("❌ API Key 無效或無可用模型")
-            else:
-                st.caption("💡 輸入 API Key 啟用 Gemini AI。未連接時使用模擬資料。")
+            st.caption("💡 Demo 模式下無需 API Key，使用模擬資料。")
     # ── 📋 歷史 ──
     with _c_hist:
         if st.button("📋", key="nb_hist_btn", use_container_width=True, help=f"歷史記錄 ({_hist_count})"):
@@ -968,26 +698,6 @@ with st.container(key="navbar"):
         if st.button("🔄", key="nb_reset_btn", use_container_width=True, help="重置所有步驟"):
             reset_pipeline()
             st.rerun()
-    # ── 👤 用戶 ──
-    with _c_user:
-        if _LOGGED_IN:
-            _user_pop = st.popover(
-                f"👤", use_container_width=True, help=_USER_NAME or _USER_EMAIL)
-            with _user_pop:
-                _display = _USER_NAME or _USER_EMAIL or "用戶"
-                st.markdown(f"##### 👋 {_display}")
-                st.caption(f"📧 {_USER_EMAIL}")
-                st.caption(f"📋 共 {_hist_count} 筆歷史記錄")
-                if st.button("🚪 登出", key="nb_logout", use_container_width=True):
-                    st.session_state["connected"] = False
-                    st.session_state["user_info"] = {}
-                    st.rerun()
-        else:
-            _login_pop = st.popover("🔒", use_container_width=True, help="登入")
-            with _login_pop:
-                st.markdown("##### 🔒 登入")
-                st.caption("使用 Google 帳號登入以儲存歷史記錄，跨裝置同步。")
-                st.caption("未設定 OAuth → 功能暫不可用。")
     # ── 狀態指示器（右側） ──
     with _c_status:
         st.markdown(
@@ -1019,66 +729,44 @@ if st.session_state.view_mode == "history":
         unsafe_allow_html=True,
     )
 
-    if _IS_GUEST:
+    _history = st.session_state.history
+    if not _history:
         st.markdown(
             "<div style='text-align:center;padding:40px 0;color:rgba(255,255,255,0.55);font-size:14px;'>"
-            "🔒 請先登入 Google 帳號以查看歷史記錄<br>"
-            "<span style='font-size:12px;'>登入後，生成記錄會自動保存並可跨裝置同步</span></div>",
+            "尚無歷史記錄<br><span style='font-size:12px;'>完成一次生成後會自動保存</span></div>",
             unsafe_allow_html=True,
         )
     else:
-        _history = load_history(_USER_EMAIL)
-        if not _history:
+        for hi, entry in enumerate(reversed(_history)):
+            _ts = entry.get("timestamp", "")
+            _types = " ".join(
+                f"<span class='chip chip-teal'>{_MATERIAL_LABELS.get(k, k)}</span>"
+                for k in entry.get("selected_outputs", [])
+            )
+            _preview = entry.get("user_context", "")[:80]
+            if len(entry.get("user_context", "")) > 80:
+                _preview += "..."
+            _no_input = '<em style="color:rgba(255,255,255,0.50);">無輸入文字</em>'
+            _summary_html = _he(_preview) if _preview else _no_input
             st.markdown(
-                "<div style='text-align:center;padding:40px 0;color:rgba(255,255,255,0.55);font-size:14px;'>"
-                "尚無歷史記錄<br><span style='font-size:12px;'>完成一次生成後會自動保存</span></div>",
+                f"<div class='hist-card'>"
+                f"<div class='hist-time'>{_he(_ts)}</div>"
+                f"<div style='margin:6px 0;'>{_types}</div>"
+                f"<div class='hist-summary'>{_summary_html}</div>"
+                f"</div>",
                 unsafe_allow_html=True,
             )
-        else:
-            for hi, entry in enumerate(_history):
-                _ts = entry.get("timestamp", "")
-                _types = " ".join(
-                    f"<span class='chip chip-teal'>{_MATERIAL_LABELS.get(k, k)}</span>"
-                    for k in entry.get("selected_outputs", [])
-                )
-                _preview = entry.get("user_context", "")[:80]
-                if len(entry.get("user_context", "")) > 80:
-                    _preview += "..."
-                _no_input = '<em style="color:rgba(255,255,255,0.50);">無輸入文字</em>'
-                _summary_html = _he(_preview) if _preview else _no_input
-                _mode = entry.get("mode", "demo")
-                _mode_badge = (
-                    "<span style='font-size:10px;color:#00ffcc;font-weight:600;margin-left:8px;'>AI</span>"
-                    if _mode == "ai" else
-                    "<span style='font-size:10px;color:rgba(255,180,0,0.85);font-weight:600;margin-left:8px;'>Demo</span>"
-                )
-                st.markdown(
-                    f"<div class='hist-card'>"
-                    f"<div class='hist-time'>{_he(_ts)}{_mode_badge}</div>"
-                    f"<div style='margin:6px 0;'>{_types}</div>"
-                    f"<div class='hist-summary'>{_summary_html}</div>"
-                    f"</div>",
-                    unsafe_allow_html=True,
-                )
-                _hcol1, _hcol2 = st.columns([3, 1])
-                with _hcol1:
-                    if st.button("📊 查看結果", key=f"hist_view_{hi}", use_container_width=True):
-                        st.session_state.results = entry.get("results", {})
-                        st.session_state.selected_outputs = entry.get(
-                            "selected_outputs", [])
-                        st.session_state.user_context = entry.get(
-                            "user_context", "")
-                        st.session_state.existing_materials = entry.get(
-                            "existing_materials", [])
-                        st.session_state.n_songs = entry.get("n_songs", 15)
-                        st.session_state.step = 4
-                        st.session_state.view_mode = "wizard"
-                        st.rerun()
-                with _hcol2:
-                    _entry_id = entry.get("id", "")
-                    if _entry_id and st.button("🗑️", key=f"hist_del_{hi}", use_container_width=True, help="刪除此記錄"):
-                        delete_history_item(_USER_EMAIL, _entry_id)
-                        st.rerun()
+            if st.button(f"📊 查看結果", key=f"hist_view_{hi}", use_container_width=True):
+                st.session_state.results = entry.get("results", {})
+                st.session_state.selected_outputs = entry.get(
+                    "selected_outputs", [])
+                st.session_state.user_context = entry.get("user_context", "")
+                st.session_state.existing_materials = entry.get(
+                    "existing_materials", [])
+                st.session_state.n_songs = entry.get("n_songs", 15)
+                st.session_state.step = 4
+                st.session_state.view_mode = "wizard"
+                st.rerun()
 
     st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
     if st.button("← 返回精靈", key="hist_back", use_container_width=True):
@@ -1087,7 +775,7 @@ if st.session_state.view_mode == "history":
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='footer'>sLoth rAdio · Title Studio</div>",
+    st.markdown("<div class='footer'>sLoth rAdio · Title Studio · Dynamic Wizard Demo</div>",
                 unsafe_allow_html=True)
     st.stop()
 
@@ -1352,44 +1040,23 @@ elif step == 3:
     st.markdown("</div>", unsafe_allow_html=True)  # close .glass
 
     if gen_btn:
-        _use_ai = st.session_state.api_status == "connected"
-        _mode_label = "Gemini AI" if _use_ai else "Demo（模擬資料）"
-        with st.status(f"⚙️ {_mode_label} 生成中...", expanded=True) as status:
-            try:
-                if _use_ai:
-                    st.write(f"🤖 使用 {st.session_state.api_model} 生成中...")
-                    results = ai_generate(
-                        st.session_state.selected_outputs,
-                        st.session_state.n_songs,
-                        st.session_state.user_context,
-                        user_email=_USER_EMAIL,
-                    )
-                else:
-                    st.write("🤖 使用模擬資料（未連接 API）...")
-                    results = mock_generate(
-                        st.session_state.selected_outputs, st.session_state.n_songs)
-                if results:
-                    st.session_state.results = results
-                    # 儲存到持久化歷史記錄（需要登入）
-                    if _USER_EMAIL:
-                        save_generation(
-                            email=_USER_EMAIL,
-                            results=dict(results),
-                            selected_outputs=list(
-                                st.session_state.selected_outputs),
-                            existing_materials=list(
-                                st.session_state.existing_materials),
-                            context=st.session_state.user_context,
-                            n_songs=st.session_state.n_songs,
-                            mode="ai" if _use_ai else "demo",
-                        )
-                    status.update(
-                        label="✅ 完成！", state="complete", expanded=False)
-                else:
-                    status.update(label="❌ 生成失敗",
-                                  state="error", expanded=False)
-            except Exception as e:
-                st.error(f"生成失敗：{e}")
+        with st.status("⚙️ Demo 生成中...", expanded=True) as status:
+            st.write("🤖 使用 Mock Data 模擬 AI 生成...")
+            results = mock_generate(
+                st.session_state.selected_outputs, st.session_state.n_songs)
+            if results:
+                st.session_state.results = results
+                # 儲存到歷史記錄
+                st.session_state.history.append({
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "selected_outputs": list(st.session_state.selected_outputs),
+                    "existing_materials": list(st.session_state.existing_materials),
+                    "user_context": st.session_state.user_context,
+                    "n_songs": st.session_state.n_songs,
+                    "results": dict(results),
+                })
+                status.update(label="✅ 完成！", state="complete", expanded=False)
+            else:
                 status.update(label="❌ 生成失敗", state="error", expanded=False)
         if st.session_state.results:
             st.session_state.step = 4
@@ -1567,5 +1234,5 @@ elif step == 4:
 # ═════════════════════════════════════════════════════════════════════════════
 #  FOOTER
 # ═════════════════════════════════════════════════════════════════════════════
-st.markdown("<div class='footer'>sLoth rAdio · Title Studio</div>",
+st.markdown("<div class='footer'>sLoth rAdio · Title Studio · Dynamic Wizard Demo</div>",
             unsafe_allow_html=True)
