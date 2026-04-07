@@ -335,6 +335,12 @@ button[data-testid="stBaseButton-secondary"]:hover {
     background: rgba(255,255,255,0.06) !important; border-color: rgba(255,255,255,0.30) !important;
     transform: translateY(-2px) !important; box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
 }
+button[data-testid="baseButton-secondary"]:active,
+button[data-testid="stBaseButton-secondary"]:active {
+    background: linear-gradient(135deg, rgba(0,255,204,0.08), rgba(176,38,255,0.06)) !important;
+    border-color: rgba(0,255,204,0.50) !important; color: #00ffcc !important;
+    transform: translateY(0) !important; transition-duration: 0.05s !important;
+}
 
 /* ── Primary (selected / action) ── */
 button[data-testid="baseButton-primary"],
@@ -349,6 +355,11 @@ button[data-testid="baseButton-primary"]:hover,
 button[data-testid="stBaseButton-primary"]:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 0 28px rgba(0,255,204,0.25), 0 8px 24px rgba(0,0,0,0.4) !important;
+}
+button[data-testid="baseButton-primary"]:active,
+button[data-testid="stBaseButton-primary"]:active {
+    transform: translateY(0) !important; transition-duration: 0.05s !important;
+    box-shadow: 0 0 12px rgba(0,255,204,0.15) !important;
 }
 
 /* ── Info / Review cards ── */

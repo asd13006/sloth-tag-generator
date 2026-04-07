@@ -378,23 +378,26 @@ if step == 1:
         unsafe_allow_html=True,
     )
 
+    def _toggle_output(key):
+        if key in st.session_state.selected_outputs:
+            st.session_state.selected_outputs.remove(key)
+        else:
+            st.session_state.selected_outputs.append(key)
+
     @st.fragment
     def _step1_cards():
         cols = st.columns(5, gap="medium")
         for ci, (key, icon, name, desc) in enumerate(_OPTIONS):
             with cols[ci]:
                 is_sel = key in st.session_state.selected_outputs
-                if st.button(
+                st.button(
                     f"{icon}\n\n**{name}**",
                     key=f"out_{key}",
                     type="primary" if is_sel else "secondary",
                     use_container_width=True,
-                ):
-                    if is_sel:
-                        st.session_state.selected_outputs.remove(key)
-                    else:
-                        st.session_state.selected_outputs.append(key)
-                    st.rerun()
+                    on_click=_toggle_output,
+                    args=(key,),
+                )
                 st.markdown(
                     f"<div class='card-desc'>{desc}</div>", unsafe_allow_html=True)
 
@@ -441,6 +444,14 @@ elif step == 2:
         unsafe_allow_html=True,
     )
 
+    def _toggle_material(key):
+        if key in st.session_state.existing_materials:
+            st.session_state.existing_materials.remove(key)
+            if key == "images":
+                st.session_state.uploaded_images = []
+        else:
+            st.session_state.existing_materials.append(key)
+
     @st.fragment
     def _step2_cards():
         # Filter out items the user wants to generate + always include images
@@ -453,15 +464,9 @@ elif step == 2:
         for ci, (key, icon, name, _) in enumerate(available):
             with cols[ci]:
                 is_sel = key in st.session_state.existing_materials
-                if st.button(f"{icon}\n\n**已有{name}**", key=f"mat_{key}",
-                             type="primary" if is_sel else "secondary", use_container_width=True):
-                    if is_sel:
-                        st.session_state.existing_materials.remove(key)
-                        if key == "images":
-                            st.session_state.uploaded_images = []
-                    else:
-                        st.session_state.existing_materials.append(key)
-                    st.rerun()
+                st.button(f"{icon}\n\n**已有{name}**", key=f"mat_{key}",
+                          type="primary" if is_sel else "secondary", use_container_width=True,
+                          on_click=_toggle_material, args=(key,))
 
         n_mat = len(st.session_state.existing_materials)
 
