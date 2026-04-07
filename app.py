@@ -293,18 +293,18 @@ _MODEL_CANDIDATES = [
 #  MOCK DATA  ── realistic lofi-themed content for demo fallback
 # ─────────────────────────────────────────────────────────────────────────────
 _MOCK_TITLES_EN = [
-    "Midnight Pages… Chill Lofi for Late Night Study & Focus 📚 🌙",
-    "Rainy Café Daydream… Cozy Lofi for Relaxation & Calm ☕ 🌧️",
-    "Warm Silence… Soothing Jazz Lofi for Sleep & Comfort 🕯️ 💤",
-    "Paper & Ink… Gentle Lofi for Writing, Reading & Peace ✒️ 🍃",
-    "Golden Hour Drift… Soft Lofi for Afternoon Chill & Vibes 🌅 🎧",
+    "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙",
+    "Find Your Calm… Soothing R&B for Work, Rest & Healing 🌸 ☕",
+    "Slow Morning Chores… Chill R&B for Study, Work & Gentle Focus 🧰 🧰",
+    "Peace in the Garden… Chill R&B for Study, Work & Soft Focus ⏳ 🫖",
+    "Rest in the Morning Light… Chill R&B for Yoga & Peaceful Moments 🧘 🌞",
 ]
 _MOCK_TITLES_ZH = [
-    "午夜書頁… 深夜讀書＆專注的 Chill Lofi 📚 🌙",
-    "雨天咖啡白日夢… 放鬆＆平靜的溫暖 Lofi ☕ 🌧️",
-    "溫暖的沉默… 助眠＆舒適的爵士 Lofi 🕯️ 💤",
-    "紙與墨… 書寫、閱讀＆寧靜的輕柔 Lofi ✒️ 🍃",
-    "金色時光漫遊… 午後放鬆＆氛圍的柔和 Lofi 🌅 🎧",
+    "溫馨茶時光… 放鬆、讀書＆平靜的 Chill Lofi 🍵 🌙",
+    "找到你的安寧… 工作、休憩＆療癒的舒緩 R&B 🌸 ☕",
+    "慢活早晨家務… 讀書、工作＆溫柔專注的 Chill R&B 🧰 🧰",
+    "花園裡的寧靜… 讀書、工作＆柔和專注的 Chill R&B ⏳ 🫖",
+    "晨光中的休憩… 瑜伽＆平靜時刻的 Chill R&B 🧘 🌞",
 ]
 _MOCK_TAGS = (
     "lofi, lofi music, chill lofi, lofi hip hop, lofi beats, study music, "
@@ -553,7 +553,15 @@ def ai_generate_assets(selected_outputs: list, context: str, tracklist: list | N
     if "titles" in selected_outputs:
         output_specs.append("""- "titles": array of 5 English YouTube titles, ranked by predicted CTR (high→low).
   Each title MUST follow this exact format: "{Catchy Name 2-5 words}… {Genre with Lofi/R&B/Jazz keyword} for {Use Case 2-3 words} {emoji} {emoji}"
-  Example: "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm ☕ 🌙"
+  IMPORTANT: Vary the genre keyword across titles (mix Lofi, R&B, Jazz — don't repeat the same one).
+  Vary the use cases (Study, Work, Relaxation, Yoga, Healing, Focus, etc.) and moods (Cozy, Peaceful, Slow, Warm, etc.).
+  Use diverse, evocative emoji pairs — avoid repeating the same pair.
+  Examples of good diversity:
+  - "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙"
+  - "Find Peace in Small Tasks… Chill Lofi for Relaxation & Unwinding 🧼 🌿"
+  - "Find Your Calm… Soothing R&B for Work, Rest & Healing 🌸 ☕"
+  - "Slow Morning Chores… Chill R&B for Study, Work & Gentle Focus 🧰 🧰"
+  - "Rest in the Morning Light… Chill R&B for Yoga & Peaceful Moments 🧘 🌞"
 - "titles_zh": array of 5 Traditional Chinese titles, 1:1 corresponding to the English titles.""")
     if "tags" in selected_outputs:
         output_specs.append("""- "tags": a single comma-separated string of 35-45 YouTube SEO tags.
