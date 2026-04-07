@@ -39,49 +39,53 @@ _AUTH_OBJ = None  # global ref for login button rendering
 
 def _init_auth():
     """Initialise Google OAuth. Returns (logged_in, email, name, photo_url).
-    Falls back to guest mode when secrets are missing."""
+    Falls back to guest mode when secrets are missing or auth fails."""
     global _AUTH_OBJ
     try:
         _client_id = st.secrets["google_oauth"]["client_id"]
         _client_secret = st.secrets["google_oauth"]["client_secret"]
         _redirect_uri = st.secrets["google_oauth"].get(
             "redirect_uri", "http://localhost:8501")
+
+        # streamlit-google-auth 需要 Google client secrets JSON 檔案
+        import json
+        import tempfile
+        import os
+        _cred_path = os.path.join(tempfile.gettempdir(), "sloth_oauth_creds.json")
+        _cred_data = {
+            "web": {
+                "client_id": _client_id,
+                "client_secret": _client_secret,
+                "redirect_uris": [_redirect_uri],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+            }
+        }
+        with open(_cred_path, "w") as f:
+            json.dump(_cred_data, f)
+
+        from streamlit_google_auth import Authenticate
+        auth = Authenticate(
+            secret_credentials_path=_cred_path,
+            redirect_uri=_redirect_uri,
+            cookie_name="sloth_title_studio",
+            cookie_key="sloth_title_studio_auth_cookie_key_v1",
+            cookie_expiry_days=30,
+        )
+        auth.check_authentification()
+        _AUTH_OBJ = auth
+        return (
+            st.session_state.get("connected", False),
+            st.session_state.get("user_info", {}).get("email"),
+            st.session_state.get("user_info", {}).get("name"),
+            st.session_state.get("user_info", {}).get("picture"),
+        )
     except (KeyError, FileNotFoundError):
         return False, None, None, None
-
-    # streamlit-google-auth 需要 Google client secrets JSON 檔案
-    import json
-    import tempfile
-    import os
-    _cred_path = os.path.join(tempfile.gettempdir(), "sloth_oauth_creds.json")
-    _cred_data = {
-        "web": {
-            "client_id": _client_id,
-            "client_secret": _client_secret,
-            "redirect_uris": [_redirect_uri],
-            "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-            "token_uri": "https://oauth2.googleapis.com/token",
-        }
-    }
-    with open(_cred_path, "w") as f:
-        json.dump(_cred_data, f)
-
-    from streamlit_google_auth import Authenticate
-    auth = Authenticate(
-        secret_credentials_path=_cred_path,
-        redirect_uri=_redirect_uri,
-        cookie_name="sloth_title_studio",
-        cookie_key="sloth_title_studio_auth_cookie_key_v1",
-        cookie_expiry_days=30,
-    )
-    auth.check_authentification()
-    _AUTH_OBJ = auth
-    return (
-        st.session_state.get("connected", False),
-        st.session_state.get("user_info", {}).get("email"),
-        st.session_state.get("user_info", {}).get("name"),
-        st.session_state.get("user_info", {}).get("picture"),
-    )
+    except Exception as e:
+        import logging
+        logging.warning(f"OAuth 初始化失敗: {e}")
+        return False, None, None, None
 
 
 _LOGGED_IN, _USER_EMAIL, _USER_NAME, _USER_PHOTO = _init_auth()

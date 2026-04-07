@@ -1,5 +1,11 @@
 # Cloned skill references (large, not part of this project)
 .github/skills/
+.github/prompts/ui-ux-pro-max/
+
+# Dev-only files
+app.py.bak
+app_demo.py
+prompts.txt
 
 # User data (persistent history files)
 user_data/
@@ -10,3 +16,6 @@ user_data/
 # Python cache
 __pycache__/
 *.pyc
+
+# Virtual environment
+.venv/
