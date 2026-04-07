@@ -106,11 +106,11 @@ _api_txt = (
 _hist_count = len(load_history(_USER_EMAIL)) if _USER_EMAIL else 0
 
 # ═════════════════════════════════════════════════════════════════════════
-#  NAVBAR ─ brand | sep | api | reset | spacer | profile | status
+#  NAVBAR ─ [brand | sep | api] ··· [reset | profile | status]
 # ═════════════════════════════════════════════════════════════════════════
 with st.container(key="navbar"):
-    _c_brand, _c_sep, _c_key, _c_reset, _c_space, _c_user, _c_status = st.columns(
-        [1.8, 0.12, 0.5, 0.5, 4.0, 0.8, 1.6], vertical_alignment="center"
+    _c_brand, _c_sep, _c_key, _c_space, _c_reset, _c_user, _c_status = st.columns(
+        [1.8, 0.12, 0.5, 3.5, 0.5, 0.8, 1.6], vertical_alignment="center"
     )
     # ── 品牌標題 ──
     with _c_brand:
