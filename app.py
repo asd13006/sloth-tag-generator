@@ -41,10 +41,8 @@ import time
 
 
 class _SlothAuth:
-    """輕量 Google OAuth wrapper，將 code_verifier 保存在 temp 檔案以修正 PKCE。
-    session_state 在瀏覽器跳轉 Google 後會遺失，改用 state→file 映射。"""
-
-    _PKCE_PREFIX = "sloth_pkce_"
+    """輕量 Google OAuth wrapper — 停用 PKCE 以相容 Streamlit Cloud。
+    Web app 已透過 client_secret 保護，PKCE 非必要。"""
 
     def __init__(self, cred_path: str, redirect_uri: str):
         self._cred_path = cred_path
@@ -54,7 +52,7 @@ class _SlothAuth:
 
     def _make_flow(self):
         import google_auth_oauthlib.flow
-        return google_auth_oauthlib.flow.Flow.from_client_secrets_file(
+        flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
             self._cred_path,
             scopes=[
                 "openid",
@@ -63,29 +61,27 @@ class _SlothAuth:
             ],
             redirect_uri=self._redirect_uri,
         )
-
-    def _verifier_path(self, state: str) -> str:
-        """回傳以 OAuth state 為 key 的 temp 檔案路徑。"""
-        import hashlib
-        safe = hashlib.sha256(state.encode()).hexdigest()[:32]
-        return os.path.join(tempfile.gettempdir(), f"{self._PKCE_PREFIX}{safe}")
+        # 停用 PKCE — Streamlit Cloud 無法在 redirect 間保存 code_verifier
+        flow.autogenerate_code_verifier = False
+        flow.code_verifier = None
+        return flow
 
     def check_authentification(self):
         if st.session_state["connected"]:
             return
+        # 處理 Google 回傳的錯誤
+        error = st.query_params.get("error")
+        if error:
+            import logging
+            error_desc = st.query_params.get("error_description", "")
+            logging.warning(f"Google OAuth 錯誤: {error} — {error_desc}")
+            st.query_params.clear()
+            return
         auth_code = st.query_params.get("code")
-        state = st.query_params.get("state")
         if auth_code:
             st.query_params.clear()
             try:
                 flow = self._make_flow()
-                # 從 temp 檔案取回 PKCE code_verifier（以 state 為 key）
-                if state:
-                    vp = self._verifier_path(state)
-                    if os.path.exists(vp):
-                        with open(vp, "r") as f:
-                            flow.code_verifier = f.read().strip()
-                        os.remove(vp)
                 flow.fetch_token(code=auth_code)
                 from googleapiclient.discovery import build
                 svc = build("oauth2", "v2", credentials=flow.credentials)
@@ -102,15 +98,11 @@ class _SlothAuth:
         if st.session_state["connected"]:
             return
         flow = self._make_flow()
-        auth_url, state = flow.authorization_url(
+        auth_url, _ = flow.authorization_url(
             access_type="offline",
             include_granted_scopes="true",
+            prompt="consent",
         )
-        # 將 PKCE code_verifier 寫入 temp 檔案（以 state 為 key）
-        if hasattr(flow, "code_verifier") and flow.code_verifier and state:
-            vp = self._verifier_path(state)
-            with open(vp, "w") as f:
-                f.write(flow.code_verifier)
         bg = "#fff" if color == "white" else "#4285f4"
         fg = "#000" if color == "white" else "#fff"
         st.markdown(
@@ -1097,15 +1089,6 @@ with st.container(key="navbar"):
                 st.caption("使用 Google 帳號登入以儲存歷史記錄，跨裝置同步。")
                 if _AUTH_OBJ is not None:
                     _AUTH_OBJ.login(color="blue", justify_content="center")
-                    # === 臨時除錯（確認後移除） ===
-                    with st.expander("🔧 Debug Info", expanded=False):
-                        st.code(f"redirect_uri: {_AUTH_OBJ._redirect_uri}", language="text")
-                        try:
-                            _dbg_flow = _AUTH_OBJ._make_flow()
-                            _dbg_url, _ = _dbg_flow.authorization_url(access_type="offline")
-                            st.code(f"auth_url: {_dbg_url[:200]}...", language="text")
-                        except Exception as _e:
-                            st.code(f"error: {_e}", language="text")
                 else:
                     st.caption("未設定 OAuth → 功能暫不可用。")
     # ── 狀態指示器（右側） ──
