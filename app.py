@@ -7,6 +7,8 @@ UI Language: Traditional Chinese
 Design: OLED Dark + Neon Teal (#00ffcc / #b026ff)
 """
 
+__version__ = "0.3.0"
+
 import json
 from datetime import datetime
 
