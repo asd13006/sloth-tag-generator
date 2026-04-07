@@ -72,6 +72,8 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .st-key-nb_brand_home button {
     background: transparent !important; border: none !important; box-shadow: none !important;
     padding: 0 !important; cursor: pointer !important; text-align: left !important;
+    height: 38px !important; min-height: 38px !important;
+    display: flex !important; align-items: center !important;
 }
 .st-key-nb_brand_home button:hover { background: transparent !important; }
 .st-key-nb_brand_home button:focus-visible { outline: 2px solid #00ffcc; outline-offset: 4px; border-radius: 6px; }
@@ -82,8 +84,8 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     background-size: 300% 300% !important;
     animation: gradient-text 5s ease 1 forwards !important;
     -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;
-    white-space: nowrap !important; line-height: 38px !important;
-    transform: translateY(-1px) !important;
+    white-space: nowrap !important; line-height: 1 !important;
+    margin: 0 !important; padding: 0 !important;
 }
 .st-key-nb_brand_home button:hover p { opacity: 0.85; }
 
@@ -227,7 +229,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .st-key-navbar [data-testid="stElementContainer"] { margin: 0 !important; padding: 0 !important; display: flex; align-items: center; width: 100%; height: 100%; }
 
 /* ── Stepper ── */
-.stepper { display: flex; align-items: center; margin: 16px 0 24px; }
+.stepper { display: flex; align-items: center; margin: 16px 0 24px; padding: 0 41px; }
 .s-item { display: flex; align-items: center; gap: 8px; }
 .s-item:not(:last-child) { flex: 1; }
 .s-dot {
@@ -369,7 +371,7 @@ button[data-testid="stBaseButton-primary"]:hover {
 .chip-purple { background: rgba(176,38,255,0.08); border: 1px solid rgba(176,38,255,0.25); color: #b026ff; }
 
 /* ── Card description (under buttons) ── */
-.card-desc { text-align: center; font-size: 11px; color: rgba(255,255,255,0.65); margin-top: 6px; line-height: 1.4; }
+.card-desc { text-align: center; font-size: 11px; color: rgba(255,255,255,0.75); margin-top: 6px; line-height: 1.4; }
 
 /* ── Counter ── */
 .counter { text-align: right; margin: 0; font-size: 13px; color: rgba(255,255,255,0.55); display: flex; align-items: center; justify-content: flex-end; height: 100%; }

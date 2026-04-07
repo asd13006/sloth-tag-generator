@@ -378,42 +378,46 @@ if step == 1:
         unsafe_allow_html=True,
     )
 
-    cols = st.columns(5, gap="medium")
-    for ci, (key, icon, name, desc) in enumerate(_OPTIONS):
-        with cols[ci]:
-            is_sel = key in st.session_state.selected_outputs
-            if st.button(
-                f"{icon}\n\n**{name}**",
-                key=f"out_{key}",
-                type="primary" if is_sel else "secondary",
-                use_container_width=True,
-            ):
-                if is_sel:
-                    st.session_state.selected_outputs.remove(key)
-                else:
-                    st.session_state.selected_outputs.append(key)
-                st.rerun()
+    @st.fragment
+    def _step1_cards():
+        cols = st.columns(5, gap="medium")
+        for ci, (key, icon, name, desc) in enumerate(_OPTIONS):
+            with cols[ci]:
+                is_sel = key in st.session_state.selected_outputs
+                if st.button(
+                    f"{icon}\n\n**{name}**",
+                    key=f"out_{key}",
+                    type="primary" if is_sel else "secondary",
+                    use_container_width=True,
+                ):
+                    if is_sel:
+                        st.session_state.selected_outputs.remove(key)
+                    else:
+                        st.session_state.selected_outputs.append(key)
+                    st.rerun()
+                st.markdown(
+                    f"<div class='card-desc'>{desc}</div>", unsafe_allow_html=True)
+
+        n_sel = len(st.session_state.selected_outputs)
+
+        # Navigation — actions grouped right
+        st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
+        _, nav_all, nav_count, nav_next = st.columns([2.5, 1.2, 0.8, 1], vertical_alignment="center")
+        with nav_all:
+            if st.button("✓ 全選直入", use_container_width=True):
+                st.session_state.selected_outputs = [k for k, *_ in _OPTIONS]
+                st.session_state.existing_materials = []
+                st.session_state.step = 3
+                st.rerun(scope="app")
+        with nav_count:
             st.markdown(
-                f"<div class='card-desc'>{desc}</div>", unsafe_allow_html=True)
+                f"<div class='counter'>已選 <b class='teal'>{n_sel}</b> 項</div>", unsafe_allow_html=True)
+        with nav_next:
+            if st.button("下一步 →", type="primary", use_container_width=True, disabled=(n_sel == 0)):
+                st.session_state.step = 2
+                st.rerun(scope="app")
 
-    n_sel = len(st.session_state.selected_outputs)
-
-    # Navigation
-    st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
-    nav_l, _, nav_count, nav_r = st.columns([1, 1.5, 1.5, 1], vertical_alignment="center")
-    with nav_l:
-        if st.button("✓ 全選直入", use_container_width=True):
-            st.session_state.selected_outputs = [k for k, *_ in _OPTIONS]
-            st.session_state.existing_materials = []
-            st.session_state.step = 3
-            st.rerun()
-    with nav_count:
-        st.markdown(
-            f"<div class='counter'>已選 <b class='teal'>{n_sel}</b> 項</div>", unsafe_allow_html=True)
-    with nav_r:
-        if st.button("下一步 →", type="primary", use_container_width=True, disabled=(n_sel == 0)):
-            st.session_state.step = 2
-            st.rerun()
+    _step1_cards()
 
     st.markdown("</div>", unsafe_allow_html=True)  # close .glass
 
@@ -437,48 +441,52 @@ elif step == 2:
         unsafe_allow_html=True,
     )
 
-    # Filter out items the user wants to generate + always include images
-    available = [(k, ic, nm, ds) for k, ic, nm,
-                 ds in _OPTIONS if k not in st.session_state.selected_outputs]
-    # Append image as a material option (always available)
-    available.append(("images", "🖼️", "圖片", "上傳參考圖讓 AI 理解視覺風格"))
+    @st.fragment
+    def _step2_cards():
+        # Filter out items the user wants to generate + always include images
+        available = [(k, ic, nm, ds) for k, ic, nm,
+                     ds in _OPTIONS if k not in st.session_state.selected_outputs]
+        # Append image as a material option (always available)
+        available.append(("images", "🖼️", "圖片", "上傳參考圖讓 AI 理解視覺風格"))
 
-    cols = st.columns(len(available), gap="medium")
-    for ci, (key, icon, name, _) in enumerate(available):
-        with cols[ci]:
-            is_sel = key in st.session_state.existing_materials
-            if st.button(f"{icon}\n\n**已有{name}**", key=f"mat_{key}",
-                         type="primary" if is_sel else "secondary", use_container_width=True):
-                if is_sel:
-                    st.session_state.existing_materials.remove(key)
-                    if key == "images":
-                        st.session_state.uploaded_images = []
-                else:
-                    st.session_state.existing_materials.append(key)
-                st.rerun()
+        cols = st.columns(len(available), gap="medium")
+        for ci, (key, icon, name, _) in enumerate(available):
+            with cols[ci]:
+                is_sel = key in st.session_state.existing_materials
+                if st.button(f"{icon}\n\n**已有{name}**", key=f"mat_{key}",
+                             type="primary" if is_sel else "secondary", use_container_width=True):
+                    if is_sel:
+                        st.session_state.existing_materials.remove(key)
+                        if key == "images":
+                            st.session_state.uploaded_images = []
+                    else:
+                        st.session_state.existing_materials.append(key)
+                    st.rerun()
 
-    n_mat = len(st.session_state.existing_materials)
+        n_mat = len(st.session_state.existing_materials)
 
-    # Navigation
-    st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
-    nav_l, nav_skip, nav_count, nav_r = st.columns([1, 1.5, 1.5, 1], vertical_alignment="center")
-    with nav_l:
-        if st.button("← 返回", key="s2_back", use_container_width=True):
-            st.session_state.existing_materials = []
-            st.session_state.step = 1
-            st.rerun()
-    with nav_skip:
-        if st.button("跳過，從零開始", key="s2_skip", use_container_width=True):
-            st.session_state.existing_materials = []
-            st.session_state.step = 3
-            st.rerun()
-    with nav_count:
-        st.markdown(
-            f"<div class='counter'>已選 <b class='purple'>{n_mat}</b> 項材料</div>", unsafe_allow_html=True)
-    with nav_r:
-        if st.button("下一步 →", key="s2_next", type="primary", use_container_width=True):
-            st.session_state.step = 3
-            st.rerun()
+        # Navigation — actions grouped right
+        st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
+        nav_back, _, nav_skip, nav_count, nav_next = st.columns([1, 1, 1.5, 0.8, 1], vertical_alignment="center")
+        with nav_back:
+            if st.button("← 返回", key="s2_back", use_container_width=True):
+                st.session_state.existing_materials = []
+                st.session_state.step = 1
+                st.rerun(scope="app")
+        with nav_skip:
+            if st.button("跳過，從零開始", key="s2_skip", use_container_width=True):
+                st.session_state.existing_materials = []
+                st.session_state.step = 3
+                st.rerun(scope="app")
+        with nav_count:
+            st.markdown(
+                f"<div class='counter'>已選 <b class='purple'>{n_mat}</b> 項材料</div>", unsafe_allow_html=True)
+        with nav_next:
+            if st.button("下一步 →", key="s2_next", type="primary", use_container_width=True):
+                st.session_state.step = 3
+                st.rerun(scope="app")
+
+    _step2_cards()
 
     st.markdown("</div>", unsafe_allow_html=True)  # close .glass
 
