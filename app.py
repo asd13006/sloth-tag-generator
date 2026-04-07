@@ -106,23 +106,21 @@ _api_txt = (
 _hist_count = len(load_history(_USER_EMAIL)) if _USER_EMAIL else 0
 
 # ═════════════════════════════════════════════════════════════════════════
-#  NAVBAR ─ [brand | sep | api] ··· [reset | profile | status]
+#  NAVBAR ─ [brand] ··· [api | reset | profile | status]
 # ═════════════════════════════════════════════════════════════════════════
 with st.container(key="navbar"):
-    _c_brand, _c_sep, _c_key, _c_space, _c_reset, _c_user, _c_status = st.columns(
-        [1.8, 0.12, 0.5, 3.5, 0.5, 0.8, 1.6], vertical_alignment="center"
+    _c_brand, _c_space, _c_key, _c_reset, _c_user, _c_status = st.columns(
+        [2.5, 3.5, 0.6, 0.6, 0.8, 1.6], vertical_alignment="center"
     )
     # ── 品牌標題 ──
     with _c_brand:
         st.markdown(
+            "<div class='brand-wrap'>"
             "<span class='nb-brand'>Title Studio</span>"
             "<span class='nb-sub'>sLoth rAdio</span>"
-            f"<span class='nb-ver'>v{__version__}</span>",
+            "</div>",
             unsafe_allow_html=True,
         )
-    # ── 分隔線 ──
-    with _c_sep:
-        st.markdown("<div class='nav-sep'></div>", unsafe_allow_html=True)
     # ── 🔑 API Key ──
     with _c_key:
         _api_pop = st.popover("🔑", use_container_width=True, help="API Key 設定")

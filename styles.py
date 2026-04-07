@@ -39,28 +39,31 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .st-key-navbar {
     position: sticky; top: 0; z-index: 999;
     background: rgba(10,10,20,0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
-    margin: 0 -2.5rem; padding: 10px 2.5rem 10px;
+    margin: 0 auto 20px; padding: 12px 0 14px;
+    max-width: 1200px;
 }
 .st-key-navbar::after {
     content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
     background: linear-gradient(90deg, transparent, rgba(0,255,204,0.12), rgba(176,38,255,0.08), transparent);
 }
 /* 品牌標題 */
+.brand-wrap { display: flex; align-items: baseline; gap: 10px; }
 .nb-brand {
-    font-family: 'Righteous', sans-serif; font-size: 26px; font-weight: 400; letter-spacing: 1px;
+    font-family: 'Righteous', sans-serif; font-size: 24px; font-weight: 400; letter-spacing: 1px;
     background: linear-gradient(270deg, #00ffcc, #b026ff, #00E676, #00ffcc); background-size: 300% 300%;
     animation: gradient-text 5s ease 1 forwards;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    line-height: 1.2; white-space: nowrap;
+    line-height: 1; white-space: nowrap;
 }
-.nb-sub { color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; display: block; margin-top: -2px; }
-.nb-ver { color: rgba(0,255,204,0.5); font-size: 9px; font-weight: 500; letter-spacing: 1px; display: block; margin-top: 1px; }
+.nb-sub { color: rgba(255,255,255,0.45); font-size: 11px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; white-space: nowrap; }
+
 /* 狀態指示器 */
 .api-status {
-    display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
-    border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
-    border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
-    white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 14px;
+    border-radius: 20px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px;
+    border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.04);
+    white-space: nowrap; color: #a0a0a0;
+    height: 38px; box-sizing: border-box;
 }
 .api-status-wrap { display: flex; justify-content: flex-end; align-items: center; height: 100%; }
 /* 品牌/按鈕分隔線 */
@@ -69,15 +72,20 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .api-dot.off { background: #ff4757; box-shadow: 0 0 6px rgba(255,71,87,0.5); }
 .api-dot.on { background: #00ffcc; box-shadow: 0 0 6px rgba(0,255,204,0.5); }
 .api-dot.wait { background: #ffa502; box-shadow: 0 0 6px rgba(255,165,2,0.5); animation: neon-breathe 2s ease-in-out infinite; }
-.api-lbl { color: rgba(255,255,255,0.60); }
+.api-lbl { color: #a0a0a0; }
 /* 統一按鈕樣式（button + popover trigger） */
 .st-key-navbar button,
 .st-key-navbar [data-testid="stPopover"] > button {
-    min-height: 34px !important; padding: 4px 10px !important; font-size: 16px !important;
-    background: rgba(255,255,255,0.04) !important;
-    border: 1px solid rgba(255,255,255,0.12) !important;
+    min-height: 38px !important; padding: 4px 10px !important; font-size: 18px !important;
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.15) !important;
     border-radius: 10px !important;
-    color: rgba(255,255,255,0.65) !important;
+    color: #a0a0a0 !important;
+    display: flex !important; align-items: center !important; justify-content: center !important;
+    cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    box-shadow: none !important;
+    position: relative;
+}
     cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
     box-shadow: none !important;
     position: relative;
