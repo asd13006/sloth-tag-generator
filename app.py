@@ -31,40 +31,42 @@ st.set_page_config(
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  GOOGLE OAUTH  ── login / guest mode
-#  自訂實作：修正 streamlit-google-auth PKCE code_verifier 遺失問題
+#  手動 HTTP 實作：完全不依賴 google_auth_oauthlib，避免 PKCE 問題
 # ─────────────────────────────────────────────────────────────────────────────
 
-import json
 import os
-import tempfile
-import time
+import urllib.parse
+import requests as _requests
+
+
+_AUTH_OBJ = None  # global ref for login button rendering
+
+_GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+_GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
+_GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
+_OAUTH_SCOPES = "openid email profile"
 
 
 class _SlothAuth:
-    """輕量 Google OAuth wrapper — 停用 PKCE 以相容 Streamlit Cloud。
-    Web app 已透過 client_secret 保護，PKCE 非必要。"""
+    """手動 Google OAuth，用 requests 直接呼叫 Google 端點。"""
 
-    def __init__(self, cred_path: str, redirect_uri: str):
-        self._cred_path = cred_path
+    def __init__(self, client_id: str, client_secret: str, redirect_uri: str):
+        self._client_id = client_id
+        self._client_secret = client_secret
         self._redirect_uri = redirect_uri
         st.session_state.setdefault("connected", False)
         st.session_state.setdefault("user_info", {})
 
-    def _make_flow(self):
-        import google_auth_oauthlib.flow
-        flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
-            self._cred_path,
-            scopes=[
-                "openid",
-                "https://www.googleapis.com/auth/userinfo.profile",
-                "https://www.googleapis.com/auth/userinfo.email",
-            ],
-            redirect_uri=self._redirect_uri,
-        )
-        # 停用 PKCE — Streamlit Cloud 無法在 redirect 間保存 code_verifier
-        flow.autogenerate_code_verifier = False
-        flow.code_verifier = None
-        return flow
+    def _build_auth_url(self) -> str:
+        params = {
+            "client_id": self._client_id,
+            "redirect_uri": self._redirect_uri,
+            "response_type": "code",
+            "scope": _OAUTH_SCOPES,
+            "access_type": "offline",
+            "prompt": "consent",
+        }
+        return f"{_GOOGLE_AUTH_URL}?{urllib.parse.urlencode(params)}"
 
     def check_authentification(self):
         if st.session_state["connected"]:
@@ -73,19 +75,32 @@ class _SlothAuth:
         error = st.query_params.get("error")
         if error:
             import logging
-            error_desc = st.query_params.get("error_description", "")
-            logging.warning(f"Google OAuth 錯誤: {error} — {error_desc}")
+            logging.warning(f"Google OAuth 錯誤: {error}")
             st.query_params.clear()
             return
+        # 處理 auth code → 交換 token → 取得 user info
         auth_code = st.query_params.get("code")
         if auth_code:
             st.query_params.clear()
             try:
-                flow = self._make_flow()
-                flow.fetch_token(code=auth_code)
-                from googleapiclient.discovery import build
-                svc = build("oauth2", "v2", credentials=flow.credentials)
-                user_info = svc.userinfo().get().execute()
+                # 用 auth code 交換 access token
+                token_resp = _requests.post(_GOOGLE_TOKEN_URL, data={
+                    "code": auth_code,
+                    "client_id": self._client_id,
+                    "client_secret": self._client_secret,
+                    "redirect_uri": self._redirect_uri,
+                    "grant_type": "authorization_code",
+                }, timeout=10)
+                token_data = token_resp.json()
+                if "access_token" not in token_data:
+                    import logging
+                    logging.warning(f"OAuth token 交換失敗: {token_data}")
+                    return
+                # 用 access token 取得用戶資訊
+                user_resp = _requests.get(_GOOGLE_USERINFO_URL, headers={
+                    "Authorization": f"Bearer {token_data['access_token']}",
+                }, timeout=10)
+                user_info = user_resp.json()
                 st.session_state["connected"] = True
                 st.session_state["oauth_id"] = user_info.get("id")
                 st.session_state["user_info"] = user_info
@@ -97,12 +112,7 @@ class _SlothAuth:
     def login(self, color="blue", justify_content="center"):
         if st.session_state["connected"]:
             return
-        flow = self._make_flow()
-        auth_url, _ = flow.authorization_url(
-            access_type="offline",
-            include_granted_scopes="true",
-            prompt="consent",
-        )
+        auth_url = self._build_auth_url()
         bg = "#fff" if color == "white" else "#4285f4"
         fg = "#000" if color == "white" else "#fff"
         st.markdown(
@@ -117,9 +127,6 @@ class _SlothAuth:
         )
 
 
-_AUTH_OBJ = None  # global ref for login button rendering
-
-
 def _init_auth():
     """Initialise Google OAuth. Returns (logged_in, email, name, photo_url).
     Falls back to guest mode when secrets are missing or auth fails."""
@@ -129,24 +136,13 @@ def _init_auth():
         _client_secret = st.secrets["google_oauth"]["client_secret"]
         _redirect_uri = st.secrets["google_oauth"].get(
             "redirect_uri", "http://localhost:8501")
-
-        # 直接使用 secrets 裡的 redirect_uri（每個環境各自設定自己的值）
         _current_uri = _redirect_uri.strip().rstrip("/")
 
-        _cred_path = os.path.join(tempfile.gettempdir(), "sloth_oauth_creds.json")
-        _cred_data = {
-            "web": {
-                "client_id": _client_id,
-                "client_secret": _client_secret,
-                "redirect_uris": [_current_uri],
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-            }
-        }
-        with open(_cred_path, "w") as f:
-            json.dump(_cred_data, f)
-
-        auth = _SlothAuth(cred_path=_cred_path, redirect_uri=_current_uri)
+        auth = _SlothAuth(
+            client_id=_client_id,
+            client_secret=_client_secret,
+            redirect_uri=_current_uri,
+        )
         auth.check_authentification()
         _AUTH_OBJ = auth
         return (
