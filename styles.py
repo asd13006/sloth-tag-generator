@@ -386,6 +386,20 @@ button[data-testid="stBaseButton-primary"]:active {
 
 /* ── Counter ── */
 .counter { text-align: right; margin: 0; font-size: 13px; color: rgba(255,255,255,0.55); display: flex; align-items: center; justify-content: flex-end; height: 100%; }
+
+/* ── Doubao Tool ── */
+.doubao-result-header { margin: 16px 0 12px; }
+.doubao-video-info { margin: 12px 0; display: flex; gap: 8px; flex-wrap: wrap; }
+.doubao-download-btn {
+    display: block; text-align: center; padding: 14px 24px; margin: 16px 0;
+    border-radius: 14px; font-size: 15px; font-weight: 600;
+    background: rgba(0,255,204,0.10); border: 1px solid rgba(0,255,204,0.30);
+    color: #00ffcc; text-decoration: none; transition: all 0.2s ease;
+}
+.doubao-download-btn:hover { background: rgba(0,255,204,0.18); box-shadow: 0 0 16px rgba(0,255,204,0.15); }
+.st-key-nb_doubao_btn button {
+    font-size: 12px !important; letter-spacing: 0.5px !important;
+}
 .counter b { font-size: 20px; font-family: 'Righteous', sans-serif; }
 .counter b.teal { color: #00ffcc; }
 .counter b.purple { color: #b026ff; }

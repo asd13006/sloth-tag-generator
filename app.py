@@ -15,11 +15,15 @@ import streamlit as st
 from PIL import Image
 import io
 
+import asyncio
+
 from history import load_history, save_generation, delete_history_item
 from auth import init_auth, get_auth_object, get_login_url, inject_auth_cookies, clear_session
 from styles import inject_css
 from gemini_api import MODEL_CANDIDATES, validate_api_key, ai_generate
 from dashboard import build_dashboard, _he
+from doubao_parser.image import doubao_image_parse
+from doubao_parser.video import doubao_video_parse, yunque_video_parse
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  PAGE CONFIG
@@ -63,6 +67,9 @@ _DEFAULTS = {
     "prompt_styles": [],         # 風格 chips
     "prompt_audience": "",       # 目標受眾
     "prompt_extra": "",          # 額外指示
+    "doubao_url": "",             # 豆包連結
+    "doubao_results": None,       # 豆包解析結果
+    "doubao_type": "image",       # "image" | "video"
 }
 for k, v in _DEFAULTS.items():
     if k not in st.session_state:
@@ -102,8 +109,8 @@ _hist_count = len(load_history(_USER_EMAIL)) if _USER_EMAIL else 0
 #  NAVBAR ─ [brand] ··· [api | reset | auth]
 # ═════════════════════════════════════════════════════════════════════════
 with st.container(key="navbar"):
-    _c_brand, _c_space, _c_key, _c_reset, _c_auth = st.columns(
-        [3.0, 4.4, 0.5, 0.5, 1.6], vertical_alignment="center"
+    _c_brand, _c_space, _c_doubao, _c_key, _c_reset, _c_auth = st.columns(
+        [3.0, 3.7, 0.7, 0.5, 0.5, 1.6], vertical_alignment="center"
     )
     # ── 品牌標題（點擊回首頁）──
     with _c_brand:
@@ -111,7 +118,19 @@ with st.container(key="navbar"):
             st.session_state.step = 1
             st.session_state.view_mode = "wizard"
             st.rerun()
-    # ── 🔑 API Key（動態 key 觸發狀態 CSS）──
+    # ── �️ 豆包無水印工具 ──
+    with _c_doubao:
+        _doubao_active = st.session_state.view_mode == "doubao"
+        if st.button(
+            "🖼️ 豆包" if not _doubao_active else "🖼️ 豆包",
+            key="nb_doubao_btn",
+            type="primary" if _doubao_active else "secondary",
+            use_container_width=True,
+            help="豆包無水印圖片/影片提取",
+        ):
+            st.session_state.view_mode = "doubao" if not _doubao_active else "wizard"
+            st.rerun()
+    # ── �🔑 API Key（動態 key 觸發狀態 CSS）──
     with _c_key:
         _api_btn_label = {"connected": "🟢", "disconnected": "🔑"}.get(
             st.session_state.api_status, "🔑")
@@ -336,6 +355,171 @@ if st.session_state.view_mode == "profile":
 
     # ── 返回 ──
     if st.button("← 返回精靈", key="profile_back", use_container_width=True):
+        st.session_state.view_mode = "wizard"
+        st.rerun()
+
+    st.markdown(f"<div class='footer'>sLoth rAdio · Title Studio · v{__version__}</div>",
+                unsafe_allow_html=True)
+    st.stop()
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  DOUBAO TOOL — 豆包無水印圖片/影片提取
+# ═════════════════════════════════════════════════════════════════════════════
+if st.session_state.view_mode == "doubao":
+    st.markdown("<div class='glass'>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='sec-title'>🖼️ 豆包無水印提取</div>"
+        "<div class='sec-desc'>從豆包對話連結中提取無水印圖片或影片資源</div>",
+        unsafe_allow_html=True,
+    )
+
+    # 類型選擇
+    _db_type_l, _db_type_r = st.columns(2)
+    with _db_type_l:
+        if st.button(
+            "🖼️ 圖片提取",
+            key="db_type_image",
+            type="primary" if st.session_state.doubao_type == "image" else "secondary",
+            use_container_width=True,
+        ):
+            st.session_state.doubao_type = "image"
+            st.session_state.doubao_results = None
+            st.rerun()
+    with _db_type_r:
+        if st.button(
+            "🎬 影片提取",
+            key="db_type_video",
+            type="primary" if st.session_state.doubao_type == "video" else "secondary",
+            use_container_width=True,
+        ):
+            st.session_state.doubao_type = "video"
+            st.session_state.doubao_results = None
+            st.rerun()
+
+    # 連結輸入
+    _is_image = st.session_state.doubao_type == "image"
+    _placeholder = (
+        "https://www.doubao.com/thread/xxxxxx"
+        if _is_image
+        else "https://www.doubao.com/video-sharing?share_id=xxx&video_id=xxx"
+    )
+    _hint = "貼上豆包對話連結（包含 /thread/）" if _is_image else "貼上豆包影片分享連結"
+    st.markdown(
+        f"<div style='color:rgba(255,255,255,0.55);font-size:11px;letter-spacing:2px;"
+        f"text-transform:uppercase;margin:14px 0 4px;'>🔗 {_hint}</div>",
+        unsafe_allow_html=True,
+    )
+    _db_url = st.text_input(
+        "doubao_url_input",
+        value=st.session_state.doubao_url,
+        placeholder=_placeholder,
+        label_visibility="collapsed",
+    )
+    st.session_state.doubao_url = _db_url
+
+    # 解析按鈕
+    _parse_btn = st.button(
+        "🔍 開始解析",
+        key="db_parse_btn",
+        type="primary",
+        use_container_width=True,
+        disabled=not _db_url.strip(),
+    )
+
+    if _parse_btn and _db_url.strip():
+        with st.status("⚙️ 解析中...", expanded=True) as _db_status:
+            try:
+                if _is_image:
+                    st.write("📡 正在提取無水印圖片...")
+                    _result = asyncio.run(doubao_image_parse(_db_url.strip()))
+                    st.session_state.doubao_results = {"type": "image", "data": _result}
+                else:
+                    st.write("📡 正在提取無水印影片...")
+                    if "doubao.com" in _db_url:
+                        _result = asyncio.run(doubao_video_parse(_db_url.strip()))
+                    else:
+                        _result = asyncio.run(yunque_video_parse(_db_url.strip()))
+                    st.session_state.doubao_results = {"type": "video", "data": _result}
+                _db_status.update(label="✅ 解析完成！", state="complete", expanded=False)
+            except (ValueError, KeyError) as e:
+                st.error(f"解析失敗：{e}")
+                _db_status.update(label="❌ 解析失敗", state="error", expanded=False)
+            except Exception as e:
+                st.error(f"發生錯誤：{e}")
+                _db_status.update(label="❌ 解析失敗", state="error", expanded=False)
+        if st.session_state.doubao_results:
+            st.rerun()
+
+    # 顯示結果
+    _db_res = st.session_state.doubao_results
+    if _db_res:
+        st.markdown("<hr style='border-color:rgba(255,255,255,0.08);margin:20px 0;'>", unsafe_allow_html=True)
+        if _db_res["type"] == "image":
+            _images = _db_res["data"]
+            st.markdown(
+                f"<div class='doubao-result-header'>"
+                f"<span class='chip chip-teal'>🖼️ 共 {len(_images)} 張無水印圖片</span>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+            # 圖片網格
+            _cols_per_row = 3
+            for _ri in range(0, len(_images), _cols_per_row):
+                _row_imgs = _images[_ri : _ri + _cols_per_row]
+                _cols = st.columns(_cols_per_row)
+                for _ci, _img in enumerate(_row_imgs):
+                    with _cols[_ci]:
+                        _img_url = _img.get("url", "")
+                        _w = _img.get("width", "?")
+                        _h = _img.get("height", "?")
+                        st.image(_img_url, use_container_width=True)
+                        st.markdown(
+                            f"<div style='text-align:center;font-size:11px;color:rgba(255,255,255,0.5);'>"
+                            f"{_w} × {_h}</div>",
+                            unsafe_allow_html=True,
+                        )
+                        st.markdown(
+                            f"<a href='{_he(_img_url)}' target='_blank' rel='noopener noreferrer' "
+                            f"style='display:block;text-align:center;font-size:12px;color:#00ffcc;"
+                            f"text-decoration:none;margin-top:4px;'>⬇️ 開啟原圖</a>",
+                            unsafe_allow_html=True,
+                        )
+
+        elif _db_res["type"] == "video":
+            _video = _db_res["data"]
+            st.markdown(
+                "<div class='doubao-result-header'>"
+                "<span class='chip chip-teal'>🎬 影片解析成功</span>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+            _v_url = _video.get("url", "")
+            _v_w = _video.get("width", "?")
+            _v_h = _video.get("height", "?")
+            _v_def = _video.get("definition", "?")
+            _poster = _video.get("poster_url", "")
+
+            if _poster:
+                st.image(_poster, use_container_width=True, caption="影片封面")
+
+            st.markdown(
+                f"<div class='doubao-video-info'>"
+                f"<div><span class='chip chip-purple'>📐 {_v_w} × {_v_h}</span>"
+                f"<span class='chip chip-purple'>📺 {_v_def}</span></div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f"<a href='{_he(_v_url)}' target='_blank' rel='noopener noreferrer' "
+                f"class='doubao-download-btn'>⬇️ 下載無水印影片</a>",
+                unsafe_allow_html=True,
+            )
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    # 返回
+    if st.button("← 返回精靈", key="doubao_back", use_container_width=True):
         st.session_state.view_mode = "wizard"
         st.rerun()
 
