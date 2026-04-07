@@ -55,7 +55,7 @@ _DEFAULTS = {
     "n_songs": 15,               # 歌單數量
     "results": {},               # AI / mock 結果
     "uploaded_images": [],       # Step 3 上傳嘅圖片 (UploadedFile objects)
-    "view_mode": "wizard",       # "wizard" | "history"
+    "view_mode": "wizard",       # "wizard" | "profile"
     "api_key": "",               # API key
     "api_status": "disconnected",  # "disconnected" | "validating" | "connected"
     "api_model": "",             # 模型名稱
@@ -106,11 +106,11 @@ _api_txt = (
 _hist_count = len(load_history(_USER_EMAIL)) if _USER_EMAIL else 0
 
 # ═════════════════════════════════════════════════════════════════════════
-#  NAVBAR ─ single-row: brand | buttons | user/status
+#  NAVBAR ─ simplified: brand | sep | reset | profile | status
 # ═════════════════════════════════════════════════════════════════════════
 with st.container(key="navbar"):
-    _c_brand, _c_sep, _c_key, _c_hist, _c_set, _c_reset, _c_space, _c_user, _c_status = st.columns(
-        [1.8, 0.12, 0.5, 0.5, 0.5, 0.5, 3, 1.2, 1.6], vertical_alignment="center"
+    _c_brand, _c_sep, _c_reset, _c_space, _c_user, _c_status = st.columns(
+        [1.8, 0.12, 0.5, 4.5, 0.8, 1.6], vertical_alignment="center"
     )
     # ── 品牌標題 ──
     with _c_brand:
@@ -123,85 +123,18 @@ with st.container(key="navbar"):
     # ── 分隔線 ──
     with _c_sep:
         st.markdown("<div class='nav-sep'></div>", unsafe_allow_html=True)
-    # ── 🔑 API Key ──
-    with _c_key:
-        _api_pop = st.popover("🔑", use_container_width=True, help="API Key 設定")
-        with _api_pop:
-            st.markdown("##### 🔑 API Key 設定")
-            _new_key = st.text_input(
-                "api_key_input", value=st.session_state.api_key,
-                type="password", placeholder="輸入 Google Gemini API Key...",
-                label_visibility="collapsed",
-            )
-            if _new_key != st.session_state.api_key:
-                st.session_state.api_key = _new_key
-                if _new_key:
-                    st.session_state.api_status = "validating"
-                    ok, model = validate_api_key(_new_key)
-                    if ok:
-                        st.session_state.api_status = "connected"
-                        st.session_state.api_model = model
-                    else:
-                        st.session_state.api_status = "disconnected"
-                        st.session_state.api_model = ""
-                else:
-                    st.session_state.api_status = "disconnected"
-                    st.session_state.api_model = ""
-                st.rerun()
-            if st.session_state.api_status == "connected":
-                st.caption(f"✅ 已連接 · 模型：{st.session_state.api_model}")
-            elif st.session_state.api_status == "disconnected" and st.session_state.api_key:
-                st.caption("❌ API Key 無效或無可用模型")
-            else:
-                st.caption("💡 輸入 API Key 啟用 Gemini AI。未連接時使用模擬資料。")
-    # ── 📋 歷史 ──
-    with _c_hist:
-        if st.button("📋", key="nb_hist_btn", use_container_width=True, help=f"歷史記錄 ({_hist_count})"):
-            st.session_state.view_mode = "history" if st.session_state.view_mode != "history" else "wizard"
-            st.rerun()
-    # ── ⚙️ 設定 ──
-    with _c_set:
-        _settings_pop = st.popover("⚙️", use_container_width=True, help="設定")
-        with _settings_pop:
-            st.markdown("##### ⚙️ 設定")
-            st.markdown("**模型偏好**")
-            st.selectbox(
-                "model_pref", options=["Gemini 2.5 Flash (推薦)", "Gemini 2.5 Pro", "Gemini 2.0 Flash"],
-                index=0, label_visibility="collapsed", key="model_select",
-            )
-            st.markdown("**介面語言**")
-            st.selectbox(
-                "lang_pref", options=["繁體中文", "English"],
-                index=0, label_visibility="collapsed", key="lang_select",
-            )
-            st.caption("設定會在下次生成時生效。")
     # ── 🔄 重置 ──
     with _c_reset:
         if st.button("🔄", key="nb_reset_btn", use_container_width=True, help="重置所有步驟"):
             reset_pipeline()
             st.rerun()
-    # ── 👤 用戶 ──
+    # ── 👤 個人中心入口 ──
     with _c_user:
-        if _LOGGED_IN:
-            _user_pop = st.popover(
-                f"👤", use_container_width=True, help=_USER_NAME or _USER_EMAIL)
-            with _user_pop:
-                _display = _USER_NAME or _USER_EMAIL or "用戶"
-                st.markdown(f"##### 👋 {_display}")
-                st.caption(f"📧 {_USER_EMAIL}")
-                st.caption(f"📋 共 {_hist_count} 筆歷史記錄")
-                if st.button("🚪 登出", key="nb_logout", use_container_width=True):
-                    clear_session()
-                    st.rerun()
-        else:
-            _login_pop = st.popover("🔒", use_container_width=True, help="登入")
-            with _login_pop:
-                st.markdown("##### 🔒 登入")
-                st.caption("使用 Google 帳號登入以儲存歷史記錄，跨裝置同步。")
-                if _AUTH_OBJ is not None:
-                    _AUTH_OBJ.login(color="blue", justify_content="center")
-                else:
-                    st.caption("未設定 OAuth → 功能暫不可用。")
+        _profile_icon = "👤" if _LOGGED_IN else "🔒"
+        _profile_help = (_USER_NAME or _USER_EMAIL or "個人中心") if _LOGGED_IN else "登入 / 個人中心"
+        if st.button(_profile_icon, key="nb_profile_btn", use_container_width=True, help=_profile_help):
+            st.session_state.view_mode = "profile" if st.session_state.view_mode != "profile" else "wizard"
+            st.rerun()
     # ── 狀態指示器（右側） ──
     with _c_status:
         st.markdown(
@@ -223,83 +156,178 @@ st.markdown(_sh, unsafe_allow_html=True)
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-#  HISTORY VIEW
+#  PROFILE CENTER — 個人中心（帳號 · API · 設定 · 歷史）
 # ═════════════════════════════════════════════════════════════════════════════
-if st.session_state.view_mode == "history":
+if st.session_state.view_mode == "profile":
     st.markdown("<div class='glass'>", unsafe_allow_html=True)
     st.markdown(
-        "<div class='sec-title'>📋 歷史記錄</div>"
-        "<div class='sec-desc'>點擊任意記錄可查看完整結果</div>",
+        "<div class='sec-title'>👤 個人中心</div>"
+        "<div class='sec-desc'>管理帳號、API 連線、偏好設定與歷史記錄</div>",
         unsafe_allow_html=True,
     )
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    if _IS_GUEST:
-        st.markdown(
-            "<div style='text-align:center;padding:40px 0;color:rgba(255,255,255,0.55);font-size:14px;'>"
-            "🔒 請先登入 Google 帳號以查看歷史記錄<br>"
-            "<span style='font-size:12px;'>登入後，生成記錄會自動保存並可跨裝置同步</span></div>",
-            unsafe_allow_html=True,
+    _tab_account, _tab_api, _tab_settings, _tab_history = st.tabs(
+        ["👤 帳號", "🔑 API", "⚙️ 設定", f"📋 歷史 ({_hist_count})"])
+
+    # ── Tab 1: 帳號 ──
+    with _tab_account:
+        st.markdown("<div class='glass'>", unsafe_allow_html=True)
+        if _LOGGED_IN:
+            _display = _USER_NAME or _USER_EMAIL or "用戶"
+            st.markdown(
+                f"<div style='text-align:center;padding:20px 0 10px;'>"
+                f"<div style='font-size:48px;margin-bottom:12px;'>👤</div>"
+                f"<div style='font-family:Righteous,sans-serif;font-size:22px;color:#fff;'>{_he(_display)}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+            st.markdown(
+                f"<div style='text-align:center;color:rgba(255,255,255,0.55);font-size:13px;margin-bottom:6px;'>📧 {_he(_USER_EMAIL)}</div>"
+                f"<div style='text-align:center;color:rgba(255,255,255,0.55);font-size:13px;margin-bottom:20px;'>📋 共 {_hist_count} 筆歷史記錄</div>",
+                unsafe_allow_html=True,
+            )
+            _acc_l, _acc_c, _acc_r = st.columns([1, 1, 1])
+            with _acc_c:
+                if st.button("🚪 登出", key="profile_logout", use_container_width=True):
+                    clear_session()
+                    st.rerun()
+        else:
+            st.markdown(
+                "<div style='text-align:center;padding:30px 0;'>"
+                "<div style='font-size:48px;margin-bottom:12px;'>🔒</div>"
+                "<div style='font-family:Righteous,sans-serif;font-size:20px;color:#fff;margin-bottom:8px;'>尚未登入</div>"
+                "<div style='color:rgba(255,255,255,0.55);font-size:13px;margin-bottom:20px;'>使用 Google 帳號登入以儲存歷史記錄，跨裝置同步</div>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+            if _AUTH_OBJ is not None:
+                _login_l, _login_c, _login_r = st.columns([1, 1, 1])
+                with _login_c:
+                    _AUTH_OBJ.login(color="blue", justify_content="center")
+            else:
+                st.caption("未設定 OAuth → 功能暫不可用。")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # ── Tab 2: API ──
+    with _tab_api:
+        st.markdown("<div class='glass'>", unsafe_allow_html=True)
+        st.markdown("##### 🔑 API Key 設定")
+        _new_key = st.text_input(
+            "api_key_input", value=st.session_state.api_key,
+            type="password", placeholder="輸入 Google Gemini API Key...",
+            label_visibility="collapsed",
         )
-    else:
-        _history = load_history(_USER_EMAIL)
-        if not _history:
+        if _new_key != st.session_state.api_key:
+            st.session_state.api_key = _new_key
+            if _new_key:
+                st.session_state.api_status = "validating"
+                ok, model = validate_api_key(_new_key)
+                if ok:
+                    st.session_state.api_status = "connected"
+                    st.session_state.api_model = model
+                else:
+                    st.session_state.api_status = "disconnected"
+                    st.session_state.api_model = ""
+            else:
+                st.session_state.api_status = "disconnected"
+                st.session_state.api_model = ""
+            st.rerun()
+        if st.session_state.api_status == "connected":
+            st.success(f"✅ 已連接 · 模型：{st.session_state.api_model}")
+        elif st.session_state.api_status == "disconnected" and st.session_state.api_key:
+            st.error("❌ API Key 無效或無可用模型")
+        else:
+            st.info("💡 輸入 API Key 啟用 Gemini AI。未連接時使用模擬資料。")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # ── Tab 3: 設定 ──
+    with _tab_settings:
+        st.markdown("<div class='glass'>", unsafe_allow_html=True)
+        st.markdown("##### ⚙️ 偏好設定")
+        st.markdown("**模型偏好**")
+        st.selectbox(
+            "model_pref", options=["Gemini 2.5 Flash (推薦)", "Gemini 2.5 Pro", "Gemini 2.0 Flash"],
+            index=0, label_visibility="collapsed", key="model_select",
+        )
+        st.markdown("**介面語言**")
+        st.selectbox(
+            "lang_pref", options=["繁體中文", "English"],
+            index=0, label_visibility="collapsed", key="lang_select",
+        )
+        st.caption("設定會在下次生成時生效。")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    # ── Tab 4: 歷史記錄 ──
+    with _tab_history:
+        st.markdown("<div class='glass'>", unsafe_allow_html=True)
+        if _IS_GUEST:
             st.markdown(
                 "<div style='text-align:center;padding:40px 0;color:rgba(255,255,255,0.55);font-size:14px;'>"
-                "尚無歷史記錄<br><span style='font-size:12px;'>完成一次生成後會自動保存</span></div>",
+                "🔒 請先登入 Google 帳號以查看歷史記錄<br>"
+                "<span style='font-size:12px;'>登入後，生成記錄會自動保存並可跨裝置同步</span></div>",
                 unsafe_allow_html=True,
             )
         else:
-            for hi, entry in enumerate(_history):
-                _ts = entry.get("timestamp", "")
-                _types = " ".join(
-                    f"<span class='chip chip-teal'>{_MATERIAL_LABELS.get(k, k)}</span>"
-                    for k in entry.get("selected_outputs", [])
-                )
-                _preview = entry.get("user_context", "")[:80]
-                if len(entry.get("user_context", "")) > 80:
-                    _preview += "..."
-                _no_input = '<em style="color:rgba(255,255,255,0.50);">無輸入文字</em>'
-                _summary_html = _he(_preview) if _preview else _no_input
-                _mode = entry.get("mode", "demo")
-                _mode_badge = (
-                    "<span style='font-size:10px;color:#00ffcc;font-weight:600;margin-left:8px;'>AI</span>"
-                    if _mode == "ai" else
-                    "<span style='font-size:10px;color:rgba(255,180,0,0.85);font-weight:600;margin-left:8px;'>Demo</span>"
-                )
+            _history = load_history(_USER_EMAIL)
+            if not _history:
                 st.markdown(
-                    f"<div class='hist-card'>"
-                    f"<div class='hist-time'>{_he(_ts)}{_mode_badge}</div>"
-                    f"<div style='margin:6px 0;'>{_types}</div>"
-                    f"<div class='hist-summary'>{_summary_html}</div>"
-                    f"</div>",
+                    "<div style='text-align:center;padding:40px 0;color:rgba(255,255,255,0.55);font-size:14px;'>"
+                    "尚無歷史記錄<br><span style='font-size:12px;'>完成一次生成後會自動保存</span></div>",
                     unsafe_allow_html=True,
                 )
-                _hcol1, _hcol2 = st.columns([3, 1])
-                with _hcol1:
-                    if st.button("📊 查看結果", key=f"hist_view_{hi}", use_container_width=True):
-                        st.session_state.results = entry.get("results", {})
-                        st.session_state.selected_outputs = entry.get(
-                            "selected_outputs", [])
-                        st.session_state.user_context = entry.get(
-                            "user_context", "")
-                        st.session_state.existing_materials = entry.get(
-                            "existing_materials", [])
-                        st.session_state.n_songs = entry.get("n_songs", 15)
-                        st.session_state.step = 4
-                        st.session_state.view_mode = "wizard"
-                        st.rerun()
-                with _hcol2:
-                    _entry_id = entry.get("id", "")
-                    if _entry_id and st.button("🗑️", key=f"hist_del_{hi}", use_container_width=True, help="刪除此記錄"):
-                        delete_history_item(_USER_EMAIL, _entry_id)
-                        st.rerun()
+            else:
+                for hi, entry in enumerate(_history):
+                    _ts = entry.get("timestamp", "")
+                    _types = " ".join(
+                        f"<span class='chip chip-teal'>{_MATERIAL_LABELS.get(k, k)}</span>"
+                        for k in entry.get("selected_outputs", [])
+                    )
+                    _preview = entry.get("user_context", "")[:80]
+                    if len(entry.get("user_context", "")) > 80:
+                        _preview += "..."
+                    _no_input = '<em style="color:rgba(255,255,255,0.50);">無輸入文字</em>'
+                    _summary_html = _he(_preview) if _preview else _no_input
+                    _mode = entry.get("mode", "demo")
+                    _mode_badge = (
+                        "<span style='font-size:10px;color:#00ffcc;font-weight:600;margin-left:8px;'>AI</span>"
+                        if _mode == "ai" else
+                        "<span style='font-size:10px;color:rgba(255,180,0,0.85);font-weight:600;margin-left:8px;'>Demo</span>"
+                    )
+                    st.markdown(
+                        f"<div class='hist-card'>"
+                        f"<div class='hist-time'>{_he(_ts)}{_mode_badge}</div>"
+                        f"<div style='margin:6px 0;'>{_types}</div>"
+                        f"<div class='hist-summary'>{_summary_html}</div>"
+                        f"</div>",
+                        unsafe_allow_html=True,
+                    )
+                    _hcol1, _hcol2 = st.columns([3, 1])
+                    with _hcol1:
+                        if st.button("📊 查看結果", key=f"hist_view_{hi}", use_container_width=True):
+                            st.session_state.results = entry.get("results", {})
+                            st.session_state.selected_outputs = entry.get(
+                                "selected_outputs", [])
+                            st.session_state.user_context = entry.get(
+                                "user_context", "")
+                            st.session_state.existing_materials = entry.get(
+                                "existing_materials", [])
+                            st.session_state.n_songs = entry.get("n_songs", 15)
+                            st.session_state.step = 4
+                            st.session_state.view_mode = "wizard"
+                            st.rerun()
+                    with _hcol2:
+                        _entry_id = entry.get("id", "")
+                        if _entry_id and st.button("🗑️", key=f"hist_del_{hi}", use_container_width=True, help="刪除此記錄"):
+                            delete_history_item(_USER_EMAIL, _entry_id)
+                            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
+    # ── 返回按鈕 ──
     st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
-    if st.button("← 返回精靈", key="hist_back", use_container_width=True):
+    if st.button("← 返回精靈", key="profile_back", use_container_width=True):
         st.session_state.view_mode = "wizard"
         st.rerun()
-
-    st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown(f"<div class='footer'>sLoth rAdio · Title Studio · v{__version__}</div>",
                 unsafe_allow_html=True)

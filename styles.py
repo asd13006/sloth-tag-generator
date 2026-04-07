@@ -139,6 +139,24 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .hist-time { font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 500; }
 .hist-summary { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 6px; line-height: 1.5; }
 
+/* ── Profile center tabs ── */
+.stTabs [data-baseweb="tab-list"] {
+    background: rgba(255,255,255,0.02); border-radius: 14px; padding: 4px;
+    border: 1px solid rgba(255,255,255,0.06); gap: 0 !important;
+}
+.stTabs [data-baseweb="tab"] {
+    font-family: 'Poppins', sans-serif; font-size: 13px; font-weight: 600;
+    color: rgba(255,255,255,0.50); border-radius: 10px; padding: 8px 20px;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+.stTabs [data-baseweb="tab"]:hover { color: rgba(255,255,255,0.80); background: rgba(255,255,255,0.04); }
+.stTabs [aria-selected="true"] {
+    color: #00ffcc !important; background: rgba(0,255,204,0.08) !important;
+    border-bottom: none !important;
+}
+.stTabs [data-baseweb="tab-highlight"] { background-color: #00ffcc !important; height: 2px !important; }
+.stTabs [data-baseweb="tab-border"] { display: none !important; }
+
 /* ── Export bar ── */
 .export-bar {
     display: flex; align-items: center; gap: 10px; padding: 12px 18px;
