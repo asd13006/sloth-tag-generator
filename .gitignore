@@ -10,9 +10,6 @@ prompts.txt
 # User data (persistent history files)
 user_data/
 
-# Server-side auth sessions
-.sloth_sessions.json
-
 # Streamlit secrets（含 OAuth 憑證，絕不可 commit）
 .streamlit/secrets.toml
 

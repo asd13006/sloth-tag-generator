@@ -35,76 +35,55 @@ st.set_page_config(
 # ─────────────────────────────────────────────────────────────────────────────
 
 import os
-import secrets as _secrets
+import hmac
+import hashlib
+import base64
 import urllib.parse
 import requests as _requests
 
 
 _AUTH_OBJ = None  # global ref for login button rendering
+_AUTH_SECRET = None  # cookie 簽名用密鑰
 
 _GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 _GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 _GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v2/userinfo"
 _OAUTH_SCOPES = "openid email profile"
 
-_SESSION_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".sloth_sessions.json")
 
+# ── Cookie 持久化登入 ──
+def _sign_cookie(data: dict, secret: str) -> str:
+    """建立簽名 cookie 值: base64(json).hmac_signature"""
+    payload = base64.urlsafe_b64encode(json.dumps(data, ensure_ascii=False).encode()).decode()
+    sig = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}.{sig}"
 
-# ── Server-side session 持久化登入 ──
-def _save_session(user_info: dict) -> str:
-    """儲存 user_info 到 server-side session 檔案，回傳 session token。"""
-    token = _secrets.token_urlsafe(32)
-    sessions = {}
-    if os.path.exists(_SESSION_FILE):
-        try:
-            with open(_SESSION_FILE, "r", encoding="utf-8") as f:
-                sessions = json.load(f)
-        except Exception:
-            sessions = {}
-    sessions[token] = user_info
-    with open(_SESSION_FILE, "w", encoding="utf-8") as f:
-        json.dump(sessions, f, ensure_ascii=False)
-    return token
-
-def _load_session(token: str):
-    """從 server-side session 檔案載入 user_info，失敗回傳 None。"""
-    if not token or not os.path.exists(_SESSION_FILE):
-        return None
+def _verify_cookie(cookie_val: str, secret: str):
+    """驗證並解碼簽名 cookie，失敗回傳 None。"""
     try:
-        with open(_SESSION_FILE, "r", encoding="utf-8") as f:
-            sessions = json.load(f)
-        return sessions.get(token)
+        payload, sig = cookie_val.rsplit(".", 1)
+        expected = hmac.new(secret.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            return None
+        return json.loads(base64.urlsafe_b64decode(payload).decode())
     except Exception:
         return None
 
-def _delete_session(token: str):
-    """刪除指定 session。"""
-    if not token or not os.path.exists(_SESSION_FILE):
-        return
+def _restore_from_cookie(secret: str) -> bool:
+    """從 cookie 還原登入狀態，成功回傳 True。"""
     try:
-        with open(_SESSION_FILE, "r", encoding="utf-8") as f:
-            sessions = json.load(f)
-        sessions.pop(token, None)
-        with open(_SESSION_FILE, "w", encoding="utf-8") as f:
-            json.dump(sessions, f, ensure_ascii=False)
+        cookie_val = st.context.cookies.get("sloth_auth")
+        if not cookie_val:
+            return False
+        data = _verify_cookie(cookie_val, secret)
+        if not data or "email" not in data:
+            return False
+        st.session_state["connected"] = True
+        st.session_state["oauth_id"] = data.get("id", "")
+        st.session_state["user_info"] = data
+        return True
     except Exception:
-        pass
-
-def _restore_from_session() -> bool:
-    """從 query params 的 session token 還原登入狀態。"""
-    token = st.query_params.get("s")
-    if not token:
         return False
-    user_info = _load_session(token)
-    if not user_info or "email" not in user_info:
-        # token 無效，清除
-        st.query_params.pop("s", None)
-        return False
-    st.session_state["connected"] = True
-    st.session_state["oauth_id"] = user_info.get("id", "")
-    st.session_state["user_info"] = user_info
-    st.session_state["_session_token"] = token
-    return True
 
 
 class _SlothAuth:
@@ -164,10 +143,7 @@ class _SlothAuth:
                 st.session_state["connected"] = True
                 st.session_state["oauth_id"] = user_info.get("id")
                 st.session_state["user_info"] = user_info
-                # 儲存 server-side session 並將 token 寫入 URL
-                token = _save_session(user_info)
-                st.session_state["_session_token"] = token
-                st.query_params["s"] = token
+                st.session_state["_set_auth_cookie"] = True
                 st.rerun()
             except Exception as e:
                 import logging
@@ -177,36 +153,24 @@ class _SlothAuth:
         if st.session_state["connected"]:
             return
         auth_url = self._build_auth_url()
-        # 使用 <a> tag 在同一視窗導航（target="_top" 跳出 iframe）
-        st.markdown(
-            f'<a href="{auth_url}" target="_top" style="'
-            f'display:inline-flex;align-items:center;justify-content:center;width:100%;'
-            f'padding:0.5rem 1rem;border-radius:8px;font-size:14px;font-weight:600;'
-            f'background:linear-gradient(135deg,#4285f4,#34a853);color:#fff;'
-            f'text-decoration:none;border:none;cursor:pointer;'
-            f'transition:opacity 0.2s;'
-            f'"'
-            f' onmouseover="this.style.opacity=0.85"'
-            f' onmouseout="this.style.opacity=1"'
-            f'>🔐 Sign in with Google</a>',
-            unsafe_allow_html=True,
-        )
+        st.link_button("🔐 Sign in with Google", auth_url, use_container_width=True)
 
 
 def _init_auth():
     """Initialise Google OAuth. Returns (logged_in, email, name, photo_url).
     Falls back to guest mode when secrets are missing or auth fails."""
-    global _AUTH_OBJ
+    global _AUTH_OBJ, _AUTH_SECRET
     try:
         _client_id = st.secrets["google_oauth"]["client_id"]
         _client_secret = st.secrets["google_oauth"]["client_secret"]
         _redirect_uri = st.secrets["google_oauth"].get(
             "redirect_uri", "http://localhost:8501")
         _current_uri = _redirect_uri.strip().rstrip("/")
+        _AUTH_SECRET = _client_secret
 
-        # 優先從 server-side session 還原登入狀態（解決刷新後登入遺失）
+        # 優先從 cookie 還原登入狀態（解決刷新後登入遺失）
         if not st.session_state.get("connected"):
-            _restore_from_session()
+            _restore_from_cookie(_AUTH_SECRET)
 
         auth = _SlothAuth(
             client_id=_client_id,
@@ -231,6 +195,24 @@ def _init_auth():
 
 _LOGGED_IN, _USER_EMAIL, _USER_NAME, _USER_PHOTO = _init_auth()
 _IS_GUEST = not _LOGGED_IN
+
+# ── 登入 cookie 注入（在頁面渲染時執行 JS）──
+if st.session_state.get("_set_auth_cookie") and _AUTH_SECRET:
+    _cookie_data = st.session_state.get("user_info", {})
+    if _cookie_data:
+        _cookie_val = _sign_cookie(_cookie_data, _AUTH_SECRET)
+        st.components.v1.html(
+            f'<script>document.cookie="sloth_auth={_cookie_val}; path=/; max-age=2592000; SameSite=Lax";</script>',
+            height=0, width=0,
+        )
+    st.session_state["_set_auth_cookie"] = False
+
+if st.session_state.get("_clear_auth_cookie"):
+    st.components.v1.html(
+        '<script>document.cookie="sloth_auth=; path=/; max-age=0; SameSite=Lax";</script>',
+        height=0, width=0,
+    )
+    st.session_state["_clear_auth_cookie"] = False
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  GLOBAL CSS  ── OLED Dark + Neon Cyberpunk design system
@@ -1145,11 +1127,9 @@ with st.container(key="navbar"):
                 st.caption(f"📧 {_USER_EMAIL}")
                 st.caption(f"📋 共 {_hist_count} 筆歷史記錄")
                 if st.button("🚪 登出", key="nb_logout", use_container_width=True):
-                    _delete_session(st.session_state.get("_session_token", ""))
                     st.session_state["connected"] = False
                     st.session_state["user_info"] = {}
-                    st.session_state.pop("_session_token", None)
-                    st.query_params.pop("s", None)
+                    st.session_state["_clear_auth_cookie"] = True
                     st.rerun()
         else:
             _login_pop = st.popover("🔒", use_container_width=True, help="登入")
