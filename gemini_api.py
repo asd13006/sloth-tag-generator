@@ -1,9 +1,8 @@
 """
-Gemini API 模組 — AI 生成 + Mock 資料 + 模型候選清單
+Gemini API 模組 — AI 生成 + 模型候選清單
 """
 
 import json
-import time
 
 import streamlit as st
 from google import genai
@@ -23,109 +22,7 @@ MODEL_CANDIDATES = [
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  MOCK DATA — realistic lofi-themed content for demo fallback
-# ─────────────────────────────────────────────────────────────────────────────
-_MOCK_TITLES_EN = [
-    "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙",
-    "Find Your Calm… Soothing R&B for Work, Rest & Healing 🌸 ☕",
-    "Slow Morning Chores… Chill R&B for Study, Work & Gentle Focus 🧰 🧰",
-    "Peace in the Garden… Chill R&B for Study, Work & Soft Focus ⏳ 🫖",
-    "Rest in the Morning Light… Chill R&B for Yoga & Peaceful Moments 🧘 🌞",
-]
-_MOCK_TITLES_ZH = [
-    "溫馨茶時光… 放鬆、讀書＆平靜的 Chill Lofi 🍵 🌙",
-    "找到你的安寧… 工作、休憩＆療癒的舒緩 R&B 🌸 ☕",
-    "慢活早晨家務… 讀書、工作＆溫柔專注的 Chill R&B 🧰 🧰",
-    "花園裡的寧靜… 讀書、工作＆柔和專注的 Chill R&B ⏳ 🫖",
-    "晨光中的休憩… 瑜伽＆平靜時刻的 Chill R&B 🧘 🌞",
-]
-_MOCK_TAGS = (
-    "lofi, lofi music, chill lofi, lofi hip hop, lofi beats, study music, "
-    "relax music, chill music, cozy lofi, rainy day lofi, lofi cafe, "
-    "late night lofi, lofi jazz, soothing music, ambient lofi, sleep lofi, "
-    "focus music, lo-fi, chillhop, lofi radio, lofi mix, soft lofi, "
-    "reading music, writing music, peaceful music, calm beats, "
-    "midnight study lofi, rainy cafe ambience, warm lofi vibes, "
-    "aesthetic lofi, lofi for work, deep focus lofi, cozy night lofi, "
-    "gentle piano lofi, autumn lofi, winter lofi playlist, lofi 2024, "
-    "morning coffee lofi, sunday lofi, healing lofi beats"
-)
-_MOCK_LONG_STORY_EN = (
-    "You sit by the window, watching raindrops trace slow paths down the glass. "
-    "The café is nearly empty — just you, a half-finished cup of tea, and the quiet hum of a lofi playlist "
-    "drifting from somewhere behind the counter.\n\n"
-    "Outside, the city feels far away. Streetlights blur into soft halos through the rain, "
-    "and the occasional car passes like a whisper. You open your notebook, but there's no rush to write. "
-    "Tonight, just being here is enough.\n\n"
-    "The barista glances at the clock but never hurries. "
-    "A stack of old paperbacks sits on the shelf by the door — they belong to no one and everyone.\n\n"
-    "You pick up your pen. The first sentence comes slowly, then another, then a whole paragraph "
-    "that feels like it was always waiting inside you. The rain keeps its gentle rhythm, "
-    "and the lofi beats carry you forward, one soft note at a time.\n\n"
-    "When you finally look up, the tea has gone cold and the rain has stopped. "
-    "But the words on the page glow warm, and you smile — knowing that some of the best things "
-    "are written in the quiet hours, when no one is watching."
-)
-_MOCK_LONG_STORY_ZH = (
-    "你坐在窗邊，看著雨滴在玻璃上緩緩滑落。咖啡廳裡幾乎空無一人——"
-    "只有你、一杯喝了一半的茶，和從吧台後方某處飄來的 lofi 音樂。\n\n"
-    "窗外，城市彷彿很遙遠。街燈在雨中暈成柔和的光圈，"
-    "偶爾有車經過，像一聲低語。你翻開筆記本，但不急著寫。"
-    "今夜，就只是待在這裡，已經足夠。\n\n"
-    "咖啡師熟練地擦拭義式咖啡機，看了一眼時鐘，卻從不趕時間。"
-    "門邊的書架上放著一疊舊平裝書——幾個月前有人留下的，"
-    "現在它們不屬於任何人，又屬於每個人。\n\n"
-    "你拿起筆。第一句話來得很慢，然後又一句，接著是一整段——"
-    "那些文字彷彿一直在你心裡等候。雨聲保持著溫柔的節奏，"
-    "lofi 的音符帶著你前行，一個柔和的音符接著一個。\n\n"
-    "當你終於抬起頭，茶已經涼了，雨也停了。"
-    "但紙上的文字散發著溫暖的光，你微笑——因為最好的東西，"
-    "往往是在安靜的時刻、無人注視時寫下的。"
-)
-_MOCK_SHORT_STORY_EN = (
-    "Making Tea 🍵\n"
-    "Evening settles outside the window 🌙. You fill the kettle and set it on the stove, "
-    "then choose your favorite cup—the one with the crack in the glaze you never bothered to replace.\n\n"
-    "The kettle hums low. When it whistles, you pour. Steam rises, fogging the window above the sink 💨. "
-    "You watch the water darken, then wrap your hands around the warm cup, letting the heat seep through ☕.\n\n"
-    "When you finally take a slow sip, you carry the cup to the living room and sink into the couch 🛋️. "
-    "The last light has gone. Only the warmth in your hands and the slow, easy quiet of the evening 🌿."
-)
-_MOCK_SHORT_STORY_ZH = (
-    "泡一杯茶 🍵\n"
-    "夜色在窗外慢慢沉澱 🌙。你把水壺裝滿放上爐子，"
-    "然後挑了你最愛的那只杯子——釉面上有道裂痕，你從沒想過要換掉它。\n\n"
-    "水壺發出低沉的嗡鳴。壺嘴一響，你傾倒熱水。蒸氣升起，在水槽上方的窗玻璃上凝成一層薄霧 💨。"
-    "你看著茶湯漸漸變深，然後雙手捧住溫熱的杯身，讓暖意慢慢滲透 ☕。\n\n"
-    "當你終於小啜一口，便端著杯子走進客廳，陷入沙發裡 🛋️。"
-    "最後的光已經散去。只剩手中的溫暖，和這個夜晚緩慢而安靜的呼吸 🌿。"
-)
-_MOCK_TRACKLIST = [
-    {"id": 1, "en_title": "Midnight Pages", "zh_title": "午夜書頁",
-     "en_theme": "Quiet pen scratches under a dim desk lamp", "zh_theme": "昏暗檯燈下筆尖沙沙的聲音"},
-    {"id": 2, "en_title": "Rainy Café", "zh_title": "雨天咖啡館",
-     "en_theme": "Raindrops on glass and the scent of fresh brew", "zh_theme": "玻璃上的雨滴和新煮咖啡的香氣"},
-    {"id": 3, "en_title": "Paper & Ink", "zh_title": "紙與墨",
-     "en_theme": "A worn journal filled with half-finished thoughts", "zh_theme": "一本寫滿未完思緒的舊日記"},
-    {"id": 4, "en_title": "Warm Silence", "zh_title": "溫暖的沉默",
-     "en_theme": "Two cups of tea, no words needed", "zh_theme": "兩杯茶，不需要言語"},
-    {"id": 5, "en_title": "Golden Hour Drift", "zh_title": "金色時光漫遊",
-     "en_theme": "Sunlight fading through linen curtains", "zh_theme": "陽光透過亞麻窗簾漸漸消逝"},
-    {"id": 6, "en_title": "Autumn Letters", "zh_title": "秋日信箋",
-     "en_theme": "A letter you meant to send but never did", "zh_theme": "一封你想寄出卻始終沒寄的信"},
-    {"id": 7, "en_title": "Foggy Window Sill", "zh_title": "霧氣窗台",
-     "en_theme": "Drawing shapes on a fogged-up window", "zh_theme": "在起霧的玻璃上隨手畫圖案"},
-    {"id": 8, "en_title": "Bookshop Lullaby", "zh_title": "書店搖籃曲",
-     "en_theme": "Old books and the creak of wooden floors", "zh_theme": "舊書和木地板的吱嘎聲"},
-    {"id": 9, "en_title": "Slow Morning", "zh_title": "緩慢的早晨",
-     "en_theme": "No alarm, just birdsong and soft light", "zh_theme": "沒有鬧鐘，只有鳥鳴和柔光"},
-    {"id": 10, "en_title": "Last Train Home", "zh_title": "末班車回家",
-     "en_theme": "City lights blurring past a tired smile", "zh_theme": "城市燈光在疲倦的微笑前模糊而過"},
-]
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-#  GEMINI API — real AI generation
+#  GEMINI API — AI generation
 # ─────────────────────────────────────────────────────────────────────────────
 def _get_client() -> genai.Client | None:
     """Return a configured genai Client, or None if no key."""
@@ -317,24 +214,4 @@ def ai_generate(selected_outputs: list, n_songs: int, context: str, user_email: 
             asset_outputs, context, tracklist or result.get("tracklist"), user_email)
         result.update(assets)
 
-    return result
-
-
-def mock_generate(selected_outputs: list, n_songs: int) -> dict:
-    """Simulate AI generation with mock data. Returns only the requested keys."""
-    time.sleep(1.5)  # 模擬 loading
-    result = {}
-    if "titles" in selected_outputs:
-        result["titles"] = _MOCK_TITLES_EN
-        result["titles_zh"] = _MOCK_TITLES_ZH
-    if "tags" in selected_outputs:
-        result["tags"] = _MOCK_TAGS
-    if "long_story" in selected_outputs:
-        result["long_story"] = _MOCK_LONG_STORY_EN
-        result["long_story_zh"] = _MOCK_LONG_STORY_ZH
-    if "short_story" in selected_outputs:
-        result["short_story"] = _MOCK_SHORT_STORY_EN
-        result["short_story_zh"] = _MOCK_SHORT_STORY_ZH
-    if "tracklist" in selected_outputs:
-        result["tracklist"] = _MOCK_TRACKLIST[:n_songs]
     return result

@@ -1,7 +1,6 @@
 """
 sLoth rAdio · Title Studio — Dynamic Wizard Mode
 Google Gemini AI-powered YouTube title, tag & SEO asset generator.
-Falls back to mock data when no API key is configured.
 
 UI Language: Traditional Chinese
 Design: OLED Dark + Neon Teal (#00ffcc / #b026ff)
@@ -19,7 +18,7 @@ import io
 from history import load_history, save_generation, delete_history_item
 from auth import init_auth, get_auth_object, get_login_url, inject_auth_cookies, clear_session
 from styles import inject_css
-from gemini_api import MODEL_CANDIDATES, validate_api_key, ai_generate, mock_generate
+from gemini_api import MODEL_CANDIDATES, validate_api_key, ai_generate
 from dashboard import build_dashboard, _he
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -53,7 +52,7 @@ _DEFAULTS = {
     "existing_materials": [],    # 已有嘅材料（同樣 5 類 + images）
     "user_context": "",          # Step 3 用戶輸入
     "n_songs": 15,               # 歌單數量
-    "results": {},               # AI / mock 結果
+    "results": {},               # AI 結果
     "uploaded_images": [],       # Step 3 上傳嘅圖片 (UploadedFile objects)
     "view_mode": "wizard",       # "wizard" | "profile"
     "api_key": "",               # API key
@@ -105,18 +104,21 @@ with st.container(key="navbar"):
     _c_brand, _c_space, _c_key, _c_reset, _c_auth = st.columns(
         [3.0, 4.4, 0.5, 0.5, 1.6], vertical_alignment="center"
     )
-    # ── 品牌標題 ──
+    # ── 品牌標題（點擊回首頁）──
     with _c_brand:
-        st.markdown(
-            "<span class='brand-wrap'>"
-            "<span class='nb-brand'>Title Studio</span>"
-            "<span class='nb-sub'>SLOTH RADIO</span>"
-            "</span>",
-            unsafe_allow_html=True,
-        )
-    # ── 🔑 API Key ──
+        if st.button("Title Studio ⸱ SLOTH RADIO", key="nb_brand_home", use_container_width=True):
+            st.session_state.step = 1
+            st.session_state.view_mode = "wizard"
+            st.rerun()
+    # ── 🔑 API Key（動態 key 觸發狀態 CSS）──
     with _c_key:
-        _api_pop = st.popover("🔑", use_container_width=True, help="API Key 設定")
+        _api_btn_label = {"connected": "🟢", "disconnected": "🔑"}.get(
+            st.session_state.api_status, "🔑")
+        if st.session_state.api_status == "disconnected" and st.session_state.api_key:
+            _api_btn_label = "🔴"
+        _api_key_name = f"api_{st.session_state.api_status}" if st.session_state.api_status == "connected" else (
+            "api_error" if st.session_state.api_key else "api_default")
+        _api_pop = st.popover(_api_btn_label, use_container_width=True, help="API Key 設定", key=_api_key_name)
         with _api_pop:
             st.markdown("##### 🔑 API Key 設定")
             _new_key = st.text_input(
@@ -144,7 +146,7 @@ with st.container(key="navbar"):
             elif st.session_state.api_status == "disconnected" and st.session_state.api_key:
                 st.caption("❌ API Key 無效或無可用模型")
             else:
-                st.caption("💡 輸入 API Key 啟用 Gemini AI。未連接時使用模擬資料。")
+                st.caption("💡 輸入 API Key 以啟用 Gemini AI 生成功能。")
     # ── ⟲ 重置 ──
     with _c_reset:
         if st.button("⟲", key="nb_reset_btn", use_container_width=True, help="重置所有步驟"):
@@ -336,6 +338,29 @@ if st.session_state.view_mode == "profile":
         st.session_state.view_mode = "wizard"
         st.rerun()
 
+    st.markdown(f"<div class='footer'>sLoth rAdio · Title Studio · v{__version__}</div>",
+                unsafe_allow_html=True)
+    st.stop()
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  API GATE — 未連接 API Key 時封鎖所有步驟
+# ═════════════════════════════════════════════════════════════════════════════
+if st.session_state.api_status != "connected":
+    st.markdown(
+        "<div class='glass api-gate'>"
+        "<div class='api-gate-icon'>🔑</div>"
+        "<div class='api-gate-title'>請先設定 API Key</div>"
+        "<div class='api-gate-desc'>"
+        "點擊右上角 🔑 按鈕輸入你的 Google Gemini API Key，"
+        "連接成功後即可使用所有生成功能。"
+        "</div>"
+        "<a class='api-gate-link' href='https://aistudio.google.com/apikey' target='_blank' rel='noopener noreferrer'>"
+        "📋 前往 Google AI Studio 取得 API Key"
+        "</a>"
+        "</div>",
+        unsafe_allow_html=True,
+    )
     st.markdown(f"<div class='footer'>sLoth rAdio · Title Studio · v{__version__}</div>",
                 unsafe_allow_html=True)
     st.stop()
@@ -601,22 +626,15 @@ elif step == 3:
     st.markdown("</div>", unsafe_allow_html=True)  # close .glass
 
     if gen_btn:
-        _use_ai = st.session_state.api_status == "connected"
-        _mode_label = "Gemini AI" if _use_ai else "Demo（模擬資料）"
-        with st.status(f"⚙️ {_mode_label} 生成中...", expanded=True) as status:
+        with st.status(f"⚙️ Gemini AI 生成中...", expanded=True) as status:
             try:
-                if _use_ai:
-                    st.write(f"🤖 使用 {st.session_state.api_model} 生成中...")
-                    results = ai_generate(
-                        st.session_state.selected_outputs,
-                        st.session_state.n_songs,
-                        st.session_state.user_context,
-                        user_email=_USER_EMAIL,
-                    )
-                else:
-                    st.write("🤖 使用模擬資料（未連接 API）...")
-                    results = mock_generate(
-                        st.session_state.selected_outputs, st.session_state.n_songs)
+                st.write(f"🤖 使用 {st.session_state.api_model} 生成中...")
+                results = ai_generate(
+                    st.session_state.selected_outputs,
+                    st.session_state.n_songs,
+                    st.session_state.user_context,
+                    user_email=_USER_EMAIL,
+                )
                 if results:
                     st.session_state.results = results
                     # 儲存到持久化歷史記錄（需要登入）
@@ -630,7 +648,7 @@ elif step == 3:
                                 st.session_state.existing_materials),
                             context=st.session_state.user_context,
                             n_songs=st.session_state.n_songs,
-                            mode="ai" if _use_ai else "demo",
+                            mode="ai",
                         )
                     status.update(
                         label="✅ 完成！", state="complete", expanded=False)

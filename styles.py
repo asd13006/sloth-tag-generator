@@ -57,7 +57,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     height: 100%; 
 }
 
-/* 品牌標題 */
+/* 品牌標題（可點擊回首頁）*/
 .brand-wrap { display: inline-flex; align-items: center; gap: 12px; height: 38px; margin: 0; padding: 0; }
 .nb-brand {
     font-family: 'Righteous', sans-serif; font-size: 24px; font-weight: 400; letter-spacing: 1px;
@@ -67,6 +67,24 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     line-height: 1; white-space: nowrap;
 }
 .nb-sub { color: rgba(255,255,255,0.9); font-size: 11px; font-weight: 700; letter-spacing: 4px; text-transform: uppercase; white-space: nowrap; }
+
+/* 品牌按鈕 — 覆蓋預設按鈕樣式 */
+.st-key-nb_brand_home button {
+    background: transparent !important; border: none !important; box-shadow: none !important;
+    padding: 0 !important; cursor: pointer !important; text-align: left !important;
+}
+.st-key-nb_brand_home button:hover { background: transparent !important; }
+.st-key-nb_brand_home button:focus-visible { outline: 2px solid #00ffcc; outline-offset: 4px; border-radius: 6px; }
+.st-key-nb_brand_home button p {
+    font-family: 'Righteous', sans-serif !important; font-size: 22px !important; font-weight: 400 !important;
+    letter-spacing: 1px !important;
+    background: linear-gradient(270deg, #00ffcc, #b026ff, #00E676, #00ffcc) !important;
+    background-size: 300% 300% !important;
+    animation: gradient-text 5s ease 1 forwards !important;
+    -webkit-background-clip: text !important; -webkit-text-fill-color: transparent !important;
+    white-space: nowrap !important; line-height: 38px !important;
+}
+.st-key-nb_brand_home button:hover p { opacity: 0.85; }
 
 /* 登入狀態標籤 */
 .auth-badge {
@@ -116,6 +134,56 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 /* 隱藏 popover 的下拉箭頭與內部無用元素 */
 .st-key-navbar [data-testid="stPopover"] button svg { display: none !important; }
 .st-key-navbar [data-testid="stPopover"] button div:nth-child(2) { display: none !important; }
+
+/* ── API Key 按鈕狀態指示 ── */
+.st-key-api_connected button {
+    border-color: rgba(0,255,204,0.6) !important;
+    box-shadow: 0 0 10px rgba(0,255,204,0.25), 0 2px 8px rgba(0,0,0,0.4) !important;
+    background: rgba(0,255,204,0.1) !important;
+}
+.st-key-api_connected button:hover {
+    border-color: rgba(0,255,204,0.8) !important;
+    box-shadow: 0 0 16px rgba(0,255,204,0.4), 0 4px 12px rgba(0,255,204,0.25) !important;
+}
+.st-key-api_error button {
+    border-color: rgba(255,80,80,0.6) !important;
+    box-shadow: 0 0 10px rgba(255,80,80,0.2), 0 2px 8px rgba(0,0,0,0.4) !important;
+    background: rgba(255,80,80,0.08) !important;
+}
+.st-key-api_error button:hover {
+    border-color: rgba(255,80,80,0.8) !important;
+    box-shadow: 0 0 16px rgba(255,80,80,0.35), 0 4px 12px rgba(255,80,80,0.2) !important;
+}
+
+/* ── API Gate（未連接時的全頁封鎖提示）── */
+.api-gate {
+    text-align: center; padding: 80px 40px 60px;
+}
+.api-gate-icon {
+    font-size: 64px; margin-bottom: 20px; line-height: 1;
+    filter: grayscale(0.3);
+}
+.api-gate-title {
+    font-family: 'Righteous', sans-serif; font-size: 24px; color: #fff;
+    margin-bottom: 12px; letter-spacing: 0.5px;
+}
+.api-gate-desc {
+    color: rgba(255,255,255,0.55); font-size: 14px; line-height: 1.7;
+    max-width: 480px; margin: 0 auto 28px;
+}
+.api-gate-link {
+    display: inline-block; padding: 10px 24px; border-radius: 12px;
+    background: rgba(0,255,204,0.12); border: 1px solid rgba(0,255,204,0.35);
+    color: #00ffcc; font-weight: 600; font-size: 13px; letter-spacing: 0.5px;
+    text-decoration: none; transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.api-gate-link:hover {
+    background: rgba(0,255,204,0.2); border-color: rgba(0,255,204,0.6);
+    box-shadow: 0 0 16px rgba(0,255,204,0.25);
+}
+@media (prefers-reduced-motion: reduce) {
+    .api-gate-link { transition: none; }
+}
 
 /* 確保中間圖示顏色透白（避免系統繪製黑 emoji） */
 .st-key-navbar [data-testid="column"]:nth-child(3) button p,
