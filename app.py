@@ -106,11 +106,11 @@ _api_txt = (
 _hist_count = len(load_history(_USER_EMAIL)) if _USER_EMAIL else 0
 
 # ═════════════════════════════════════════════════════════════════════════
-#  NAVBAR ─ simplified: brand | sep | reset | profile | status
+#  NAVBAR ─ brand | sep | api | reset | spacer | profile | status
 # ═════════════════════════════════════════════════════════════════════════
 with st.container(key="navbar"):
-    _c_brand, _c_sep, _c_reset, _c_space, _c_user, _c_status = st.columns(
-        [1.8, 0.12, 0.5, 4.5, 0.8, 1.6], vertical_alignment="center"
+    _c_brand, _c_sep, _c_key, _c_reset, _c_space, _c_user, _c_status = st.columns(
+        [1.8, 0.12, 0.5, 0.5, 4.0, 0.8, 1.6], vertical_alignment="center"
     )
     # ── 品牌標題 ──
     with _c_brand:
@@ -123,6 +123,37 @@ with st.container(key="navbar"):
     # ── 分隔線 ──
     with _c_sep:
         st.markdown("<div class='nav-sep'></div>", unsafe_allow_html=True)
+    # ── 🔑 API Key ──
+    with _c_key:
+        _api_pop = st.popover("🔑", use_container_width=True, help="API Key 設定")
+        with _api_pop:
+            st.markdown("##### 🔑 API Key 設定")
+            _new_key = st.text_input(
+                "api_key_input_nb", value=st.session_state.api_key,
+                type="password", placeholder="輸入 Google Gemini API Key...",
+                label_visibility="collapsed",
+            )
+            if _new_key != st.session_state.api_key:
+                st.session_state.api_key = _new_key
+                if _new_key:
+                    st.session_state.api_status = "validating"
+                    ok, model = validate_api_key(_new_key)
+                    if ok:
+                        st.session_state.api_status = "connected"
+                        st.session_state.api_model = model
+                    else:
+                        st.session_state.api_status = "disconnected"
+                        st.session_state.api_model = ""
+                else:
+                    st.session_state.api_status = "disconnected"
+                    st.session_state.api_model = ""
+                st.rerun()
+            if st.session_state.api_status == "connected":
+                st.caption(f"✅ 已連接 · 模型：{st.session_state.api_model}")
+            elif st.session_state.api_status == "disconnected" and st.session_state.api_key:
+                st.caption("❌ API Key 無效或無可用模型")
+            else:
+                st.caption("💡 輸入 API Key 啟用 Gemini AI。未連接時使用模擬資料。")
     # ── 🔄 重置 ──
     with _c_reset:
         if st.button("🔄", key="nb_reset_btn", use_container_width=True, help="重置所有步驟"):
