@@ -1,19 +1,28 @@
 """
-sLoth rAdio · Title Studio — Dynamic Wizard Mode (DEMO)
-No API key required. Uses mock data to demonstrate the 4-step wizard flow.
+sLoth rAdio · Title Studio — Dynamic Wizard Mode
+Google Gemini AI-powered YouTube title, tag & SEO asset generator.
+Falls back to mock data when no API key is configured.
 
 UI Language: Traditional Chinese
 Design: OLED Dark + Neon Teal (#00ffcc / #b026ff)
 """
 
+import json
 import time
+import traceback
+from datetime import datetime
+
 import streamlit as st
+from google import genai
+from google.genai import types
+from PIL import Image
+import io
 
 # ─────────────────────────────────────────────────────────────────────────────
 #  PAGE CONFIG
 # ─────────────────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="sLoth rAdio · Title Studio (Demo)",
+    page_title="sLoth rAdio · Title Studio",
     page_icon="🎵",
     layout="wide",
 )
@@ -34,8 +43,14 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
         radial-gradient(rgba(0,255,204,0.025) 1px, transparent 1px) !important;
     background-size: 100% 100%, 30px 30px !important;
 }
-.block-container { padding: 1.5rem 2.5rem 3rem !important; max-width: 1200px !important; }
-.stApp > header { background: transparent !important; }
+.block-container { padding: 0 2.5rem 3rem !important; max-width: 1200px !important; }
+.stApp > header { display: none !important; height: 0 !important; min-height: 0 !important; }
+[data-testid="stHeader"] { display: none !important; height: 0 !important; }
+[data-testid="stToolbar"] { display: none !important; }
+[data-testid="stDecoration"] { display: none !important; }
+[data-testid="stStatusWidget"] { display: none !important; }
+.stDeployButton { display: none !important; }
+#MainMenu { display: none !important; }
 
 /* ── Animations ── */
 @keyframes gradient-text { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
@@ -44,21 +59,69 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
 
-/* ── Header ── */
-.hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
-.hdr-left { display: flex; align-items: baseline; gap: 14px; }
-.hdr-title {
-    font-family: 'Righteous', sans-serif; font-size: 32px; font-weight: 400; letter-spacing: 1px;
+/* ── Navbar (single-row, sticky) ── */
+.st-key-navbar {
+    position: sticky; top: 0; z-index: 999;
+    background: rgba(10,10,20,0.92); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+    margin: 0 -2.5rem; padding: 10px 2.5rem 10px;
+}
+.st-key-navbar::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0,255,204,0.12), rgba(176,38,255,0.08), transparent);
+}
+/* 品牌標題 */
+.nb-brand {
+    font-family: 'Righteous', sans-serif; font-size: 26px; font-weight: 400; letter-spacing: 1px;
     background: linear-gradient(270deg, #00ffcc, #b026ff, #00E676, #00ffcc); background-size: 300% 300%;
     animation: gradient-text 5s ease 1 forwards;
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1.2; white-space: nowrap;
 }
-.hdr-sub { color: rgba(255,255,255,0.40); font-size: 11px; font-weight: 500; letter-spacing: 3px; text-transform: uppercase; }
-.demo-pill {
-    display: inline-block; background: rgba(255,180,0,0.10); border: 1px solid rgba(255,180,0,0.25);
-    border-radius: 20px; padding: 2px 12px; font-size: 10px; font-weight: 700;
-    color: rgba(255,180,0,0.85); letter-spacing: 1.5px; text-transform: uppercase; vertical-align: middle; margin-left: 10px;
+.nb-sub { color: rgba(255,255,255,0.45); font-size: 10px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; display: block; margin-top: -2px; }
+/* 狀態指示器 */
+.api-status {
+    display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px;
+    border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.5px;
+    border: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03);
+    white-space: nowrap;
 }
+.api-status-wrap { display: flex; justify-content: flex-end; align-items: center; height: 100%; }
+/* 品牌/按鈕分隔線 */
+.nav-sep { width: 1px; height: 24px; background: rgba(255,255,255,0.08); margin: 0 auto; }
+.api-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.api-dot.off { background: #ff4757; box-shadow: 0 0 6px rgba(255,71,87,0.5); }
+.api-dot.on { background: #00ffcc; box-shadow: 0 0 6px rgba(0,255,204,0.5); }
+.api-dot.wait { background: #ffa502; box-shadow: 0 0 6px rgba(255,165,2,0.5); animation: neon-breathe 2s ease-in-out infinite; }
+.api-lbl { color: rgba(255,255,255,0.60); }
+/* 統一按鈕樣式（button + popover trigger） */
+.st-key-navbar button,
+.st-key-navbar [data-testid="stPopover"] > button {
+    min-height: 34px !important; padding: 4px 10px !important; font-size: 16px !important;
+    background: rgba(255,255,255,0.04) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 10px !important;
+    color: rgba(255,255,255,0.65) !important;
+    cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    box-shadow: none !important;
+    position: relative;
+}
+.st-key-navbar button:hover,
+.st-key-navbar [data-testid="stPopover"] > button:hover {
+    background: rgba(0,255,204,0.08) !important;
+    border-color: rgba(0,255,204,0.25) !important;
+    color: #fff !important;
+    transform: translateY(-1px);
+}
+.st-key-navbar button:focus-visible,
+.st-key-navbar [data-testid="stPopover"] > button:focus-visible {
+    outline: 2px solid rgba(0,255,204,0.45) !important; outline-offset: 2px;
+}
+/* 隱藏 popover 的下拉箭頭 */
+.st-key-navbar [data-testid="stPopover"] > button svg { display: none !important; }
+/* 移除 navbar 內 Streamlit 預設間距 */
+.st-key-navbar [data-testid="stVerticalBlock"] { gap: 0 !important; }
+.st-key-navbar [data-testid="stHorizontalBlock"] { gap: 0.4rem !important; align-items: center !important; }
+.st-key-navbar [data-testid="stElementContainer"] { margin: 0 !important; }
 
 /* ── Stepper ── */
 .stepper { display: flex; align-items: center; margin: 16px 0 24px; }
@@ -66,12 +129,12 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .s-item:not(:last-child) { flex: 1; }
 .s-dot {
     width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    font-size: 12px; font-weight: 700; flex-shrink: 0; transition: all 0.3s ease;
-    border: 2px solid rgba(255,255,255,0.20); color: rgba(255,255,255,0.30); background: transparent;
+    font-size: 12px; font-weight: 700; flex-shrink: 0; transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    border: 2px solid rgba(255,255,255,0.30); color: rgba(255,255,255,0.50); background: transparent;
 }
 .s-dot.active { border-color: #00ffcc; color: #00ffcc; background: rgba(0,255,204,0.12); box-shadow: 0 0 14px rgba(0,255,204,0.5); }
 .s-dot.done { border-color: rgba(0,255,204,0.4); color: rgba(0,255,204,0.6); background: rgba(0,255,204,0.06); }
-.s-lbl { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.35); white-space: nowrap; }
+.s-lbl { font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.55); white-space: nowrap; }
 .s-lbl.active { color: #00ffcc; font-weight: 700; }
 .s-lbl.done { color: rgba(0,255,204,0.45); }
 .s-line { flex: 1; height: 1px; background: rgba(255,255,255,0.06); margin: 0 14px; }
@@ -83,10 +146,33 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     border: 1px solid rgba(255,255,255,0.06); border-radius: 20px;
     padding: 36px 40px 32px; margin-bottom: 20px; position: relative; overflow: hidden;
 }
+.glass:empty { display: none !important; padding: 0; margin: 0; border: none; min-height: 0; }
 .glass::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
     background: linear-gradient(90deg, transparent, rgba(0,255,204,0.15), rgba(176,38,255,0.1), transparent);
 }
+
+/* ── History view ── */
+.hist-card {
+    background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; padding: 16px 20px; margin-bottom: 10px;
+    cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+.hist-card:hover { border-color: rgba(0,255,204,0.25); background: rgba(0,255,204,0.03); }
+.hist-time { font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 500; }
+.hist-summary { font-size: 13px; color: rgba(255,255,255,0.65); margin-top: 6px; line-height: 1.5; }
+
+/* ── Export bar ── */
+.export-bar {
+    display: flex; align-items: center; gap: 10px; padding: 12px 18px;
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px; margin-bottom: 16px;
+}
+.export-bar .export-label { font-size: 12px; color: rgba(255,255,255,0.55); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-right: auto; }
+
+/* ── Prompt tuner ── */
+.tuner-label { font-size: 11px; color: rgba(255,255,255,0.55); font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; margin: 10px 0 6px; }
+.style-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 
 /* ── Section text ── */
 .sec-title { font-family: 'Righteous', sans-serif; font-size: 22px; color: #FFFFFF; margin: 0 0 4px; letter-spacing: 0.5px; }
@@ -108,7 +194,7 @@ button[data-testid="baseButton-secondary"]:has(p:nth-of-type(2)) p:nth-of-type(2
 
 /* ── All buttons base ── */
 button[data-testid^="baseButton"], button[data-testid^="stBaseButton"] {
-    cursor: pointer !important; border-radius: 14px !important; transition: all 0.25s ease !important;
+    cursor: pointer !important; border-radius: 14px !important; transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease !important;
 }
 
 /* ── Secondary (unselected) ── */
@@ -128,7 +214,7 @@ button[data-testid="baseButton-primary"],
 button[data-testid="stBaseButton-primary"] {
     background: linear-gradient(135deg, rgba(0,255,204,0.08), rgba(176,38,255,0.06)) !important;
     border: 1.5px solid rgba(0,255,204,0.50) !important; color: #00ffcc !important;
-    font-weight: 600 !important; animation: neon-breathe 3s ease-in-out infinite !important;
+    font-weight: 600 !important;
 }
 button[data-testid="baseButton-primary"] p,
 button[data-testid="stBaseButton-primary"] p { color: #00ffcc !important; }
@@ -158,24 +244,13 @@ button[data-testid="stBaseButton-primary"]:hover {
 .chip-purple { background: rgba(176,38,255,0.08); border: 1px solid rgba(176,38,255,0.25); color: #b026ff; }
 
 /* ── Card description (under buttons) ── */
-.card-desc { text-align: center; font-size: 11px; color: rgba(255,255,255,0.38); margin-top: 6px; line-height: 1.4; }
+.card-desc { text-align: center; font-size: 11px; color: rgba(255,255,255,0.55); margin-top: 6px; line-height: 1.4; }
 
 /* ── Counter ── */
-.counter { text-align: center; margin: 12px 0 4px; font-size: 13px; color: rgba(255,255,255,0.40); }
+.counter { text-align: center; margin: 12px 0 4px; font-size: 13px; color: rgba(255,255,255,0.55); }
 .counter b { font-size: 20px; font-family: 'Righteous', sans-serif; }
 .counter b.teal { color: #00ffcc; }
 .counter b.purple { color: #b026ff; }
-
-/* ── Feature cards ── */
-.feat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 20px; }
-.feat-card {
-    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 16px; padding: 28px 20px; text-align: center; transition: all 0.25s ease;
-}
-.feat-card:hover { border-color: rgba(255,255,255,0.12); transform: translateY(-2px); }
-.feat-icon { font-size: 28px; margin-bottom: 12px; }
-.feat-title { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.80); margin-bottom: 6px; }
-.feat-desc { font-size: 12px; color: rgba(255,255,255,0.42); line-height: 1.6; }
 
 /* ── Nav spacer ── */
 .nav-spacer { height: 12px; }
@@ -189,18 +264,33 @@ button[data-testid="stBaseButton-primary"]:hover {
 hr { border-color: rgba(255,255,255,0.05) !important; }
 a, a:visited { color: #00ffcc !important; }
 button:focus, button:focus-visible { outline: 2px solid rgba(0,255,204,0.45) !important; outline-offset: 2px !important; }
-::-webkit-scrollbar { width: 4px; height: 4px; }
-::-webkit-scrollbar-thumb { background: rgba(0,255,204,0.30); border-radius: 2px; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(0,255,204,0.25); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,255,204,0.40); }
+html { scrollbar-color: rgba(0,255,204,0.25) rgba(255,255,255,0.02); scrollbar-width: thin; }
 .stSlider > div { padding-left: 0 !important; }
 
 /* ── Footer ── */
-.footer { text-align: center; color: rgba(255,255,255,0.25); font-size: 10px; letter-spacing: 2px; margin-top: 40px; text-transform: uppercase; }
+.footer { text-align: center; color: rgba(255,255,255,0.40); font-size: 10px; letter-spacing: 2px; margin-top: 40px; text-transform: uppercase; }
 </style>
 """, unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-#  MOCK DATA  ── realistic lofi-themed content for demo
+#  MODEL CANDIDATES  ── preference order
+# ─────────────────────────────────────────────────────────────────────────────
+_MODEL_CANDIDATES = [
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  MOCK DATA  ── realistic lofi-themed content for demo fallback
 # ─────────────────────────────────────────────────────────────────────────────
 _MOCK_TITLES_EN = [
     "Midnight Pages… Chill Lofi for Late Night Study & Focus 📚 🌙",
@@ -306,10 +396,20 @@ _MOCK_TRACKLIST = [
 _DEFAULTS = {
     "step": 1,
     "selected_outputs": [],      # 想生成咩：titles / tags / long_story / short_story / tracklist
-    "existing_materials": [],    # 已有嘅材料（同樣 5 類）
+    "existing_materials": [],    # 已有嘅材料（同樣 5 類 + images）
     "user_context": "",          # Step 3 用戶輸入
     "n_songs": 15,               # 歌單數量
     "results": {},               # AI / mock 結果
+    "uploaded_images": [],       # Step 3 上傳嘅圖片 (UploadedFile objects)
+    "history": [],               # 歷史記錄
+    "view_mode": "wizard",       # "wizard" | "history"
+    "api_key": "",               # API key
+    "api_status": "disconnected",  # "disconnected" | "validating" | "connected"
+    "api_model": "",             # 模型名稱
+    "prompt_tone": 50,           # 語氣 slider 0-100
+    "prompt_styles": [],         # 風格 chips
+    "prompt_audience": "",       # 目標受眾
+    "prompt_extra": "",          # 額外指示
 }
 for k, v in _DEFAULTS.items():
     if k not in st.session_state:
@@ -317,9 +417,192 @@ for k, v in _DEFAULTS.items():
 
 
 def reset_pipeline():
+    _preserve = {"history", "api_key", "api_status", "api_model"}
     for k, v in _DEFAULTS.items():
+        if k in _preserve:
+            continue
         st.session_state[k] = v if not isinstance(
             v, (list, dict)) else type(v)()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  GEMINI API  ── real AI generation
+# ─────────────────────────────────────────────────────────────────────────────
+def _get_client() -> genai.Client | None:
+    """Return a configured genai Client, or None if no key."""
+    key = st.session_state.api_key
+    if not key:
+        return None
+    return genai.Client(api_key=key)
+
+
+def _validate_api_key(key: str) -> tuple[bool, str]:
+    """Validate API key and find best available model. Returns (ok, model_name)."""
+    if not key:
+        return False, ""
+    try:
+        client = genai.Client(api_key=key)
+        available = set()
+        for m in client.models.list():
+            available.add(m.name.split("/")[-1] if "/" in m.name else m.name)
+        for candidate in _MODEL_CANDIDATES:
+            if candidate in available:
+                return True, candidate
+        # If none of the candidates match, use the first available generative model
+        for m_name in available:
+            if "gemini" in m_name:
+                return True, m_name
+        return False, ""
+    except Exception:
+        return False, ""
+
+
+def _call_json(prompt: str, image_parts: list | None = None) -> dict | list:
+    """Call Gemini with JSON response mode. Returns parsed JSON."""
+    client = _get_client()
+    if not client:
+        raise RuntimeError("API key 未設定")
+    model = st.session_state.api_model
+    contents = []
+    if image_parts:
+        for img_bytes, mime in image_parts:
+            contents.append(types.Part.from_bytes(
+                data=img_bytes, mime_type=mime))
+    contents.append(prompt)
+    response = client.models.generate_content(
+        model=model,
+        contents=contents,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            temperature=0.9,
+        ),
+    )
+    return json.loads(response.text)
+
+
+def _build_tone_style_block() -> str:
+    """Build prompt fragment from tone/style/audience/extra settings."""
+    parts = []
+    tone_map = {0: "溫暖柔和", 25: "寧靜治癒", 50: "平衡自然", 75: "明亮活潑", 100: "活潑有力"}
+    tone = tone_map.get(st.session_state.prompt_tone, "平衡自然")
+    parts.append(f"語氣風格：{tone}")
+    if st.session_state.prompt_styles:
+        parts.append(f"創作風格：{', '.join(st.session_state.prompt_styles)}")
+    if st.session_state.prompt_audience and st.session_state.prompt_audience != "不指定":
+        parts.append(f"目標受眾：{st.session_state.prompt_audience}")
+    if st.session_state.prompt_extra:
+        parts.append(f"額外指示：{st.session_state.prompt_extra}")
+    return "\n".join(parts)
+
+
+def _prepare_images() -> list | None:
+    """Prepare uploaded images as (bytes, mime_type) tuples for API."""
+    imgs = st.session_state.get("uploaded_images", [])
+    if not imgs:
+        return None
+    parts = []
+    for f in imgs[:5]:  # 最多 5 張
+        data = f.getvalue()
+        mime = f.type or "image/jpeg"
+        parts.append((data, mime))
+    return parts
+
+
+def ai_generate_tracklist(n: int, context: str) -> list:
+    """Generate tracklist via Gemini."""
+    style_block = _build_tone_style_block()
+    prompt = f"""You are a lofi music curator creating a tracklist for a YouTube lofi playlist.
+
+Generate {n} lofi track concepts. Style: cozy, introspective, lofi/chillhop, quiet everyday moments.
+
+{f"User's creative context: {context}" if context else ""}
+{style_block}
+
+Return a JSON array of exactly {n} objects. Each object must have:
+- "en_title": English title, 2-5 words, poetic
+- "zh_title": Traditional Chinese title, 3-6 characters
+- "en_theme": English theme sentence, ≤15 words
+- "zh_theme": Traditional Chinese theme sentence
+
+Return ONLY the JSON array, no wrapping object."""
+
+    image_parts = _prepare_images()
+    data = _call_json(prompt, image_parts)
+    if isinstance(data, dict) and "tracklist" in data:
+        data = data["tracklist"]
+    for i, item in enumerate(data, 1):
+        item["id"] = i
+    return data[:n]
+
+
+def ai_generate_assets(selected_outputs: list, context: str, tracklist: list | None) -> dict:
+    """Generate titles, tags, stories via a single Gemini call."""
+    style_block = _build_tone_style_block()
+
+    tracklist_text = ""
+    if tracklist:
+        lines = []
+        for s in tracklist:
+            lines.append(
+                f"  - 《{s.get('en_title', '')}》({s.get('zh_title', '')}): {s.get('en_theme', '')}")
+        tracklist_text = "Tracklist for reference:\n" + "\n".join(lines)
+
+    # 構建需要生成的項目描述
+    output_specs = []
+    if "titles" in selected_outputs:
+        output_specs.append("""- "titles": array of 12 English YouTube titles, ranked by predicted CTR (high→low).
+  Each title MUST follow this exact format: "{Catchy Name 2-5 words}… {Genre with Lofi/R&B/Jazz keyword} for {Use Case 2-3 words} {emoji} {emoji}"
+  Example: "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm ☕ 🌙"
+- "titles_zh": array of 12 Traditional Chinese titles, 1:1 corresponding to the English titles.""")
+    if "tags" in selected_outputs:
+        output_specs.append("""- "tags": a single comma-separated string of 35-45 YouTube SEO tags.
+  Mix broad keywords (e.g. lofi, chill music) with niche keywords (e.g. cozy rainy night lofi).
+  Total character count should be 450-500.""")
+    if "long_story" in selected_outputs:
+        output_specs.append("""- "long_story": English prose, 4-6 paragraphs, 280-380 words.
+  Second person "you". Immersive slice-of-life style. Paragraphs separated by \\n\\n.
+- "long_story_zh": Traditional Chinese translation with equal poetic quality.""")
+    if "short_story" in selected_outputs:
+        output_specs.append("""- "short_story": English Instagram-style caption, 3-4 paragraphs, ~130 words. Include emojis.
+  Paragraphs separated by \\n\\n.
+- "short_story_zh": Traditional Chinese translation.""")
+
+    specs_text = "\n".join(output_specs)
+
+    prompt = f"""You are a YouTube SEO copywriter specializing in lofi/chill music channels.
+
+{f"User's creative context: {context}" if context else "No specific context provided — create a cozy lofi theme."}
+{tracklist_text}
+{style_block}
+
+Generate the following as a single JSON object:
+{specs_text}
+
+Return ONLY the JSON object."""
+
+    image_parts = _prepare_images()
+    return _call_json(prompt, image_parts)
+
+
+def ai_generate(selected_outputs: list, n_songs: int, context: str) -> dict:
+    """Full AI generation pipeline."""
+    result = {}
+
+    # Step 1: 生成歌單（如果需要）
+    if "tracklist" in selected_outputs:
+        tracklist = ai_generate_tracklist(n_songs, context)
+        result["tracklist"] = tracklist
+    else:
+        tracklist = None
+
+    # Step 2: 生成其他素材（標題、標籤、故事）
+    asset_outputs = [k for k in selected_outputs if k != "tracklist"]
+    if asset_outputs:
+        assets = ai_generate_assets(
+            asset_outputs, context, tracklist or result.get("tracklist"))
+        result.update(assets)
+
+    return result
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -361,9 +644,9 @@ _BASE_CSS = (
     "html, body { background: transparent; font-family: 'Poppins', -apple-system, sans-serif; overflow-x: hidden; color: #e8e8f0; }"
     ".lbl { font-size: 11px; font-weight: 700; color: #00ffcc; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 12px; }"
     ".card { background: rgba(14,14,24,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px 22px; }"
-    ".copy-btn { background: rgba(0,255,204,0.06); border: 1px solid rgba(0,255,204,0.20); border-radius: 8px; color: #00ffcc; font-size: 11px; font-weight: 600; padding: 5px 14px; cursor: pointer; font-family: inherit; transition: all 0.2s; }"
+    ".copy-btn { background: rgba(0,255,204,0.06); border: 1px solid rgba(0,255,204,0.20); border-radius: 8px; color: #00ffcc; font-size: 11px; font-weight: 600; padding: 5px 14px; cursor: pointer; font-family: inherit; transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s; }"
     ".copy-btn:hover, .copy-btn.ok { background: rgba(0,255,204,0.15); border-color: rgba(0,255,204,0.45); }"
-    ".trans-btn { background: rgba(176,38,255,0.06); border: 1px solid rgba(176,38,255,0.20); border-radius: 8px; color: #b026ff; font-size: 11px; font-weight: 600; padding: 5px 12px; cursor: pointer; font-family: inherit; transition: all 0.2s; margin-right: 6px; }"
+    ".trans-btn { background: rgba(176,38,255,0.06); border: 1px solid rgba(176,38,255,0.20); border-radius: 8px; color: #b026ff; font-size: 11px; font-weight: 600; padding: 5px 12px; cursor: pointer; font-family: inherit; transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s; margin-right: 6px; }"
     ".trans-btn:hover { background: rgba(176,38,255,0.18); border-color: rgba(176,38,255,0.45); }"
     ".content { color: rgba(255,255,255,0.72); font-size: 14px; line-height: 1.9; }"
     ".btn-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-bottom: 14px; }"
@@ -379,8 +662,13 @@ _BASE_CSS = (
     ".sinfo { flex: 1; } .stitle { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.88); margin-bottom: 6px; line-height: 1.4; }"
     ".stheme-lbl { font-size: 10px; color: #00ffcc; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }"
     ".stheme-en { font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.5; margin-bottom: 2px; }"
-    ".stheme-zh { font-size: 12px; color: rgba(255,255,255,0.40); line-height: 1.5; font-style: italic; }"
+    ".stheme-zh { font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.5; font-style: italic; }"
     "@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }"
+    "::-webkit-scrollbar { width: 6px; height: 6px; }"
+    "::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }"
+    "::-webkit-scrollbar-thumb { background: rgba(0,255,204,0.25); border-radius: 3px; }"
+    "::-webkit-scrollbar-thumb:hover { background: rgba(0,255,204,0.40); }"
+    "html { scrollbar-color: rgba(0,255,204,0.25) rgba(255,255,255,0.02); scrollbar-width: thin; }"
 )
 
 _JS = (
@@ -538,21 +826,99 @@ _OPTIONS = [
 _MATERIAL_LABELS = {
     "titles": "標題", "tags": "標籤",
     "long_story": "長故事", "short_story": "短故事", "tracklist": "歌單",
+    "images": "圖片",
 }
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-#  HEADER
-# ═════════════════════════════════════════════════════════════════════════════
-st.markdown(
-    "<div class='hdr'>"
-    "<div class='hdr-left'>"
-    "<span class='hdr-title'>Title Studio</span>"
-    "<span class='demo-pill'>Demo</span>"
-    "<span class='hdr-sub'>sLoth rAdio</span>"
-    "</div></div>",
-    unsafe_allow_html=True,
+_api_st = st.session_state.api_status
+_api_dot = "on" if _api_st == "connected" else (
+    "wait" if _api_st == "validating" else "off")
+_api_txt = (
+    f"Gemini · {st.session_state.api_model}" if _api_st == "connected"
+    else ("驗證中..." if _api_st == "validating" else "未連接")
 )
+_hist_count = len(st.session_state.history)
+
+# ═════════════════════════════════════════════════════════════════════════
+#  NAVBAR ─ single-row: brand | buttons | status
+# ═════════════════════════════════════════════════════════════════════════
+with st.container(key="navbar"):
+    _c_brand, _c_sep, _c_key, _c_hist, _c_set, _c_reset, _c_space, _c_status = st.columns(
+        [1.8, 0.12, 0.5, 0.5, 0.5, 0.5, 4, 1.6], vertical_alignment="center"
+    )
+    # ── 品牌標題 ──
+    with _c_brand:
+        st.markdown(
+            "<span class='nb-brand'>Title Studio</span>"
+            "<span class='nb-sub'>sLoth rAdio</span>",
+            unsafe_allow_html=True,
+        )
+    # ── 分隔線 ──
+    with _c_sep:
+        st.markdown("<div class='nav-sep'></div>", unsafe_allow_html=True)
+    # ── 🔑 API Key ──
+    with _c_key:
+        _api_pop = st.popover("🔑", use_container_width=True, help="API Key 設定")
+        with _api_pop:
+            st.markdown("##### 🔑 API Key 設定")
+            _new_key = st.text_input(
+                "api_key_input", value=st.session_state.api_key,
+                type="password", placeholder="輸入 Google Gemini API Key...",
+                label_visibility="collapsed",
+            )
+            if _new_key != st.session_state.api_key:
+                st.session_state.api_key = _new_key
+                if _new_key:
+                    st.session_state.api_status = "validating"
+                    ok, model = _validate_api_key(_new_key)
+                    if ok:
+                        st.session_state.api_status = "connected"
+                        st.session_state.api_model = model
+                    else:
+                        st.session_state.api_status = "disconnected"
+                        st.session_state.api_model = ""
+                else:
+                    st.session_state.api_status = "disconnected"
+                    st.session_state.api_model = ""
+                st.rerun()
+            if st.session_state.api_status == "connected":
+                st.caption(f"✅ 已連接 · 模型：{st.session_state.api_model}")
+            elif st.session_state.api_status == "disconnected" and st.session_state.api_key:
+                st.caption("❌ API Key 無效或無可用模型")
+            else:
+                st.caption("💡 輸入 API Key 啟用 Gemini AI。未連接時使用模擬資料。")
+    # ── 📋 歷史 ──
+    with _c_hist:
+        if st.button("📋", key="nb_hist_btn", use_container_width=True, help=f"歷史記錄 ({_hist_count})"):
+            st.session_state.view_mode = "history" if st.session_state.view_mode != "history" else "wizard"
+            st.rerun()
+    # ── ⚙️ 設定 ──
+    with _c_set:
+        _settings_pop = st.popover("⚙️", use_container_width=True, help="設定")
+        with _settings_pop:
+            st.markdown("##### ⚙️ 設定")
+            st.markdown("**模型偏好**")
+            st.selectbox(
+                "model_pref", options=["Gemini 2.5 Flash (推薦)", "Gemini 2.5 Pro", "Gemini 2.0 Flash"],
+                index=0, label_visibility="collapsed", key="model_select",
+            )
+            st.markdown("**介面語言**")
+            st.selectbox(
+                "lang_pref", options=["繁體中文", "English"],
+                index=0, label_visibility="collapsed", key="lang_select",
+            )
+            st.caption("設定會在下次生成時生效。")
+    # ── 🔄 重置 ──
+    with _c_reset:
+        if st.button("🔄", key="nb_reset_btn", use_container_width=True, help="重置所有步驟"):
+            reset_pipeline()
+            st.rerun()
+    # ── 狀態指示器（右側） ──
+    with _c_status:
+        st.markdown(
+            f"<div class='api-status-wrap'><div class='api-status'><span class='api-dot {_api_dot}'></span><span class='api-lbl'>{_api_txt}</span></div></div>",
+            unsafe_allow_html=True,
+        )
 
 # ── Stepper ──
 step = st.session_state.step
@@ -565,6 +931,74 @@ for _i, _lbl in enumerate(_steps, 1):
         _sh += f"<div class='s-line {'done' if _i < step else ''}'></div>"
 _sh += "</div>"
 st.markdown(_sh, unsafe_allow_html=True)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+#  HISTORY VIEW
+# ═════════════════════════════════════════════════════════════════════════════
+if st.session_state.view_mode == "history":
+    st.markdown("<div class='glass'>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='sec-title'>📋 歷史記錄</div>"
+        "<div class='sec-desc'>點擊任意記錄可查看完整結果</div>",
+        unsafe_allow_html=True,
+    )
+
+    _history = st.session_state.history
+    if not _history:
+        st.markdown(
+            "<div style='text-align:center;padding:40px 0;color:rgba(255,255,255,0.55);font-size:14px;'>"
+            "尚無歷史記錄<br><span style='font-size:12px;'>完成一次生成後會自動保存</span></div>",
+            unsafe_allow_html=True,
+        )
+    else:
+        for hi, entry in enumerate(reversed(_history)):
+            _ts = entry.get("timestamp", "")
+            _types = " ".join(
+                f"<span class='chip chip-teal'>{_MATERIAL_LABELS.get(k, k)}</span>"
+                for k in entry.get("selected_outputs", [])
+            )
+            _preview = entry.get("user_context", "")[:80]
+            if len(entry.get("user_context", "")) > 80:
+                _preview += "..."
+            _no_input = '<em style="color:rgba(255,255,255,0.50);">無輸入文字</em>'
+            _summary_html = _he(_preview) if _preview else _no_input
+            _mode = entry.get("mode", "demo")
+            _mode_badge = (
+                "<span style='font-size:10px;color:#00ffcc;font-weight:600;margin-left:8px;'>AI</span>"
+                if _mode == "ai" else
+                "<span style='font-size:10px;color:rgba(255,180,0,0.85);font-weight:600;margin-left:8px;'>Demo</span>"
+            )
+            st.markdown(
+                f"<div class='hist-card'>"
+                f"<div class='hist-time'>{_he(_ts)}{_mode_badge}</div>"
+                f"<div style='margin:6px 0;'>{_types}</div>"
+                f"<div class='hist-summary'>{_summary_html}</div>"
+                f"</div>",
+                unsafe_allow_html=True,
+            )
+            if st.button(f"📊 查看結果", key=f"hist_view_{hi}", use_container_width=True):
+                st.session_state.results = entry.get("results", {})
+                st.session_state.selected_outputs = entry.get(
+                    "selected_outputs", [])
+                st.session_state.user_context = entry.get("user_context", "")
+                st.session_state.existing_materials = entry.get(
+                    "existing_materials", [])
+                st.session_state.n_songs = entry.get("n_songs", 15)
+                st.session_state.step = 4
+                st.session_state.view_mode = "wizard"
+                st.rerun()
+
+    st.markdown("<div class='nav-spacer'></div>", unsafe_allow_html=True)
+    if st.button("← 返回精靈", key="hist_back", use_container_width=True):
+        st.session_state.view_mode = "wizard"
+        st.rerun()
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("<div class='footer'>sLoth rAdio · Title Studio</div>",
+                unsafe_allow_html=True)
+    st.stop()
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -616,17 +1050,6 @@ if step == 1:
 
     st.markdown("</div>", unsafe_allow_html=True)  # close .glass
 
-    # Feature cards (landing — only when nothing selected)
-    if n_sel == 0:
-        st.markdown(
-            "<div class='feat-grid'>"
-            "<div class='feat-card'><div class='feat-icon'>✨</div><div class='feat-title'>動態嚮導</div><div class='feat-desc'>根據你嘅選擇，自動調整問題同 AI Prompt</div></div>"
-            "<div class='feat-card'><div class='feat-icon'>🎯</div><div class='feat-title'>精準生成</div><div class='feat-desc'>告訴 AI 你已有咩材料，生成更貼切嘅結果</div></div>"
-            "<div class='feat-card'><div class='feat-icon'>📋</div><div class='feat-title'>按需展示</div><div class='feat-desc'>只顯示你揀咗嘅內容，版面乾淨利落</div></div>"
-            "</div>",
-            unsafe_allow_html=True,
-        )
-
 
 # ═════════════════════════════════════════════════════════════════════════════
 #  STEP 2 — 現有材料
@@ -643,32 +1066,29 @@ elif step == 2:
     gen_chips = " ".join(
         f"<span class='chip chip-teal'>{_MATERIAL_LABELS[k]}</span>" for k in st.session_state.selected_outputs)
     st.markdown(
-        f"<div class='info-card'><span style='font-size:12px;color:rgba(255,255,255,0.45);'>你要生成：</span><br>{gen_chips}</div>",
+        f"<div class='info-card'><span style='font-size:12px;color:rgba(255,255,255,0.55);'>你要生成：</span><br>{gen_chips}</div>",
         unsafe_allow_html=True,
     )
 
-    # Filter out items the user wants to generate
+    # Filter out items the user wants to generate + always include images
     available = [(k, ic, nm, ds) for k, ic, nm,
                  ds in _OPTIONS if k not in st.session_state.selected_outputs]
+    # Append image as a material option (always available)
+    available.append(("images", "🖼️", "圖片", "上傳參考圖讓 AI 理解視覺風格"))
 
-    if not available:
-        st.markdown(
-            "<div style='text-align:center;padding:32px 0;color:rgba(255,255,255,0.40);font-size:14px;'>"
-            "你選擇生成所有類型，冇需要提供已有材料。直接跳到輸入頁面吧！</div>",
-            unsafe_allow_html=True,
-        )
-    else:
-        cols = st.columns(len(available), gap="medium")
-        for ci, (key, icon, name, _) in enumerate(available):
-            with cols[ci]:
-                is_sel = key in st.session_state.existing_materials
-                if st.button(f"{icon}\n\n**已有{name}**", key=f"mat_{key}",
-                             type="primary" if is_sel else "secondary", use_container_width=True):
-                    if is_sel:
-                        st.session_state.existing_materials.remove(key)
-                    else:
-                        st.session_state.existing_materials.append(key)
-                    st.rerun()
+    cols = st.columns(len(available), gap="medium")
+    for ci, (key, icon, name, _) in enumerate(available):
+        with cols[ci]:
+            is_sel = key in st.session_state.existing_materials
+            if st.button(f"{icon}\n\n**已有{name}**", key=f"mat_{key}",
+                         type="primary" if is_sel else "secondary", use_container_width=True):
+                if is_sel:
+                    st.session_state.existing_materials.remove(key)
+                    if key == "images":
+                        st.session_state.uploaded_images = []
+                else:
+                    st.session_state.existing_materials.append(key)
+                st.rerun()
 
     n_mat = len(st.session_state.existing_materials)
     st.markdown(
@@ -709,9 +1129,9 @@ elif step == 3:
     mat_chips = " ".join(
         f"<span class='chip chip-purple'>{_MATERIAL_LABELS[k]}</span>" for k in st.session_state.existing_materials)
 
-    summary = f"<div class='info-card'><div style='margin-bottom:8px;'><span style='font-size:12px;color:rgba(255,255,255,0.45);'>要生成：</span> {gen_chips}</div>"
+    summary = f"<div class='info-card'><div style='margin-bottom:8px;'><span style='font-size:12px;color:rgba(255,255,255,0.55);'>要生成：</span> {gen_chips}</div>"
     if mat_chips:
-        summary += f"<div><span style='font-size:12px;color:rgba(255,255,255,0.45);'>已有材料：</span> {mat_chips}</div>"
+        summary += f"<div><span style='font-size:12px;color:rgba(255,255,255,0.55);'>已有材料：</span> {mat_chips}</div>"
     summary += "</div>"
     st.markdown(summary, unsafe_allow_html=True)
 
@@ -740,10 +1160,33 @@ elif step == 3:
     )
     st.session_state.user_context = user_input
 
+    # Image uploader (when user selected "已有圖片")
+    if "images" in st.session_state.existing_materials:
+        st.markdown(
+            "<div style='color:rgba(255,255,255,0.55);font-size:11px;letter-spacing:2px;"
+            "text-transform:uppercase;margin:14px 0 4px;'>🖼️ 上傳參考圖片</div>",
+            unsafe_allow_html=True,
+        )
+        uploaded = st.file_uploader(
+            "upload_images",
+            type=["png", "jpg", "jpeg", "webp", "gif"],
+            accept_multiple_files=True,
+            label_visibility="collapsed",
+        )
+        if uploaded:
+            st.session_state.uploaded_images = uploaded
+            # Preview thumbnails
+            thumb_cols = st.columns(min(len(uploaded), 5))
+            for ti, f in enumerate(uploaded[:5]):
+                with thumb_cols[ti]:
+                    st.image(f, use_container_width=True, caption=f.name)
+            if len(uploaded) > 5:
+                st.caption(f"...及另外 {len(uploaded) - 5} 張圖片")
+
     # Song count slider
     if "tracklist" in st.session_state.selected_outputs:
         st.markdown(
-            "<div style='color:rgba(255,255,255,0.45);font-size:11px;letter-spacing:2px;"
+            "<div style='color:rgba(255,255,255,0.55);font-size:11px;letter-spacing:2px;"
             "text-transform:uppercase;margin:14px 0 4px;'>🎚️ 歌單數量</div>",
             unsafe_allow_html=True,
         )
@@ -751,6 +1194,57 @@ elif step == 3:
             "n_songs", min_value=1, max_value=20,
             value=st.session_state.n_songs, step=1,
             label_visibility="collapsed",
+        )
+
+    # ── Prompt 微調器 ──
+    with st.expander("🎛️ 進階設定", expanded=False):
+        st.markdown("<div class='tuner-label'>🎤 語氣</div>",
+                    unsafe_allow_html=True)
+        _tone_labels = {0: "溫暖柔和", 25: "寧靜治癒",
+                        50: "平衡自然", 75: "明亮活潑", 100: "活潑有力"}
+        st.session_state.prompt_tone = st.slider(
+            "tone", min_value=0, max_value=100,
+            value=st.session_state.prompt_tone, step=25,
+            format="%d%%", label_visibility="collapsed", key="tone_slider",
+        )
+        _tone_txt = _tone_labels.get(st.session_state.prompt_tone, "平衡自然")
+        st.markdown(
+            f"<div style='text-align:center;font-size:12px;color:rgba(255,255,255,0.55);margin-top:-8px;'>{_tone_txt}</div>",
+            unsafe_allow_html=True,
+        )
+
+        st.markdown("<div class='tuner-label'>🎨 風格</div>",
+                    unsafe_allow_html=True)
+        _style_options = ["詩意", "神秘", "治癒", "復古", "都市", "自然", "夢幻", "懷舊"]
+        _style_cols = st.columns(4)
+        for si, style in enumerate(_style_options):
+            with _style_cols[si % 4]:
+                _is_active = style in st.session_state.prompt_styles
+                if st.button(
+                    f"{'✓ ' if _is_active else ''}{style}",
+                    key=f"style_{style}",
+                    type="primary" if _is_active else "secondary",
+                    use_container_width=True,
+                ):
+                    if _is_active:
+                        st.session_state.prompt_styles.remove(style)
+                    else:
+                        st.session_state.prompt_styles.append(style)
+                    st.rerun()
+
+        st.markdown("<div class='tuner-label'>👥 目標受眾</div>",
+                    unsafe_allow_html=True)
+        st.session_state.prompt_audience = st.radio(
+            "audience", options=["讀書/專注", "睡眠/放鬆", "咖啡廳/日常", "工作/生產力", "不指定"],
+            index=4, horizontal=True, label_visibility="collapsed", key="audience_radio",
+        )
+
+        st.markdown("<div class='tuner-label'>💡 額外指示</div>",
+                    unsafe_allow_html=True)
+        st.session_state.prompt_extra = st.text_input(
+            "extra_prompt", value=st.session_state.prompt_extra,
+            placeholder="例如：帶有日式和風元素、避免使用 emoji...",
+            label_visibility="collapsed", key="extra_input",
         )
 
     # Navigation
@@ -767,14 +1261,40 @@ elif step == 3:
     st.markdown("</div>", unsafe_allow_html=True)  # close .glass
 
     if gen_btn:
-        with st.status("⚙️ Demo 生成中...", expanded=True) as status:
-            st.write("🤖 使用 Mock Data 模擬 AI 生成...")
-            results = mock_generate(
-                st.session_state.selected_outputs, st.session_state.n_songs)
-            if results:
-                st.session_state.results = results
-                status.update(label="✅ 完成！", state="complete", expanded=False)
-            else:
+        _use_ai = st.session_state.api_status == "connected"
+        _mode_label = "Gemini AI" if _use_ai else "Demo（模擬資料）"
+        with st.status(f"⚙️ {_mode_label} 生成中...", expanded=True) as status:
+            try:
+                if _use_ai:
+                    st.write(f"🤖 使用 {st.session_state.api_model} 生成中...")
+                    results = ai_generate(
+                        st.session_state.selected_outputs,
+                        st.session_state.n_songs,
+                        st.session_state.user_context,
+                    )
+                else:
+                    st.write("🤖 使用模擬資料（未連接 API）...")
+                    results = mock_generate(
+                        st.session_state.selected_outputs, st.session_state.n_songs)
+                if results:
+                    st.session_state.results = results
+                    # 儲存到歷史記錄
+                    st.session_state.history.append({
+                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        "selected_outputs": list(st.session_state.selected_outputs),
+                        "existing_materials": list(st.session_state.existing_materials),
+                        "user_context": st.session_state.user_context,
+                        "n_songs": st.session_state.n_songs,
+                        "results": dict(results),
+                        "mode": "ai" if _use_ai else "demo",
+                    })
+                    status.update(
+                        label="✅ 完成！", state="complete", expanded=False)
+                else:
+                    status.update(label="❌ 生成失敗",
+                                  state="error", expanded=False)
+            except Exception as e:
+                st.error(f"生成失敗：{e}")
                 status.update(label="❌ 生成失敗", state="error", expanded=False)
         if st.session_state.results:
             st.session_state.step = 4
@@ -806,9 +1326,116 @@ elif step == 4:
             unsafe_allow_html=True,
         )
 
-    # Dashboard iframe
+    # Show uploaded image thumbnails
+    imgs = st.session_state.get("uploaded_images", [])
+    if imgs:
+        st.markdown(
+            "<div style='color:rgba(255,255,255,0.55);font-size:11px;letter-spacing:2px;"
+            "text-transform:uppercase;margin-bottom:8px;'>🖼️ 參考圖片</div>",
+            unsafe_allow_html=True,
+        )
+        thumb_cols = st.columns(min(len(imgs), 5))
+        for ti, f in enumerate(imgs[:5]):
+            with thumb_cols[ti]:
+                st.image(f, use_container_width=True)
+        if len(imgs) > 5:
+            st.caption(f"...及另外 {len(imgs) - 5} 張圖片")
+
+    # ── 匯出列 ──
     r = st.session_state.results
     selected = st.session_state.selected_outputs
+
+    def _build_export_text(res: dict, sel: list) -> str:
+        """構建純文字匯出內容"""
+        parts = []
+        if "titles" in sel and res.get("titles"):
+            parts.append("═══ YouTube 標題 ═══")
+            for i, t in enumerate(res["titles"], 1):
+                parts.append(f"  {i}. {t}")
+            if res.get("titles_zh"):
+                parts.append("\n── 中文 ──")
+                for i, t in enumerate(res["titles_zh"], 1):
+                    parts.append(f"  {i}. {t}")
+        if "tags" in sel and res.get("tags"):
+            parts.append("\n═══ SEO Tags ═══")
+            parts.append(res["tags"])
+        if "long_story" in sel and res.get("long_story"):
+            parts.append("\n═══ Long Story (EN) ═══")
+            parts.append(res["long_story"])
+            if res.get("long_story_zh"):
+                parts.append("\n── 中文 ──")
+                parts.append(res["long_story_zh"])
+        if "short_story" in sel and res.get("short_story"):
+            parts.append("\n═══ Short Story (EN) ═══")
+            parts.append(res["short_story"])
+            if res.get("short_story_zh"):
+                parts.append("\n── 中文 ──")
+                parts.append(res["short_story_zh"])
+        if "tracklist" in sel and res.get("tracklist"):
+            parts.append("\n═══ Tracklist ═══")
+            for s in res["tracklist"]:
+                parts.append(
+                    f"  {s.get('id','')}. 《{s.get('en_title','')}》 {s.get('zh_title','')}")
+                parts.append(
+                    f"     Theme: {s.get('en_theme','')} / {s.get('zh_theme','')}")
+        return "\n".join(parts)
+
+    # ── 匯出按鈕列 ──
+    st.markdown(
+        "<div class='export-bar'><span class='export-label'>📥 匯出</span></div>",
+        unsafe_allow_html=True,
+    )
+    _ex1, _ex2 = st.columns(2)
+    with _ex1:
+        _dl_txt_pop = st.popover("📄 下載 TXT", use_container_width=True)
+        with _dl_txt_pop:
+            st.markdown("##### 📄 選擇要匯出的項目")
+            _txt_sel = []
+            for _ek, _eicon, _ename, _ in _OPTIONS:
+                if _ek in selected and r.get(_ek if _ek != "titles" else "titles"):
+                    if st.checkbox(f"{_eicon} {_ename}", value=True, key=f"txt_sel_{_ek}"):
+                        _txt_sel.append(_ek)
+            if _txt_sel:
+                _filtered_txt = _build_export_text(r, _txt_sel)
+                st.download_button(
+                    "⬇️ 確認下載 TXT", _filtered_txt,
+                    file_name="title_studio_export.txt",
+                    mime="text/plain", use_container_width=True, key="dl_txt",
+                )
+            else:
+                st.caption("請至少選擇一項")
+    with _ex2:
+        _dl_json_pop = st.popover("📦 下載 JSON", use_container_width=True)
+        with _dl_json_pop:
+            st.markdown("##### 📦 選擇要匯出的項目")
+            _json_sel = []
+            for _ek, _eicon, _ename, _ in _OPTIONS:
+                if _ek in selected and r.get(_ek if _ek != "titles" else "titles"):
+                    if st.checkbox(f"{_eicon} {_ename}", value=True, key=f"json_sel_{_ek}"):
+                        _json_sel.append(_ek)
+            if _json_sel:
+                _filtered_results = {}
+                for _fk in _json_sel:
+                    for _rk, _rv in r.items():
+                        if _rk.startswith(_fk):
+                            _filtered_results[_rk] = _rv
+                _filtered_json = json.dumps({
+                    "metadata": {
+                        "generated_at": datetime.now().isoformat(),
+                        "selected_outputs": _json_sel,
+                        "user_context": st.session_state.user_context[:200],
+                    },
+                    "results": _filtered_results,
+                }, ensure_ascii=False, indent=2)
+                st.download_button(
+                    "⬇️ 確認下載 JSON", _filtered_json,
+                    file_name="title_studio_export.json",
+                    mime="application/json", use_container_width=True, key="dl_json",
+                )
+            else:
+                st.caption("請至少選擇一項")
+
+    # Dashboard iframe
     html = build_dashboard(r, selected)
 
     h = 0
@@ -845,5 +1472,5 @@ elif step == 4:
 # ═════════════════════════════════════════════════════════════════════════════
 #  FOOTER
 # ═════════════════════════════════════════════════════════════════════════════
-st.markdown("<div class='footer'>sLoth rAdio · Title Studio · Dynamic Wizard Demo</div>",
+st.markdown("<div class='footer'>sLoth rAdio · Title Studio</div>",
             unsafe_allow_html=True)
