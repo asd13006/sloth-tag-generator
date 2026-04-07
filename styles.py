@@ -122,10 +122,10 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     font-size: 22px !important;
 }
 /* 移除 navbar 內 Streamlit 預設間距，並強制垂直置中 */
-.st-key-navbar [data-testid="column"] { display: flex; flex-direction: column; justify-content: center; }
+.st-key-navbar [data-testid="column"] { display: flex; flex-direction: column; justify-content: center; align-items: center; }
 .st-key-navbar [data-testid="stVerticalBlock"] { gap: 0 !important; justify-content: center; }
 .st-key-navbar [data-testid="stHorizontalBlock"] { gap: 0.4rem !important; align-items: center !important; }
-.st-key-navbar [data-testid="stElementContainer"] { margin: 0 !important; display: flex; align-items: center; }
+.st-key-navbar [data-testid="stElementContainer"] { margin: 0 !important; display: flex; align-items: center; height: 100%; }
 
 /* ── Stepper ── */
 .stepper { display: flex; align-items: center; margin: 16px 0 24px; }
