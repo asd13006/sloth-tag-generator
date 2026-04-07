@@ -324,9 +324,8 @@ _MOCK_LONG_STORY_EN = (
     "Outside, the city feels far away. Streetlights blur into soft halos through the rain, "
     "and the occasional car passes like a whisper. You open your notebook, but there's no rush to write. "
     "Tonight, just being here is enough.\n\n"
-    "The barista wipes down the espresso machine with practiced ease, glancing at the clock but never hurrying. "
-    "A stack of old paperbacks sits on the shelf by the door — someone left them here months ago, "
-    "and now they belong to no one and everyone.\n\n"
+    "The barista glances at the clock but never hurries. "
+    "A stack of old paperbacks sits on the shelf by the door — they belong to no one and everyone.\n\n"
     "You pick up your pen. The first sentence comes slowly, then another, then a whole paragraph "
     "that feels like it was always waiting inside you. The rain keeps its gentle rhythm, "
     "and the lofi beats carry you forward, one soft note at a time.\n\n"
@@ -351,20 +350,22 @@ _MOCK_LONG_STORY_ZH = (
     "往往是在安靜的時刻、無人注視時寫下的。"
 )
 _MOCK_SHORT_STORY_EN = (
-    "Late night. Warm lights. A half-finished cup of tea and nowhere to be. ☕🌙\n\n"
-    "The rain taps gently on the window while lofi melodies fill the quiet corners of the café. "
-    "You write. You dream. You breathe. 📝✨\n\n"
-    "Some nights don't need a plan — just a playlist, a pen, and the permission to simply exist. "
-    "This is one of those nights. 🌧️💫\n\n"
-    "Stay cozy. Stay curious. The best stories begin in silence. 🍃"
+    "Making Tea 🍵\n"
+    "Evening settles outside the window 🌙. You fill the kettle and set it on the stove, "
+    "then choose your favorite cup—the one with the crack in the glaze you never bothered to replace.\n\n"
+    "The kettle hums low. When it whistles, you pour. Steam rises, fogging the window above the sink 💨. "
+    "You watch the water darken, then wrap your hands around the warm cup, letting the heat seep through ☕.\n\n"
+    "When you finally take a slow sip, you carry the cup to the living room and sink into the couch 🛋️. "
+    "The last light has gone. Only the warmth in your hands and the slow, easy quiet of the evening 🌿."
 )
 _MOCK_SHORT_STORY_ZH = (
-    "深夜。暖光。一杯喝了一半的茶，哪裡也不用去。☕🌙\n\n"
-    "雨輕輕敲著窗戶，lofi 旋律填滿了咖啡廳安靜的角落。"
-    "你書寫。你做夢。你呼吸。📝✨\n\n"
-    "有些夜晚不需要計畫——只需要一張播放清單、一支筆，"
-    "和允許自己單純存在的勇氣。今夜就是這樣的夜晚。🌧️💫\n\n"
-    "保持溫暖。保持好奇。最好的故事，始於寂靜。🍃"
+    "泡一杯茶 🍵\n"
+    "夜色在窗外慢慢沉澱 🌙。你把水壺裝滿放上爐子，"
+    "然後挑了你最愛的那只杯子——釉面上有道裂痕，你從沒想過要換掉它。\n\n"
+    "水壺發出低沉的嗡鳴。壺嘴一響，你傾倒熱水。蒸氣升起，在水槽上方的窗玻璃上凝成一層薄霧 💨。"
+    "你看著茶湯漸漸變深，然後雙手捧住溫熱的杯身，讓暖意慢慢滲透 ☕。\n\n"
+    "當你終於小啜一口，便端著杯子走進客廳，陷入沙發裡 🛋️。"
+    "最後的光已經散去。只剩手中的溫暖，和這個夜晚緩慢而安靜的呼吸 🌿。"
 )
 _MOCK_TRACKLIST = [
     {"id": 1, "en_title": "Midnight Pages", "zh_title": "午夜書頁",
@@ -550,22 +551,26 @@ def ai_generate_assets(selected_outputs: list, context: str, tracklist: list | N
     # 構建需要生成的項目描述
     output_specs = []
     if "titles" in selected_outputs:
-        output_specs.append("""- "titles": array of 12 English YouTube titles, ranked by predicted CTR (high→low).
+        output_specs.append("""- "titles": array of 5 English YouTube titles, ranked by predicted CTR (high→low).
   Each title MUST follow this exact format: "{Catchy Name 2-5 words}… {Genre with Lofi/R&B/Jazz keyword} for {Use Case 2-3 words} {emoji} {emoji}"
   Example: "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm ☕ 🌙"
-- "titles_zh": array of 12 Traditional Chinese titles, 1:1 corresponding to the English titles.""")
+- "titles_zh": array of 5 Traditional Chinese titles, 1:1 corresponding to the English titles.""")
     if "tags" in selected_outputs:
         output_specs.append("""- "tags": a single comma-separated string of 35-45 YouTube SEO tags.
   Mix broad keywords (e.g. lofi, chill music) with niche keywords (e.g. cozy rainy night lofi).
   Total character count should be 450-500.""")
     if "long_story" in selected_outputs:
-        output_specs.append("""- "long_story": English prose, 4-6 paragraphs, 280-380 words.
-  Second person "you". Immersive slice-of-life style. Paragraphs separated by \\n\\n.
-- "long_story_zh": Traditional Chinese translation with equal poetic quality.""")
+        output_specs.append("""- "long_story": English prose, 3-5 paragraphs. Second person "you". Immersive slice-of-life style.
+  Total length MUST be around 1000 characters (not words). Paragraphs separated by \\n\\n.
+- "long_story_zh": Traditional Chinese translation with equal poetic quality. Also ~1000 characters total.""")
     if "short_story" in selected_outputs:
-        output_specs.append("""- "short_story": English Instagram-style caption, 3-4 paragraphs, ~130 words. Include emojis.
-  Paragraphs separated by \\n\\n.
-- "short_story_zh": Traditional Chinese translation.""")
+        output_specs.append("""- "short_story": English short prose, 200-600 characters total. Format:
+  Line 1: A short evocative title followed by one emoji (e.g. "Making Tea 🍵")
+  Then 2-3 paragraphs in second person "you", present tense, with sensory details.
+  Place emojis at the END of sentences (not inline). Paragraphs separated by \\n\\n.
+  Example:
+  "Making Tea 🍵\nEvening settles outside the window 🌙. You fill the kettle and set it on the stove...\n\nYou don't drink yet. You just stand there, holding it..."
+- "short_story_zh": Traditional Chinese translation in the same format. Also 200-600 characters total.""")
 
     specs_text = "\n".join(output_specs)
 
