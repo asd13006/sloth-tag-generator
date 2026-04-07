@@ -138,32 +138,15 @@ def _init_auth():
         _redirect_uri = st.secrets["google_oauth"].get(
             "redirect_uri", "http://localhost:8501")
 
-        # 支援多個 redirect_uri（secrets 中以逗號分隔或列表）
-        if isinstance(_redirect_uri, str) and "," in _redirect_uri:
-            _all_uris = [u.strip().rstrip("/") for u in _redirect_uri.split(",")]
-        elif isinstance(_redirect_uri, list):
-            _all_uris = [u.strip().rstrip("/") for u in _redirect_uri]
-        else:
-            _all_uris = [_redirect_uri.strip().rstrip("/")]
-
-        # 自動偵測當前環境，選匹配的 redirect_uri
-        import streamlit.web.bootstrap as _bs
-        _is_cloud = os.environ.get("STREAMLIT_SHARING_MODE") or os.environ.get("HOSTNAME", "").endswith("streamlit.app")
-        _current_uri = _all_uris[0]  # 預設第一個
-        for _u in _all_uris:
-            if _is_cloud and "streamlit.app" in _u:
-                _current_uri = _u
-                break
-            elif not _is_cloud and "localhost" in _u:
-                _current_uri = _u
-                break
+        # 直接使用 secrets 裡的 redirect_uri（每個環境各自設定自己的值）
+        _current_uri = _redirect_uri.strip().rstrip("/")
 
         _cred_path = os.path.join(tempfile.gettempdir(), "sloth_oauth_creds.json")
         _cred_data = {
             "web": {
                 "client_id": _client_id,
                 "client_secret": _client_secret,
-                "redirect_uris": _all_uris,
+                "redirect_uris": [_current_uri],
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
             }
