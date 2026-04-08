@@ -31,6 +31,10 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 /* ── Animations ── */
 @keyframes gradient-text { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
 @keyframes neon-breathe { 0%, 100% { box-shadow: 0 0 8px rgba(0,255,204,0.15), inset 0 0 8px rgba(0,255,204,0.03); } 50% { box-shadow: 0 0 16px rgba(0,255,204,0.28), inset 0 0 12px rgba(0,255,204,0.05); } }
+@keyframes doubao-breathe {
+    0%, 100% { box-shadow: 0 0 8px rgba(176,38,255,0.2), 0 2px 8px rgba(0,0,0,0.4); }
+    50% { box-shadow: 0 0 18px rgba(176,38,255,0.4), 0 2px 12px rgba(176,38,255,0.15); }
+}
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
@@ -117,6 +121,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     filter: brightness(1.1);
     box-sizing: border-box !important;
     line-height: 1 !important;
+    white-space: nowrap !important;
 }
 .st-key-navbar button p {
     margin: 0 !important; padding: 0 !important; line-height: 1 !important; display: flex; align-items: center; justify-content: center; height: 100%;
@@ -137,6 +142,67 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 /* 隱藏 popover 的下拉箭頭與內部無用元素 */
 .st-key-navbar [data-testid="stPopover"] button svg { display: none !important; }
 .st-key-navbar [data-testid="stPopover"] button div:nth-child(2) { display: none !important; }
+
+/* ── 豆包按鈕 — 紫色專屬色系 + 漸層邊框 + 呼吸光暈 ── */
+.st-key-nb_doubao_btn button {
+    background: rgba(176,38,255,0.08) !important;
+    border: 1px solid rgba(176,38,255,0.45) !important;
+    color: #e0d0ff !important;
+    font-size: 13px !important; font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
+    animation: doubao-breathe 3s ease-in-out infinite !important;
+    position: relative !important;
+    overflow: visible !important;
+    z-index: 1 !important;
+}
+.st-key-nb_doubao_btn button::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: -1px !important;
+    border-radius: 13px !important;
+    background: linear-gradient(135deg, #00ffcc, #b026ff) !important;
+    z-index: -1 !important;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+.st-key-nb_doubao_btn button::after {
+    content: '' !important;
+    position: absolute !important;
+    inset: 0 !important;
+    border-radius: 12px !important;
+    background: rgba(14,14,24,0.92) !important;
+    z-index: -1 !important;
+}
+.st-key-nb_doubao_btn button p {
+    color: #e0d0ff !important; font-size: 13px !important; font-weight: 600 !important;
+    position: relative; z-index: 1;
+}
+.st-key-nb_doubao_btn button:hover {
+    background: rgba(176,38,255,0.18) !important;
+    border-color: rgba(176,38,255,0.7) !important;
+    box-shadow: 0 0 16px rgba(176,38,255,0.4), 0 4px 12px rgba(176,38,255,0.25) !important;
+    transform: translateY(-2px) !important;
+    filter: brightness(1.3) !important;
+}
+.st-key-nb_doubao_btn button:hover::before { opacity: 0.9; }
+.st-key-nb_doubao_btn button:hover p { color: #fff !important; }
+.st-key-nb_doubao_btn button:focus-visible {
+    outline: 2px solid rgba(176,38,255,0.5) !important; outline-offset: 2px !important;
+}
+/* 豆包 active 狀態（doubao 模式啟用 → type="primary"）*/
+.st-key-nb_doubao_btn [data-testid="stBaseButton-primary"] {
+    background: rgba(176,38,255,0.15) !important;
+    border-color: rgba(176,38,255,0.7) !important;
+    box-shadow: 0 0 20px rgba(176,38,255,0.5), 0 0 40px rgba(176,38,255,0.15) !important;
+    animation: doubao-breathe 2s ease-in-out infinite !important;
+}
+.st-key-nb_doubao_btn [data-testid="stBaseButton-primary"]::before { opacity: 1; }
+.st-key-nb_doubao_btn [data-testid="stBaseButton-primary"] p {
+    color: #00ffcc !important;
+}
+.st-key-nb_doubao_btn [data-testid="stBaseButton-primary"]:hover {
+    box-shadow: 0 0 24px rgba(176,38,255,0.6), 0 0 48px rgba(176,38,255,0.2) !important;
+}
 
 /* ── API Key 按鈕狀態指示 ── */
 .st-key-api_connected button {
@@ -189,22 +255,22 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 }
 
 /* 確保中間圖示顏色透白（避免系統繪製黑 emoji） */
-.st-key-navbar [data-testid="column"]:nth-child(3) button p,
-.st-key-navbar [data-testid="column"]:nth-child(4) button p {
+.st-key-navbar [data-testid="column"]:nth-child(4) button p,
+.st-key-navbar [data-testid="column"]:nth-child(5) button p {
     color: rgba(255,255,255,0.8) !important;
     text-shadow: 0 0 1px rgba(255,255,255,0.1);
     font-size: 22px !important;
 }
 /* 最右側 auth popover / link_button — 文字左對齊、較小字體 */
-.st-key-navbar [data-testid="column"]:nth-child(5) button {
+.st-key-navbar [data-testid="column"]:nth-child(6) button {
     font-size: 13px !important; font-weight: 600 !important; letter-spacing: 0.5px !important;
     justify-content: center !important; padding: 0 14px !important;
 }
-.st-key-navbar [data-testid="column"]:nth-child(5) button p {
+.st-key-navbar [data-testid="column"]:nth-child(6) button p {
     font-size: 13px !important; font-weight: 600 !important;
 }
 /* link_button（登入按鈕）也套用統一高度 */
-.st-key-navbar [data-testid="column"]:nth-child(5) a[data-testid="stBaseLinkButton-secondary"] {
+.st-key-navbar [data-testid="column"]:nth-child(6) a[data-testid="stBaseLinkButton-secondary"] {
     height: 38px !important; min-height: 38px !important; max-height: 38px !important;
     border-radius: 12px !important;
     background: rgba(255,255,255,0.12) !important;
@@ -216,7 +282,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     text-decoration: none !important;
     box-sizing: border-box !important;
 }
-.st-key-navbar [data-testid="column"]:nth-child(5) a[data-testid="stBaseLinkButton-secondary"]:hover {
+.st-key-navbar [data-testid="column"]:nth-child(6) a[data-testid="stBaseLinkButton-secondary"]:hover {
     background: rgba(0,255,204,0.15) !important;
     border-color: rgba(0,255,204,0.4) !important;
     transform: translateY(-2px);

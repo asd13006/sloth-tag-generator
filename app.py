@@ -110,7 +110,7 @@ _hist_count = len(load_history(_USER_EMAIL)) if _USER_EMAIL else 0
 # ═════════════════════════════════════════════════════════════════════════
 with st.container(key="navbar"):
     _c_brand, _c_space, _c_doubao, _c_key, _c_reset, _c_auth = st.columns(
-        [3.0, 3.7, 0.7, 0.5, 0.5, 1.6], vertical_alignment="center"
+        [3.0, 3.4, 1.0, 0.5, 0.5, 1.6], vertical_alignment="center"
     )
     # ── 品牌標題（點擊回首頁）──
     with _c_brand:
