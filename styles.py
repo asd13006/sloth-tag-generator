@@ -115,10 +115,9 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     border-radius: 12px !important;
     color: #ffffff !important;
     display: flex !important; justify-content: center !important; align-items: center !important;
-    cursor: pointer; transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    cursor: pointer; transition: background 0.1s ease, border-color 0.1s ease, color 0.1s ease;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
     position: relative;
-    filter: brightness(1.1);
     box-sizing: border-box !important;
     line-height: 1 !important;
     white-space: nowrap !important;
@@ -131,9 +130,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     background: rgba(0,255,204,0.15) !important;
     border-color: rgba(0,255,204,0.4) !important;
     color: #fff !important;
-    transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,255,204,0.25) !important;
-    filter: brightness(1.2);
 }
 .st-key-navbar button:focus-visible,
 .st-key-navbar [data-testid="stPopover"] button:focus-visible {
@@ -181,8 +178,6 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     background: rgba(176,38,255,0.18) !important;
     border-color: rgba(176,38,255,0.7) !important;
     box-shadow: 0 0 16px rgba(176,38,255,0.4), 0 4px 12px rgba(176,38,255,0.25) !important;
-    transform: translateY(-2px) !important;
-    filter: brightness(1.3) !important;
 }
 .st-key-nb_doubao_btn button:hover::before { opacity: 0.9; }
 .st-key-nb_doubao_btn button:hover p { color: #fff !important; }
@@ -285,7 +280,6 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .st-key-navbar [data-testid="column"]:nth-child(6) a[data-testid="stBaseLinkButton-secondary"]:hover {
     background: rgba(0,255,204,0.15) !important;
     border-color: rgba(0,255,204,0.4) !important;
-    transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(0,255,204,0.25) !important;
 }
 /* 移除 navbar 內 Streamlit 預設間距，並強制垂直置中 */
@@ -387,7 +381,7 @@ button[data-testid="baseButton-secondary"]:has(p:nth-of-type(2)) p:nth-of-type(2
 
 /* ── All buttons base ── */
 button[data-testid^="baseButton"], button[data-testid^="stBaseButton"] {
-    cursor: pointer !important; border-radius: 14px !important; transition: background 0.25s ease, border-color 0.25s ease, color 0.25s ease, transform 0.25s ease, box-shadow 0.25s ease !important;
+    cursor: pointer !important; border-radius: 14px !important; transition: background 0.1s ease, border-color 0.1s ease, color 0.1s ease, box-shadow 0.1s ease !important;
 }
 
 /* ── Secondary (unselected) ── */
@@ -399,13 +393,13 @@ button[data-testid="stBaseButton-secondary"] {
 button[data-testid="baseButton-secondary"]:hover,
 button[data-testid="stBaseButton-secondary"]:hover {
     background: rgba(255,255,255,0.06) !important; border-color: rgba(255,255,255,0.30) !important;
-    transform: translateY(-2px) !important; box-shadow: 0 8px 24px rgba(0,0,0,0.4) !important;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
 }
 button[data-testid="baseButton-secondary"]:active,
 button[data-testid="stBaseButton-secondary"]:active {
-    background: linear-gradient(135deg, rgba(0,255,204,0.08), rgba(176,38,255,0.06)) !important;
+    background: linear-gradient(135deg, rgba(0,255,204,0.12), rgba(176,38,255,0.08)) !important;
     border-color: rgba(0,255,204,0.50) !important; color: #00ffcc !important;
-    transform: translateY(0) !important; transition-duration: 0.05s !important;
+    transform: scale(0.97) !important; transition-duration: 0.04s !important;
 }
 
 /* ── Primary (selected / action) ── */
@@ -419,13 +413,12 @@ button[data-testid="baseButton-primary"] p,
 button[data-testid="stBaseButton-primary"] p { color: #00ffcc !important; }
 button[data-testid="baseButton-primary"]:hover,
 button[data-testid="stBaseButton-primary"]:hover {
-    transform: translateY(-2px) !important;
-    box-shadow: 0 0 28px rgba(0,255,204,0.25), 0 8px 24px rgba(0,0,0,0.4) !important;
+    box-shadow: 0 0 20px rgba(0,255,204,0.2), 0 4px 16px rgba(0,0,0,0.3) !important;
 }
 button[data-testid="baseButton-primary"]:active,
 button[data-testid="stBaseButton-primary"]:active {
-    transform: translateY(0) !important; transition-duration: 0.05s !important;
-    box-shadow: 0 0 12px rgba(0,255,204,0.15) !important;
+    transform: scale(0.97) !important; transition-duration: 0.04s !important;
+    box-shadow: 0 0 8px rgba(0,255,204,0.1) !important;
 }
 
 /* ── Info / Review cards ── */
