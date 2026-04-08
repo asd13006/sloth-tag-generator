@@ -80,7 +80,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     display: flex !important; align-items: center !important;
 }
 .st-key-nb_brand_home button:hover { background: transparent !important; }
-.st-key-nb_brand_home button:focus-visible { outline: 2px solid #00ffcc; outline-offset: 4px; border-radius: 6px; }
+.st-key-nb_brand_home button:focus-visible { outline: 2px solid #00ffcc; outline-offset: 4px; border-radius: 14px; }
 .st-key-nb_brand_home button p {
     font-family: 'Righteous', sans-serif !important; font-size: 22px !important; font-weight: 400 !important;
     letter-spacing: 1px !important;
@@ -111,8 +111,8 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     height: 38px !important; min-height: 38px !important; max-height: 38px !important;
     padding: 0 10px !important; font-size: 18px !important;
     background: rgba(255,255,255,0.12) !important;
-    border: 1px solid rgba(255,255,255,0.25) !important;
-    border-radius: 12px !important;
+    border: 1.5px solid rgba(255,255,255,0.25) !important;
+    border-radius: 14px !important;
     color: #ffffff !important;
     display: flex !important; justify-content: center !important; align-items: center !important;
     cursor: pointer; transition: background 0.1s ease, border-color 0.1s ease, color 0.1s ease;
@@ -121,6 +121,15 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     box-sizing: border-box !important;
     line-height: 1 !important;
     white-space: nowrap !important;
+}
+/* 功能型圖示按鈕（鑰匙、重置）— 正方形容器 */
+.st-key-navbar [data-testid="column"]:nth-child(4) button,
+.st-key-navbar [data-testid="column"]:nth-child(4) [data-testid="stPopover"] button,
+.st-key-navbar [data-testid="column"]:nth-child(5) button {
+    width: 38px !important; min-width: 38px !important; max-width: 38px !important;
+    padding: 0 !important;
+    border-radius: 12px !important;
+    margin: 0 auto !important;
 }
 .st-key-navbar button p {
     margin: 0 !important; padding: 0 !important; line-height: 1 !important; display: flex; align-items: center; justify-content: center; height: 100%;
@@ -143,7 +152,8 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 /* ── 豆包按鈕 — 紫色專屬色系 + 漸層邊框 + 呼吸光暈 ── */
 .st-key-nb_doubao_btn button {
     background: rgba(176,38,255,0.08) !important;
-    border: 1px solid rgba(176,38,255,0.45) !important;
+    border: 1.5px solid rgba(176,38,255,0.45) !important;
+    border-radius: 14px !important;
     color: #e0d0ff !important;
     font-size: 13px !important; font-weight: 600 !important;
     letter-spacing: 0.5px !important;
@@ -155,8 +165,8 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 .st-key-nb_doubao_btn button::before {
     content: '' !important;
     position: absolute !important;
-    inset: -1px !important;
-    border-radius: 13px !important;
+    inset: -1.5px !important;
+    border-radius: 15px !important;
     background: linear-gradient(135deg, #00ffcc, #b026ff) !important;
     z-index: -1 !important;
     opacity: 0.6;
@@ -166,7 +176,7 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
     content: '' !important;
     position: absolute !important;
     inset: 0 !important;
-    border-radius: 12px !important;
+    border-radius: 14px !important;
     background: rgba(14,14,24,0.92) !important;
     z-index: -1 !important;
 }
@@ -267,9 +277,9 @@ html, body, [class*="css"] { font-family: 'Poppins', -apple-system, sans-serif; 
 /* link_button（登入按鈕）也套用統一高度 */
 .st-key-navbar [data-testid="column"]:nth-child(6) a[data-testid="stBaseLinkButton-secondary"] {
     height: 38px !important; min-height: 38px !important; max-height: 38px !important;
-    border-radius: 12px !important;
+    border-radius: 14px !important;
     background: rgba(255,255,255,0.12) !important;
-    border: 1px solid rgba(255,255,255,0.25) !important;
+    border: 1.5px solid rgba(255,255,255,0.25) !important;
     color: #ffffff !important;
     display: flex !important; align-items: center !important; justify-content: center !important;
     box-shadow: 0 2px 8px rgba(0,0,0,0.4) !important;
