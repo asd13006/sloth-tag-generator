@@ -20,34 +20,34 @@ def _he(t: str) -> str:
 # ─────────────────────────────────────────────────────────────────────────────
 _BASE_CSS = (
     "* { box-sizing: border-box; margin: 0; padding: 0; }"
-    "html, body { background: transparent; font-family: 'Poppins', -apple-system, sans-serif; overflow-x: hidden; color: #e8e8f0; }"
-    ".lbl { font-size: 11px; font-weight: 700; color: #00ffcc; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 12px; }"
+    "html, body { background: transparent; font-family: 'Manrope', 'Noto Sans TC', -apple-system, sans-serif; overflow-x: hidden; color: #ffffff; }"
+    ".lbl { font-size: 11px; font-weight: 700; color: #99f7ff; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 12px; }"
     ".card { background: rgba(14,14,24,0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 20px 22px; }"
-    ".copy-btn { background: rgba(0,255,204,0.06); border: 1px solid rgba(0,255,204,0.20); border-radius: 8px; color: #00ffcc; font-size: 11px; font-weight: 600; padding: 5px 14px; cursor: pointer; font-family: inherit; transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s; }"
-    ".copy-btn:hover, .copy-btn.ok { background: rgba(0,255,204,0.15); border-color: rgba(0,255,204,0.45); }"
-    ".trans-btn { background: rgba(176,38,255,0.06); border: 1px solid rgba(176,38,255,0.20); border-radius: 8px; color: #b026ff; font-size: 11px; font-weight: 600; padding: 5px 12px; cursor: pointer; font-family: inherit; transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s; margin-right: 6px; }"
-    ".trans-btn:hover { background: rgba(176,38,255,0.18); border-color: rgba(176,38,255,0.45); }"
+    ".copy-btn { background: rgba(153,247,255,0.06); border: 1px solid rgba(153,247,255,0.20); border-radius: 8px; color: #99f7ff; font-size: 11px; font-weight: 600; padding: 5px 14px; cursor: pointer; font-family: inherit; transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s; }"
+    ".copy-btn:hover, .copy-btn.ok { background: rgba(153,247,255,0.15); border-color: rgba(153,247,255,0.45); }"
+    ".trans-btn { background: rgba(214,116,255,0.06); border: 1px solid rgba(214,116,255,0.20); border-radius: 8px; color: #d674ff; font-size: 11px; font-weight: 600; padding: 5px 12px; cursor: pointer; font-family: inherit; transition: background 0.2s, border-color 0.2s, color 0.2s, transform 0.2s; margin-right: 6px; }"
+    ".trans-btn:hover { background: rgba(214,116,255,0.18); border-color: rgba(214,116,255,0.45); }"
     ".content { color: rgba(255,255,255,0.72); font-size: 14px; line-height: 1.9; }"
     ".btn-row { display: flex; justify-content: flex-end; align-items: center; gap: 6px; margin-bottom: 14px; }"
     ".sec { margin-bottom: 24px; }"
     ".title-row { display: flex; align-items: center; gap: 14px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); border-radius: 12px; padding: 14px 18px; margin-bottom: 8px; transition: border-color 0.2s; }"
-    ".title-row:hover { border-color: rgba(0,255,204,0.18); }"
-    ".tnum { font-size: 13px; color: #00ffcc; flex-shrink: 0; min-width: 26px; font-weight: 700; font-family: 'Righteous', sans-serif; }"
+    ".title-row:hover { border-color: rgba(153,247,255,0.18); }"
+    ".tnum { font-size: 13px; color: #99f7ff; flex-shrink: 0; min-width: 26px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }"
     ".ttxt-wrap { flex: 1; } .ttxt { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.88); line-height: 1.5; }"
-    ".tag-pill { display: inline-block; background: rgba(0,255,204,0.06); border: 1px solid rgba(0,255,204,0.15); border-radius: 20px; padding: 4px 12px; margin: 3px; color: #00ffcc; font-size: 12px; font-weight: 500; transition: background 0.2s; }"
-    ".tag-pill:hover { background: rgba(0,255,204,0.12); }"
+    ".tag-pill { display: inline-block; background: rgba(153,247,255,0.06); border: 1px solid rgba(153,247,255,0.15); border-radius: 20px; padding: 4px 12px; margin: 3px; color: #99f7ff; font-size: 12px; font-weight: 500; transition: background 0.2s; }"
+    ".tag-pill:hover { background: rgba(153,247,255,0.12); }"
     ".song-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }"
     ".song-row:last-child { border-bottom: none; }"
     ".sinfo { flex: 1; } .stitle { font-size: 14px; font-weight: 700; color: rgba(255,255,255,0.88); margin-bottom: 6px; line-height: 1.4; }"
-    ".stheme-lbl { font-size: 10px; color: #00ffcc; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }"
+    ".stheme-lbl { font-size: 10px; color: #99f7ff; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; margin-bottom: 4px; }"
     ".stheme-en { font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.5; margin-bottom: 2px; }"
     ".stheme-zh { font-size: 12px; color: rgba(255,255,255,0.55); line-height: 1.5; font-style: italic; }"
     "@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; } }"
     "::-webkit-scrollbar { width: 6px; height: 6px; }"
     "::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 3px; }"
-    "::-webkit-scrollbar-thumb { background: rgba(0,255,204,0.25); border-radius: 3px; }"
-    "::-webkit-scrollbar-thumb:hover { background: rgba(0,255,204,0.40); }"
-    "html { scrollbar-color: rgba(0,255,204,0.25) rgba(255,255,255,0.02); scrollbar-width: thin; }"
+    "::-webkit-scrollbar-thumb { background: rgba(153,247,255,0.25); border-radius: 3px; }"
+    "::-webkit-scrollbar-thumb:hover { background: rgba(153,247,255,0.40); }"
+    "html { scrollbar-color: rgba(153,247,255,0.25) rgba(255,255,255,0.02); scrollbar-width: thin; }"
 )
 
 _JS = (
@@ -86,7 +86,7 @@ _JS = (
 def _html_page(body: str) -> str:
     return (
         f'<!DOCTYPE html><html><head><meta charset="UTF-8">'
-        f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Righteous&display=swap">'
+        f'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Manrope:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&display=swap">'
         f'<style>{_BASE_CSS}</style></head>'
         f'<body>{body}<script>{_JS}</script></body></html>'
     )
