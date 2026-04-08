@@ -407,8 +407,9 @@ button[data-testid="stBaseButton-secondary"]:hover {
 }
 button[data-testid="baseButton-secondary"]:active,
 button[data-testid="stBaseButton-secondary"]:active {
-    background: linear-gradient(135deg, rgba(0,255,204,0.12), rgba(176,38,255,0.08)) !important;
-    border-color: rgba(0,255,204,0.50) !important; color: #00ffcc !important;
+    background: rgba(255,255,255,0.08) !important;
+    border-color: rgba(255,255,255,0.35) !important;
+    color: rgba(255,255,255,0.7) !important;
     transform: scale(0.97) !important; transition-duration: 0.04s !important;
 }
 
