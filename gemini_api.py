@@ -3,6 +3,8 @@ Gemini API 模組 — AI 生成 + 模型候選清單
 """
 
 import json
+import time
+from typing import Optional
 
 import streamlit as st
 from google import genai
@@ -53,11 +55,25 @@ def validate_api_key(key: str) -> tuple[bool, str]:
         return False, ""
 
 
-def _call_json(prompt: str, image_parts: list | None = None) -> dict | list:
-    """Call Gemini with JSON response mode. Returns parsed JSON."""
+def _call_json(prompt: str, image_parts: list | None = None, max_retries: int = 3) -> dict | list:
+    """
+    Call Gemini with JSON response mode. Includes retry logic with exponential backoff.
+    
+    Args:
+        prompt: The text prompt
+        image_parts: Optional list of (bytes, mime_type) tuples for images
+        max_retries: Maximum number of retry attempts (default: 3)
+    
+    Returns:
+        Parsed JSON from Gemini response
+    
+    Raises:
+        RuntimeError: If API key not set or all retries exhausted
+    """
     client = _get_client()
     if not client:
         raise RuntimeError("API key 未設定")
+    
     model = st.session_state.api_model
     contents = []
     if image_parts:
@@ -65,15 +81,48 @@ def _call_json(prompt: str, image_parts: list | None = None) -> dict | list:
             contents.append(types.Part.from_bytes(
                 data=img_bytes, mime_type=mime))
     contents.append(prompt)
-    response = client.models.generate_content(
-        model=model,
-        contents=contents,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            temperature=0.9,
-        ),
-    )
-    return json.loads(response.text)
+    
+    # Retry logic with exponential backoff
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            # Add status update for UI feedback
+            if attempt > 0:
+                st.write(f"⚠️ 重試中 ({attempt}/{max_retries})...")
+            
+            response = client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.9,
+                    timeout=120,  # 120 seconds timeout per request
+                ),
+            )
+            
+            return json.loads(response.text)
+        
+        except Exception as e:
+            last_error = e
+            error_str = str(e)
+            
+            # Check if it's a retryable error (503, timeout, etc.)
+            is_retryable = any(code in error_str for code in ["503", "UNAVAILABLE", "timeout", "timed out", "500"])
+            
+            if is_retryable and attempt < max_retries - 1:
+                # Exponential backoff: 2^attempt seconds
+                wait_time = min(2 ** attempt, 16)  # Cap at 16 seconds
+                st.write(f"⏳ 伺服器暫時繁忙，{wait_time} 秒後重試...")
+                time.sleep(wait_time)
+                continue
+            else:
+                # Non-retryable error or last attempt
+                raise
+    
+    # All retries exhausted
+    if last_error:
+        raise RuntimeError(f"生成失敗（已重試 {max_retries} 次）: {last_error}")
+    raise RuntimeError("生成失敗：未知錯誤")
 
 
 def _build_tone_style_block() -> str:
@@ -149,48 +198,34 @@ def ai_generate_assets(selected_outputs: list, context: str, tracklist: list | N
     # 構建需要生成的項目描述
     output_specs = []
     if "titles" in selected_outputs:
-        output_specs.append("""- "titles": array of 5 English YouTube titles, ranked by predicted CTR (high→low).
-  Each title MUST follow this exact format: "{Catchy Name 2-5 words}… {Genre with Lofi/R&B/Jazz keyword} for {Use Case 2-3 words} {emoji} {emoji}"
-  IMPORTANT: Vary the genre keyword across titles (mix Lofi, R&B, Jazz — don't repeat the same one).
-  Vary the use cases (Study, Work, Relaxation, Yoga, Healing, Focus, etc.) and moods (Cozy, Peaceful, Slow, Warm, etc.).
-  Use diverse, evocative emoji pairs — avoid repeating the same pair.
-  Examples of good diversity:
-  - "Cozy Tea Moments… Chill Lofi for Relaxation, Study & Calm 🍵 🌙"
-  - "Find Peace in Small Tasks… Chill Lofi for Relaxation & Unwinding 🧼 🌿"
-  - "Find Your Calm… Soothing R&B for Work, Rest & Healing 🌸 ☕"
-  - "Slow Morning Chores… Chill R&B for Study, Work & Gentle Focus 🧰 🧰"
-  - "Rest in the Morning Light… Chill R&B for Yoga & Peaceful Moments 🧘 🌞"
-- "titles_zh": array of 5 Traditional Chinese titles, 1:1 corresponding to the English titles.""")
+        output_specs.append("""- "titles": array of 5 English YouTube titles (ranked by CTR: high→low).
+  Format: "{Catchy Name}… {Genre} for {Use Case} {emoji} {emoji}"
+  Mix genres (Lofi, R&B, Jazz) and use cases (Study, Work, Relaxation, Focus).
+  Examples: "Cozy Tea Moments… Chill Lofi for Relaxation 🍵 🌙"
+- "titles_zh": array of 5 Traditional Chinese titles, 1:1 matching English.""")
     if "tags" in selected_outputs:
-        output_specs.append("""- "tags": a single comma-separated string of 35-45 YouTube SEO tags.
-  Mix broad keywords (e.g. lofi, chill music) with niche keywords (e.g. cozy rainy night lofi).
-  Total character count should be 450-500.""")
+        output_specs.append("""- "tags": comma-separated YouTube SEO tags (450-500 chars).
+  Include broad (lofi, chill music) and niche keywords (cozy rainy night lofi).""")
     if "long_story" in selected_outputs:
-        output_specs.append("""- "long_story": English prose, 3-5 paragraphs. Second person "you". Immersive slice-of-life style.
-  Total length MUST be around 1000 characters (not words). Paragraphs separated by \\n\\n.
-- "long_story_zh": Traditional Chinese translation with equal poetic quality. Also ~1000 characters total.""")
+        output_specs.append("""- "long_story": English prose, 3-5 paragraphs, ~1000 chars. Second person "you".
+- "long_story_zh": Traditional Chinese translation, ~1000 chars.""")
     if "short_story" in selected_outputs:
-        output_specs.append("""- "short_story": English short prose, 200-600 characters total. Format:
-  Line 1: A short evocative title followed by one emoji (e.g. "Making Tea 🍵")
-  Then 2-3 paragraphs in second person "you", present tense, with sensory details.
-  Place emojis at the END of sentences (not inline). Paragraphs separated by \\n\\n.
-  Example:
-  "Making Tea 🍵\nEvening settles outside the window 🌙. You fill the kettle and set it on the stove...\n\nYou don't drink yet. You just stand there, holding it..."
-- "short_story_zh": Traditional Chinese translation in the same format. Also 200-600 characters total.""")
+        output_specs.append("""- "short_story": English short prose, 200-600 chars. Format: Title + emoji, then 2-3 sensory paragraphs.
+- "short_story_zh": Traditional Chinese translation, 200-600 chars.""")
 
     specs_text = "\n".join(output_specs)
 
-    prompt = f"""You are a YouTube SEO copywriter specializing in lofi/chill music channels.
+    prompt = f"""You are a lofi/chill music YouTube content specialist.
 
-{f"User's creative context: {context}" if context else "No specific context provided — create a cozy lofi theme."}
+{f"User context: {context}" if context else "Create a cozy lofi theme."}
 {tracklist_text}
 {style_block}
 {dedup_block}
 
-Generate the following as a single JSON object:
+Generate this JSON object:
 {specs_text}
 
-Return ONLY the JSON object."""
+Return ONLY the JSON object, no extra text."""
 
     image_parts = _prepare_images()
     return _call_json(prompt, image_parts)
