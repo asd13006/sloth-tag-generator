@@ -880,6 +880,8 @@ elif step == 3:
         with st.status(f"⚙️ Gemini AI 生成中...", expanded=True) as status:
             try:
                 st.write(f"🤖 使用 {st.session_state.api_model} 生成中...")
+                st.write("💡 提示：首次生成可能需要 30-60 秒，請耐心等待...")
+                st.write("🔄 若伺服器過載，會自動切換至備選模型")
                 results = ai_generate(
                     st.session_state.selected_outputs,
                     st.session_state.n_songs,
@@ -907,7 +909,26 @@ elif step == 3:
                     status.update(label="❌ 生成失敗",
                                   state="error", expanded=False)
             except Exception as e:
-                st.error(f"生成失敗：{e}")
+                error_msg = str(e)
+                # Provide context-aware error messages
+                if "高需求" in error_msg or "503" in error_msg or "UNAVAILABLE" in error_msg:
+                    st.error(
+                        f"生成失敗：Google Gemini API 目前負載過高 🚀\n\n"
+                        "**建議解決方案：**\n"
+                        "1. ⏳ 等待 3-5 分鐘後重試（尖峰需求通常是暫時的）\n"
+                        "2. 🎯 簡化你的輸入內容（更短的提示詞可能更快）\n"
+                        "3. 🔄 刷新頁面後重新開始\n"
+                        "4. 📱 如果問題持續，API 可能正進行維護，建議稍後再試"
+                    )
+                else:
+                    st.error(
+                        f"生成失敗：{error_msg}\n\n"
+                        "**建議：**\n"
+                        "1. 檢查 API Key 是否有效\n"
+                        "2. 檢查網路連接是否正常\n"
+                        "3. 內容是否過長？試試簡化你的輸入\n"
+                        "4. 如果問題持續，請稍後再試"
+                    )
                 status.update(label="❌ 生成失敗", state="error", expanded=False)
         if st.session_state.results:
             st.session_state.step = 4
