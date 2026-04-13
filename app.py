@@ -141,8 +141,7 @@ with st.container(key="navbar"):
         _api_pop = st.popover(_api_btn_label, use_container_width=True, help="API Key 設定", key=_api_key_name)
         with _api_pop:
             st.markdown("##### 🔑 API Key 設定")
-            _new_key = st.text_input(
-                "api_key_input_nb", value=st.session_state.api_key,
+            _new_key = st.text_input("api_key_input_nb", value=st.session_state.api_key,
                 type="password", placeholder="輸入 Google Gemini API Key...",
                 label_visibility="collapsed",
             )
@@ -731,12 +730,8 @@ elif step == 3:
             st.session_state.material_inputs = {}
         for _mk in _text_materials:
             _mlabel = _MATERIAL_LABELS.get(_mk, _mk)
-            _micon = dict(_OPTIONS).get(_mk, ("📄",))[0] if any(k == _mk for k, *_ in _OPTIONS) else "📄"
-            # 找到對應 icon
-            for _ok, _oi, _on, _od in _OPTIONS:
-                if _ok == _mk:
-                    _micon = _oi
-                    break
+            # 找到對應 icon；找不到時回退為預設圖示
+            _micon = next((_oi for _ok, _oi, _on, _od in _OPTIONS if _ok == _mk), "📄")
             st.markdown(
                 f"<div style='color:rgba(255,255,255,0.55);font-size:11px;letter-spacing:2px;"
                 f"text-transform:uppercase;margin:14px 0 4px;'>{_micon} 已有{_mlabel}</div>",
